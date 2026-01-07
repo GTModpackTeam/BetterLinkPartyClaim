@@ -38,5 +38,13 @@
  * For more details, see https://docs.gradle.org/8.4/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
+    // Hard Dependencies
+    devOnlyNonPublishable(rfg.deobf("curse.maven:better-questing-unofficial-629629:7421294")) // BetterQuestingUnofficial - 4.2.7
 
+    // Soft Dependencies
+    devOnlyNonPublishable(rfg.deobf("curse.maven:modularui-624243:7300254")) // ModularUI − 3.0.5
+
+    // Journey Map
+    api("info.journeymap:journeymap-api:1.12-1.4") // JourneyMap API 1.12-1.4
+    devOnlyNonPublishable(rfg.deobf("curse.maven:journeymap-32274:5172461")) // JourneyMap 5.7.1p3
 }
