@@ -45,6 +45,22 @@ public class ChunkData {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ChunkData chunkData = (ChunkData) o;
+        return x == chunkData.x && z == chunkData.z && dimId == chunkData.dimId;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = x;
+        result = 31 * result + z;
+        result = 31 * result + dimId;
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "ChunkData{x=" + x + ", z=" + z + ", dimId=" + dimId + "}";
     }
