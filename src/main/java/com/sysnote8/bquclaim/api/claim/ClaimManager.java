@@ -1,48 +1,60 @@
 package com.sysnote8.bquclaim.api.claim;
 
-import java.util.List;
-
 import com.sysnote8.bquclaim.api.chunk.ChunkData;
+import net.minecraft.world.chunk.Chunk;
 
-public interface ClaimManager {
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+public class ClaimManager {
+    protected final ClaimMap claimMap;
+    public ClaimManager(File claimJsonFile) {
+        claimMap = new ClaimMap(claimJsonFile);
+    }
+
+    // Todo: handle party join/leave
+
+    public boolean addClaim(ChunkData chunkData, int partyId) {
+        return false;
+    }
+
+    public boolean getClaim(ChunkData chunkData) {
+        return false;
+    }
+
+    public boolean updateClaim(ChunkData chunkData, int newOwnerPartyId) {
+        return false;
+    }
+
+    public boolean removeClaim(ChunkData chunkData) {
+        return false;
+    }
+
+    public List<ChunkData> getClaims(int partyId) {
+        return Collections.emptyList();
+    }
+
+    public boolean isClaimed(Chunk chunk) {
+        return isClaimed(ChunkData.fromChunk(chunk));
+    }
+
+    public boolean isClaimed(ChunkData chunk) {
+        return false;
+    }
+
+    public boolean removePartyClaim(int partyId) {
+        return false;
+    }
 
     /**
-     * @param chunkData ChunkData of target chunk
-     * @param partyId   New claim owner party's id
-     * @return Returns result which this action was successful.
+     * Check player permission in target chunk
+     * @param chunkData target chunk data
+     * @param playerUuid uuid of player
+     * @return is permitted for player
      */
-    boolean addClaim(ChunkData chunkData, int partyId);
-
-    /**
-     * @param chunkData ChunkData of target chunk
-     * @return Returns result which this action was successful.
-     */
-    boolean getClaim(ChunkData chunkData); // TODO return value change to ClaimInfo(copy)
-
-    /**
-     * @param chunkData       ChunkData of target chunk
-     * @param newOwnerPartyId New owner party's id
-     * @return Returns result which this action was successful.
-     */
-    boolean updateClaim(ChunkData chunkData, int newOwnerPartyId); // TODO int parameter change to ClaimInfo
-
-    /**
-     * @param chunkData ChunkData of target chunk
-     * @return Returns result which this action was successful.
-     */
-    boolean removeClaim(ChunkData chunkData);
-
-    /**
-     * @param partyId target party's id
-     * @return List of target party's all claimed chunk
-     */
-    List<ChunkData> getClaims(int partyId);
-
-    /**
-     * Remove all target party claims.
-     *
-     * @param partyId Target party's id
-     * @return Returns result which this action was successful.
-     */
-    boolean removePartyClaim(int partyId);
+    public boolean hasPermission(ChunkData chunkData, UUID playerUuid) {
+        return false;
+    }
 }

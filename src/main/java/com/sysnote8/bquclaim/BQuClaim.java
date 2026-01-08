@@ -1,17 +1,20 @@
 package com.sysnote8.bquclaim;
 
+import com.sysnote8.bquclaim.api.claim.ClaimManager;
+import com.sysnote8.bquclaim.core.CommonProxy;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.sysnote8.bquclaim.core.CommonProxy;
+import java.io.File;
 
 @Mod(modid = Tags.MODID,
      version = Tags.VERSION,
@@ -19,6 +22,8 @@ import com.sysnote8.bquclaim.core.CommonProxy;
      acceptedMinecraftVersions = "[1.12.2]",
      dependencies = "required-after:betterquesting;after:journeymap;")
 public class BQuClaim {
+
+    public static ClaimManager claimManager;
 
     public static final Logger LOGGER = LogManager.getLogger(Tags.MODID);
 
@@ -45,5 +50,10 @@ public class BQuClaim {
     // postInit "Handle interaction with other mods, complete your setup based on this." (Remove if not needed)
     public void postInit(FMLPostInitializationEvent event) {
         proxy.postInit(event);
+    }
+
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event) {
+        claimManager = new ClaimManager(new File(event.getWorld().getSaveHandler().getWorldDirectory(), "bquclaims.json"));
     }
 }
