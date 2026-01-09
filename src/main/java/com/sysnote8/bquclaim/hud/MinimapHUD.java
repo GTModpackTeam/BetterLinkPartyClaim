@@ -1,16 +1,19 @@
 package com.sysnote8.bquclaim.hud;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 import com.sysnote8.bquclaim.ModConfig;
 import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
 import com.sysnote8.bquclaim.chunk.ClientCache;
 import com.sysnote8.bquclaim.gui.AsyncMapRenderer;
 import com.sysnote8.bquclaim.gui.TextureCache;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.lwjgl.opengl.GL11;
 
 public class MinimapHUD {
 
@@ -20,47 +23,111 @@ public class MinimapHUD {
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        // 文字などの描画が終わった後のタイミング(ALL)で描画
         if (event.getType() != RenderGameOverlayEvent.ElementType.ALL) return;
-
         if (!ModConfig.showMinimap) return;
-
-        // インベントリや他のGUIが開いているときは非表示
         if (mc.currentScreen != null) return;
 
-        int pX = mc.player.chunkCoordX;
-        int pZ = mc.player.chunkCoordZ;
+        // 1. ステンシルが利用可能かチェックし、有効化
+        mc.getFramebuffer().enableStencil();
 
         GlStateManager.pushMatrix();
-        // 画面の右上（10pxの余白）に移動
+        // 画面右上へ移動
         int startX = event.getResolution().getScaledWidth() - mapSize - 10;
         int startY = 10;
         GlStateManager.translate(startX, startY, 0);
 
-        // 背景の黒枠
-        Gui.drawRect(-1, -1, mapSize + 1, mapSize + 1, 0xFF000000);
+        // --- ステンシル設定開始 ---
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
+        GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
 
-        // 描画範囲の計算（中央がプレイヤー）
+        // A. 型抜き（円）の描画設定
+        GL11.glStencilFunc(GL11.GL_ALWAYS, 1, 0xFF);
+        GL11.glStencilOp(GL11.GL_REPLACE, GL11.GL_REPLACE, GL11.GL_REPLACE);
+
+        // 【重要】ここから画面への色書き込みを一時禁止
+        GL11.glColorMask(false, false, false, false);
+
+        drawCircle(mapSize / 2, mapSize / 2, mapSize / 2, 0xFFFFFFFF);
+
+        // 【重要】型抜きが終わったら、即座に色書き込みを許可に戻す！！
+        GL11.glColorMask(true, true, true, true);
+
+        // B. マスク内のみ描画許可の設定
+        GL11.glStencilFunc(GL11.GL_EQUAL, 1, 0xFF);
+        GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
+
+        // --- 実際の地図描画 ---
+        Gui.drawRect(0, 0, mapSize, mapSize, 0xFF000000); // 地図の背景
+
+        int pX = mc.player.chunkCoordX;
+        int pZ = mc.player.chunkCoordZ;
         int range = mapSize / zoomSize / 2;
-
         for (int x = -range; x <= range; x++) {
             for (int z = -range; z <= range; z++) {
-                int rx = pX + x;
-                int rz = pZ + z;
-                int dx = (mapSize / 2) + (x * zoomSize);
-                int dy = (mapSize / 2) + (z * zoomSize);
-
-                // --- 既存のロジックを流用 ---
-                renderMinimapChunk(rx, rz, dx, dy);
+                renderMinimapChunk(pX + x, pZ + z, (mapSize / 2) + (x * zoomSize), (mapSize / 2) + (z * zoomSize));
             }
         }
 
-        // プレイヤーアイコン（自分）
+        // --- ステンシル終了（必ずOFFにする） ---
+        GL11.glDisable(GL11.GL_STENCIL_TEST);
+
+        // --- 装飾（型抜きしない） ---
+        drawCircleOutline(mapSize / 2, mapSize / 2, mapSize / 2, 2.0F, 0xFFFFFFFF);
         drawSmallPlayerIcon(mapSize / 2, mapSize / 2);
 
         GlStateManager.popMatrix();
+
+        // 念のための色リセット
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
+    private void drawCircle(int x, int y, int radius, int color) {
+        float a = (float)(color >> 24 & 255) / 255.0F;
+        float r = (float)(color >> 16 & 255) / 255.0F;
+        float g = (float)(color >> 8 & 255) / 255.0F;
+        float b = (float)(color & 255) / 255.0F;
+
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.color(r, g, b, a);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL11.GL_POLYGON, DefaultVertexFormats.POSITION);
+
+        // 360度を細かく分割して多角形で円を表現
+        for (int i = 0; i < 360; i++) {
+            double angle = Math.toRadians(i);
+            bufferbuilder.pos(x + Math.sin(angle) * radius, y + Math.cos(angle) * radius, 0).endVertex();
+        }
+
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
+    }
+
+    /** * 円の縁を描画するヘルパーメソッド
+     */
+    private void drawCircleOutline(int x, int y, int radius, float thickness, int color) {
+        float a = (float)(color >> 24 & 255) / 255.0F;
+        float r = (float)(color >> 16 & 255) / 255.0F;
+        float g = (float)(color >> 8 & 255) / 255.0F;
+        float b = (float)(color & 255) / 255.0F;
+
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.color(r, g, b, a);
+        GL11.glLineWidth(thickness);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL11.GL_LINE_LOOP, DefaultVertexFormats.POSITION);
+        for (int i = 0; i < 360; i++) {
+            double angle = Math.toRadians(i);
+            bufferbuilder.pos(x + Math.sin(angle) * radius, y + Math.cos(angle) * radius, 0).endVertex();
+        }
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
+    }
     private void renderMinimapChunk(int rx, int rz, int dx, int dy) {
         // 1. 地形テクスチャの取得
         int[] colors = AsyncMapRenderer.getColors(rx, rz);
@@ -84,7 +151,7 @@ public class MinimapHUD {
     }
 
     private void drawSmallPlayerIcon(int centerX, int centerY) {
-        float yaw = mc.player.rotationYaw;
+        float yaw = mc.player.rotationYawHead;
 
         mc.getTextureManager().bindTexture(new net.minecraft.util.ResourceLocation("textures/map/map_icons.png"));
 
