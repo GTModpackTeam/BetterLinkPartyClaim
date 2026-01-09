@@ -74,6 +74,11 @@ public class GuiChunkMap extends GuiScreen {
             // 地形が見えるように、drawRectで半透明の四角を重ねる
             // dx, dy は画面上の描画開始位置、size はチャンクの表示サイズ(16)
             drawRect(dx, dy, dx + size, dy + size, color);
+
+            if (d.isForceLoaded) {
+                // 領地の色の上に、さらに濃い色で小さな四角を描く
+                drawRect(dx + 5, dy + 5, dx + 11, dy + 11, 0xFFFF0000); // 中央に赤いポッチ
+            }
         }
     }
 
@@ -129,10 +134,13 @@ public class GuiChunkMap extends GuiScreen {
         }
 
         // 左クリック(0)でClaim、右クリック(1)でUnclaim
-        if (mouseButton == 0 || mouseButton == 1) {
-            int mode = (mouseButton == 0) ? 0 : 1;
+        if (mouseButton == 0) { // 左クリック
+            int mode = GuiScreen.isShiftKeyDown() ? 2 : 0; // Shiftなら2、普通なら0
             ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(rx, rz, mode));
-
+        } else if (mouseButton == 1) { // 右クリック
+            ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(rx, rz, 1)); // 解除
+        }
+        if (mouseButton == 0 || mouseButton == 1) {
             // 最後に処理した座標を保存
             lastDragX = rx;
             lastDragZ = rz;

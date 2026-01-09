@@ -1,30 +1,30 @@
 package com.sysnote8.bquclaim.network;
 
-import java.util.UUID;
-
+import com.sysnote8.bquclaim.chunk.ClientCache;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import com.sysnote8.bquclaim.chunk.ClientCache;
-
-import io.netty.buffer.ByteBuf;
+import java.util.UUID;
 
 public class MessageSyncClaims implements IMessage {
 
     private int x, z;
     private UUID owner;
     private String name;
+    private boolean isForceLoaded;
 
     public MessageSyncClaims() {} // 必須
 
-    public MessageSyncClaims(int x, int z, UUID owner, String name) {
+    public MessageSyncClaims(int x, int z, UUID owner, String name, boolean isForceLoaded) {
         this.x = x;
         this.z = z;
         this.owner = owner;
         this.name = name;
+        this.isForceLoaded = isForceLoaded;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class MessageSyncClaims implements IMessage {
         public IMessage onMessage(MessageSyncClaims message, MessageContext ctx) {
             // クライアント側で実行
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                ClientCache.update(message.x, message.z, message.owner, message.name);
+                ClientCache.update(message.x, message.z, message.owner, message.name, message.isForceLoaded);
             });
             return null;
         }

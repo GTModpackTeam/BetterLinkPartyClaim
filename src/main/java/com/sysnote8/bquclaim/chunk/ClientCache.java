@@ -10,12 +10,12 @@ public class ClientCache {
     private static final Map<String, ClaimedChunkData> cache = new HashMap<>();
 
     // パケット受信時に呼ばれる更新メソッド
-    public static void update(int x, int z, UUID owner, String name) {
+    public static void update(int x, int z, UUID owner, String name, boolean isForceLoaded) {
         String key = x + "," + z;
         if (owner == null) {
             cache.remove(key);
         } else {
-            cache.put(key, new ClaimedChunkData(x, z, owner, name));
+            cache.put(key, new ClaimedChunkData(x, z, owner, name, isForceLoaded));
         }
     }
 

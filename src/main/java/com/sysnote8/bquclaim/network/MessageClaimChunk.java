@@ -1,15 +1,15 @@
 package com.sysnote8.bquclaim.network;
 
+import com.sysnote8.bquclaim.chunk.ChunkManagerData;
+import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
+import com.sysnote8.bquclaim.chunk.TicketManager;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import com.sysnote8.bquclaim.chunk.ChunkManagerData;
-
-import io.netty.buffer.ByteBuf;
 
 public class MessageClaimChunk implements IMessage {
 
@@ -50,16 +50,33 @@ public class MessageClaimChunk implements IMessage {
                 EntityPlayerMP player = ctx.getServerHandler().player;
                 ChunkManagerData data = ChunkManagerData.get(player.world);
 
-                if (message.mode == 0) {
+                if (message.mode == 0 || message.mode == 2) {
                     // Claim処理
-                    data.setClaim(message.x, message.z, player.getUniqueID(), player.getName());
+                    // Todo: If its already claimed, skip it.
+                    data.setClaim(message.x, message.z, player.getUniqueID(), player.getName(), message.mode == 2);
                     player.sendMessage(
                             new TextComponentString("Chunk [" + message.x + ", " + message.z + "] claimed!"));
                 } else {
                     // Unclaim処理
-                    data.setClaim(message.x, message.z, null, "");
+                    data.setClaim(message.x, message.z, null, "", false);
                     player.sendMessage(
                             new TextComponentString("Chunk [" + message.x + ", " + message.z + "] unclaimed!"));
+                }
+
+                // Handler内の処理
+                if (message.mode == 2) {
+                    ClaimedChunkData d = data.claims.get(message.x + "," + message.z);
+                    if (d != null && d.ownerUUID.equals(player.getUniqueID())) {
+                        // 強制ロードのON/OFFを切り替え
+                        d.isForceLoaded = !d.isForceLoaded;
+
+                        if (d.isForceLoaded) {
+                            TicketManager.forceChunk(player.world, message.x, message.z, null);
+                        } else {
+                            TicketManager.unforceChunk(player.world, message.x, message.z);
+                        }
+                        data.markDirty();
+                    }
                 }
 
                 // 更新を全員（または周辺のプレイヤー）に同期
@@ -67,8 +84,9 @@ public class MessageClaimChunk implements IMessage {
                 ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(
                         message.x,
                         message.z,
-                        message.mode == 0 ? player.getUniqueID() : null,
-                        player.getName()));
+                        message.mode != 1 ? player.getUniqueID() : null,
+                        player.getName(),
+                        message.mode == 2));
             });
             return null;
         }

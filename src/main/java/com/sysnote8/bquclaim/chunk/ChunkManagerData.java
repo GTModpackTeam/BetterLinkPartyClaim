@@ -1,15 +1,15 @@
 package com.sysnote8.bquclaim.chunk;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldSavedData;
 import net.minecraftforge.common.util.Constants;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class ChunkManagerData extends WorldSavedData {
 
@@ -31,9 +31,9 @@ public class ChunkManagerData extends WorldSavedData {
         return data;
     }
 
-    public void setClaim(int x, int z, UUID owner, String name) {
+    public void setClaim(int x, int z, UUID owner, String name, boolean isForceLoaded) {
         if (owner == null) claims.remove(x + "," + z);
-        else claims.put(x + "," + z, new ClaimedChunkData(x, z, owner, name));
+        else claims.put(x + "," + z, new ClaimedChunkData(x, z, owner, name, isForceLoaded));
         markDirty();
     }
 
@@ -44,8 +44,11 @@ public class ChunkManagerData extends WorldSavedData {
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound c = list.getCompoundTagAt(i);
             String key = c.getInteger("x") + "," + c.getInteger("z");
-            claims.put(key, new ClaimedChunkData(c.getInteger("x"), c.getInteger("z"), c.getUniqueId("owner"),
-                    c.getString("name")));
+            claims.put(key, new ClaimedChunkData(c.getInteger("x"),
+                    c.getInteger("z"),
+                    c.getUniqueId("owner"),
+                    c.getString("name"),
+                    c.getBoolean("is_force_loaded")));
         }
     }
 
@@ -58,6 +61,7 @@ public class ChunkManagerData extends WorldSavedData {
             c.setInteger("z", d.z);
             c.setUniqueId("owner", d.ownerUUID);
             c.setString("name", d.ownerName);
+            c.setBoolean("is_force_loaded", d.isForceLoaded);
             list.appendTag(c);
         }
         nbt.setTag("list", list);
