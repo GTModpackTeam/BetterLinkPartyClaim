@@ -1,6 +1,7 @@
 package com.sysnote8.bquclaim.hud;
 
 import com.sysnote8.bquclaim.ModConfig;
+import com.sysnote8.bquclaim.Tags;
 import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
 import com.sysnote8.bquclaim.chunk.ClientCache;
 import com.sysnote8.bquclaim.gui.AsyncMapRenderer;
@@ -11,6 +12,7 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
@@ -27,37 +29,16 @@ public class MinimapHUD {
         if (!ModConfig.showMinimap) return;
         if (mc.currentScreen != null) return;
 
-        // 1. ステンシルが利用可能かチェックし、有効化
-        mc.getFramebuffer().enableStencil();
-
         GlStateManager.pushMatrix();
-        // 画面右上へ移動
+        GlStateManager.enableBlend();
+
         int startX = event.getResolution().getScaledWidth() - mapSize - 10;
         int startY = 10;
         GlStateManager.translate(startX, startY, 0);
 
-        // --- ステンシル設定開始 ---
-        GL11.glEnable(GL11.GL_STENCIL_TEST);
-        GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
-
-        // A. 型抜き（円）の描画設定
-        GL11.glStencilFunc(GL11.GL_ALWAYS, 1, 0xFF);
-        GL11.glStencilOp(GL11.GL_REPLACE, GL11.GL_REPLACE, GL11.GL_REPLACE);
-
-        // 【重要】ここから画面への色書き込みを一時禁止
-        GL11.glColorMask(false, false, false, false);
-
-        drawCircle(mapSize / 2, mapSize / 2, mapSize / 2, 0xFFFFFFFF);
-
-        // 【重要】型抜きが終わったら、即座に色書き込みを許可に戻す！！
-        GL11.glColorMask(true, true, true, true);
-
-        // B. マスク内のみ描画許可の設定
-        GL11.glStencilFunc(GL11.GL_EQUAL, 1, 0xFF);
-        GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
-
-        // --- 実際の地図描画 ---
-        Gui.drawRect(0, 0, mapSize, mapSize, 0xFF000000); // 地図の背景
+        // --- 1. まず「四角いまま」地図を描画 ---
+        // (背後の黒背景)
+        Gui.drawRect(0, 0, mapSize, mapSize, 0xFF000000);
 
         int pX = mc.player.chunkCoordX;
         int pZ = mc.player.chunkCoordZ;
@@ -68,17 +49,26 @@ public class MinimapHUD {
             }
         }
 
-        // --- ステンシル終了（必ずOFFにする） ---
-        GL11.glDisable(GL11.GL_STENCIL_TEST);
+        GlStateManager.enableBlend();
+// 「上から重ねる画像（マスク）のアルファ値を優先する」設定
+        GlStateManager.tryBlendFuncSeparate(
+                GlStateManager.SourceFactor.SRC_ALPHA,
+                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                GlStateManager.SourceFactor.ONE,
+                GlStateManager.DestFactor.ZERO
+        );
 
-        // --- 装飾（型抜きしない） ---
-        drawCircleOutline(mapSize / 2, mapSize / 2, mapSize / 2, 2.0F, 0xFFFFFFFF);
-        drawSmallPlayerIcon(mapSize / 2, mapSize / 2);
-
-        GlStateManager.popMatrix();
-
-        // 念のための色リセット
+// マスク画像をバインド（外側が黒・内側が透明な画像）
+        mc.getTextureManager().bindTexture(new ResourceLocation(Tags.MODID, "textures/gui/minimap_mask.png"));
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+
+// マスクを描画。これで「角」だけが上書きされる
+        Gui.drawModalRectWithCustomSizedTexture(0, 0, 0, 0, mapSize, mapSize, (float)mapSize, (float)mapSize);
+
+        GlStateManager.disableBlend();
+
+// 最後にアイコン
+        drawSmallPlayerIcon(mapSize / 2, mapSize / 2);
     }
 
     private void drawCircle(int x, int y, int radius, int color) {
