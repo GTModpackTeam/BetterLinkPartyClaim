@@ -8,8 +8,13 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.sysnote8.bquclaim.gui.KeyInputHandler;
+import com.sysnote8.bquclaim.gui.ModKeyBindings;
+import com.sysnote8.bquclaim.network.ModNetwork;
 
 @Mod(modid = Tags.MODID,
      version = Tags.VERSION,
@@ -26,19 +31,24 @@ public class BQuClaim {
         // register to the event bus so that we can listen to events
         MinecraftForge.EVENT_BUS.register(this);
         LOGGER.info("I am " + Tags.MODNAME + " + at version " + Tags.VERSION);
+        ModNetwork.init();
     }
 
     @EventHandler
     // load "Do your mod setup. Build whatever data structures you care about." (Remove if not needed)
     public void init(FMLInitializationEvent event) {
+        if (event.getSide().isClient()) {
+            // Client side only
+            ModKeyBindings.init();
+            MinecraftForge.EVENT_BUS.register(new KeyInputHandler());
+            // todo: add minimap
+        }
     }
 
     @EventHandler
     // postInit "Handle interaction with other mods, complete your setup based on this." (Remove if not needed)
-    public void postInit(FMLPostInitializationEvent event) {
-    }
+    public void postInit(FMLPostInitializationEvent event) {}
 
     @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event) {
-    }
+    public void onWorldLoad(WorldEvent.Load event) {}
 }
