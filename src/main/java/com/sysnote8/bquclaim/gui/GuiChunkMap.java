@@ -27,8 +27,8 @@ public class GuiChunkMap extends GuiScreen {
             for (int z = -10; z <= 10; z++) {
                 int rx = pX + x;
                 int rz = pZ + z;
-                int dx = cx + (x * size);
-                int dy = cy + (z * size);
+                int dx = (width / 2) + (x * size);
+                int dy = (height / 2) + (z * size);
 
                 int[] colors = AsyncMapRenderer.getColors(rx, rz);
 
@@ -107,9 +107,21 @@ public class GuiChunkMap extends GuiScreen {
      * 実際の Claim/Unclaim パケット送信処理を一本化
      */
     private void handleAction(int mouseX, int mouseY, int mouseButton) {
-        // 画面中央からの相対座標でチャンクを計算
-        int rx = (mouseX - (this.width / 2)) / size + mc.player.chunkCoordX;
-        int rz = (mouseY - (this.height / 2)) / size + mc.player.chunkCoordZ;
+        // 1. 画面中央のピクセル座標
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+
+        // 2. 中央からの相対ピクセル距離
+        int diffX = mouseX - centerX;
+        int diffY = mouseY - centerY;
+
+        // 3. チャンク単位に変換（Math.floorを使わないと負の座標でズレる）
+        // size = 16 の場合、-1~-16ピクセルは -1チャンク目になる必要がある
+        int rx = (int) Math.floor((double) diffX / size) + mc.player.chunkCoordX;
+        int rz = (int) Math.floor((double) diffY / size) + mc.player.chunkCoordZ;
+
+        // デバッグ用（コンソールで確認）
+        // System.out.println("Mouse: " + mouseY + " -> ChunkZ: " + rz);
 
         // 前回の処理と同じチャンクなら通信をスキップ（ドラッグの重複防止）
         if (rx == lastDragX && rz == lastDragZ) {
