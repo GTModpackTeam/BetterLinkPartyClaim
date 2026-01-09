@@ -1,6 +1,8 @@
 package com.sysnote8.bquclaim.chunk;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,5 +29,9 @@ public class ClientCache {
     // 全消去（ワールド退出時などに使用）
     public static void clear() {
         cache.clear();
+    }
+
+    public static List<ClaimedChunkData> getAll() {
+        return new ArrayList<>(cache.values());
     }
 }

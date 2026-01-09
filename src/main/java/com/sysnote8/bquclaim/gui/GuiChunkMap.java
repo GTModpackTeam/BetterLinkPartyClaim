@@ -1,6 +1,7 @@
 package com.sysnote8.bquclaim.gui;
 
 import com.sysnote8.bquclaim.BQPartyHelper;
+import com.sysnote8.bquclaim.ModConfig;
 import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
 import com.sysnote8.bquclaim.chunk.ClientCache;
 import com.sysnote8.bquclaim.network.MessageClaimChunk;
@@ -51,6 +52,7 @@ public class GuiChunkMap extends GuiScreen {
             }
         }
         drawPlayerIcon();
+        renderLimitOverlay();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
@@ -82,6 +84,27 @@ public class GuiChunkMap extends GuiScreen {
                 drawRect(dx + 5, dy + 5, dx + 11, dy + 11, 0xFFFF0000); // 中央に赤いポッチ
             }
         }
+    }
+
+    private void renderLimitOverlay() {
+        // 2. 統計情報の取得
+        int claims = countMyClaims();
+        int loads = countMyForceLoads();
+
+        // 3. 表示文字列の作成
+        String claimText = String.format("Claims: %d / %d", claims, ModConfig.maxClaimsPerPlayer);
+        String loadText = String.format("Force Loaded: %d / %d", loads, ModConfig.maxForceLoadsPerPlayer);
+
+        // 4. 描画（左上から少し余白をあける）
+        int x = 10;
+        int y = 10;
+
+        // 制限ギリギリなら赤文字にするなどの演出も可能
+        int claimColor = (claims >= ModConfig.maxClaimsPerPlayer) ? 0xFFFF5555 : 0xFFFFFFFF;
+        int loadColor = (loads >= ModConfig.maxForceLoadsPerPlayer) ? 0xFFFF5555 : 0xFFFFFFFF;
+
+        this.fontRenderer.drawStringWithShadow(claimText, x, y, claimColor);
+        this.fontRenderer.drawStringWithShadow(loadText, x, y + 12, loadColor);
     }
 
     private void drawPlayerIcon() {
@@ -190,5 +213,26 @@ public class GuiChunkMap extends GuiScreen {
         super.mouseReleased(mouseX, mouseY, state);
         lastDragX = Integer.MIN_VALUE;
         lastDragZ = Integer.MIN_VALUE;
+    }
+
+    private int countMyClaims() {
+        int count = 0;
+        // ClientCacheから全データを取得（ClientCacheにgetAllメソッド等を追加しておくと楽です）
+        for (ClaimedChunkData d : ClientCache.getAll()) {
+            if (d.ownerUUID.equals(mc.player.getUniqueID())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countMyForceLoads() {
+        int count = 0;
+        for (ClaimedChunkData d : ClientCache.getAll()) {
+            if (d.ownerUUID.equals(mc.player.getUniqueID()) && d.isForceLoaded) {
+                count++;
+            }
+        }
+        return count;
     }
 }
