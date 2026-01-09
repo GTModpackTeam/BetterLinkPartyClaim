@@ -16,6 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public class GuiChunkMap extends GuiScreen {
 
@@ -82,6 +83,9 @@ public class GuiChunkMap extends GuiScreen {
             // 地形が見えるように、drawRectで半透明の四角を重ねる
             // dx, dy は画面上の描画開始位置、size はチャンクの表示サイズ(16)
             drawRect(dx, dy, dx + size, dy + size, color);
+
+            // 境界線の描画（これをつなげる！）
+            renderChunkBorder(rx, rz, dx, dy, d.ownerUUID);
 
             // 2. 強制ロード中ならハッチングを重ねる
             if (d.isForceLoaded) {
@@ -275,5 +279,34 @@ public class GuiChunkMap extends GuiScreen {
 
         tessellator.draw();
         GlStateManager.enableTexture2D();
+    }
+
+    private void renderChunkBorder(int rx, int rz, int dx, int dy, UUID owner) {
+        int borderColor = 0xFFFFFFFF; // 白色の枠線
+        int thickness = 1; // 線の太さ
+
+        // 上 (Z-1)
+        if (!isSameOwner(rx, rz - 1, owner)) {
+            drawRect(dx, dy, dx + size, dy + thickness, borderColor);
+        }
+        // 下 (Z+1)
+        if (!isSameOwner(rx, rz + 1, owner)) {
+            drawRect(dx, dy + size - thickness, dx + size, dy + size, borderColor);
+        }
+        // 左 (X-1)
+        if (!isSameOwner(rx - 1, rz, owner)) {
+            drawRect(dx, dy, dx + thickness, dy + size, borderColor);
+        }
+        // 右 (X+1)
+        if (!isSameOwner(rx + 1, rz, owner)) {
+            drawRect(dx + size - thickness, dy, dx + size, dy + size, borderColor);
+        }
+    }
+
+    // 隣が同じ所有者かどうかを判定するヘルパー
+    private boolean isSameOwner(int rx, int rz, UUID currentOwner) {
+        ClaimedChunkData neighbor = ClientCache.get(rx, rz);
+        if (neighbor == null) return false;
+        return neighbor.ownerUUID.equals(currentOwner);
     }
 }
