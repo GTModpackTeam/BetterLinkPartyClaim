@@ -1,8 +1,7 @@
 package com.sysnote8.bquclaim.chunk;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,7 +30,7 @@ public class ClientCache {
         cache.clear();
     }
 
-    public static List<ClaimedChunkData> getAll() {
-        return new ArrayList<>(cache.values());
+    public static Collection<ClaimedChunkData> getAll() {
+        return cache.values();
     }
 }
