@@ -8,8 +8,12 @@ import com.sysnote8.bquclaim.network.MessageClaimChunk;
 import com.sysnote8.bquclaim.network.ModNetwork;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 
@@ -79,9 +83,10 @@ public class GuiChunkMap extends GuiScreen {
             // dx, dy は画面上の描画開始位置、size はチャンクの表示サイズ(16)
             drawRect(dx, dy, dx + size, dy + size, color);
 
+            // 2. 強制ロード中ならハッチングを重ねる
             if (d.isForceLoaded) {
-                // 領地の色の上に、さらに濃い色で小さな四角を描く
-                drawRect(dx + 5, dy + 5, dx + 11, dy + 11, 0xFFFF0000); // 中央に赤いポッチ
+                // 赤い斜線を描画
+                drawHatching(dx, dy, size, size, 0xAAFF0000);
             }
         }
     }
@@ -234,5 +239,41 @@ public class GuiChunkMap extends GuiScreen {
             }
         }
         return count;
+    }
+
+    private void drawHatching(int x, int y, int width, int height, int color) {
+        // 線の間隔
+        int spacing = 4;
+
+        // OpenGLのライン描画設定
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.glLineWidth(1.0F); // 線の太さ
+
+        // 色の分解 (ARGB)
+        float a = (float)(color >> 24 & 255) / 255.0F;
+        float r = (float)(color >> 16 & 255) / 255.0F;
+        float g = (float)(color >> 8 & 255) / 255.0F;
+        float b = (float)(color & 255) / 255.0F;
+        GlStateManager.color(r, g, b, a);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION);
+
+        // 斜線を描画（左上から右下へ）
+        for (int i = 0; i <= width + height; i += spacing) {
+            // 描画範囲をチャンクの枠内にクリップ（制限）するための計算
+            int xStart = Math.max(0, i - height);
+            int yStart = Math.min(i, height);
+            int xEnd = Math.min(i, width);
+            int yEnd = Math.max(0, i - width);
+
+            bufferbuilder.pos(x + xStart, y + yStart, 0.0D).endVertex();
+            bufferbuilder.pos(x + xEnd, y + yEnd, 0.0D).endVertex();
+        }
+
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
     }
 }
