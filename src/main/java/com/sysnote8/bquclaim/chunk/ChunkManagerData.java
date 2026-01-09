@@ -37,6 +37,21 @@ public class ChunkManagerData extends WorldSavedData {
         markDirty();
     }
 
+    public NBTTagCompound serializeAll() {
+        NBTTagCompound all = new NBTTagCompound();
+        for (Map.Entry<String, ClaimedChunkData> entry : claims.entrySet()) {
+            NBTTagCompound tag = new NBTTagCompound();
+            ClaimedChunkData d = entry.getValue();
+            tag.setInteger("x", d.x);
+            tag.setInteger("z", d.z);
+            tag.setUniqueId("owner", d.ownerUUID);
+            tag.setString("name", d.ownerName);
+            tag.setBoolean("force", d.isForceLoaded);
+            all.setTag(entry.getKey(), tag);
+        }
+        return all;
+    }
+
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
         NBTTagList list = nbt.getTagList("list", Constants.NBT.TAG_COMPOUND);
