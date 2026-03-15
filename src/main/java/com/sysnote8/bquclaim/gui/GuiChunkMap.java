@@ -24,10 +24,28 @@ public class GuiChunkMap extends GuiScreen {
 
     private final int size = 16; // 1チャンクの表示サイズ
     private int lastX = Integer.MIN_VALUE, lastZ = Integer.MIN_VALUE;
+    // Selected chunk under cursor (updated each draw)
+    private int selectedRX = Integer.MIN_VALUE;
+    private int selectedRZ = Integer.MIN_VALUE;
+
+    // GuiButtons
+    private net.minecraft.client.gui.GuiButton btnClaim;
+    private net.minecraft.client.gui.GuiButton btnUnclaim;
+    private net.minecraft.client.gui.GuiButton btnToggleForce;
+    // Confirmation dialog
+    private boolean confirmOpen = false;
+    private int confirmAction = 0; // 1 = unclaim, 2 = toggle force
+    private String confirmMessage = "";
+    private net.minecraft.client.gui.GuiButton confirmYes;
+    private net.minecraft.client.gui.GuiButton confirmNo;
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
+
+        // Update selected chunk under mouse BEFORE drawing so it can be highlighted
+        updateSelectedChunk(mouseX, mouseY);
+
         int cx = width / 2, cy = height / 2;
         int pX = mc.player.chunkCoordX, pZ = mc.player.chunkCoordZ;
 
@@ -58,9 +76,156 @@ public class GuiChunkMap extends GuiScreen {
                 renderClaimOverlay(rx, rz, dx, dy);
             }
         }
+
         drawPlayerIcon();
         renderLimitOverlay();
+
+        // Info panel above buttons (bottom center)
+        drawInfoPanel();
+
         super.drawScreen(mouseX, mouseY, partialTicks);
+
+        // Draw tooltips for buttons (if hovered)
+        // Tooltips for buttons (plain single-line tooltips)
+        for (Object o : this.buttonList) {
+            if (o instanceof net.minecraft.client.gui.GuiButton) {
+                net.minecraft.client.gui.GuiButton b = (net.minecraft.client.gui.GuiButton) o;
+                if (b.visible && mouseX >= b.xPosition && mouseY >= b.yPosition
+                        && mouseX < b.xPosition + b.width && mouseY < b.yPosition + b.height) {
+                    String tip;
+                    if (b == btnClaim) {
+                        tip = "Claim this chunk (Left-click). Shift+Click = Claim+Force";
+                    } else if (b == btnUnclaim) {
+                        tip = "Unclaim this chunk (owner or OP only)";
+                    } else {
+                        tip = "Toggle force-load for this chunk";
+                    }
+                    java.util.List<String> lines = new java.util.ArrayList<>();
+                    lines.add(tip);
+                    this.drawHoveringText(lines, mouseX, mouseY);
+                    break;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void initGui() {
+        super.initGui();
+        int btnWidth = 80;
+        int gap = 6;
+        int startX = (this.width / 2) - ((btnWidth * 3 + gap * 2) / 2);
+        int y = this.height - 30;
+        btnClaim = new net.minecraft.client.gui.GuiButton(1, startX, y, btnWidth, 20, "Claim");
+        btnUnclaim = new net.minecraft.client.gui.GuiButton(2, startX + (btnWidth + gap), y, btnWidth, 20, "Unclaim");
+        btnToggleForce = new net.minecraft.client.gui.GuiButton(3, startX + (btnWidth + gap) * 2, y, btnWidth, 20, "Toggle Force");
+        this.buttonList.clear();
+        this.buttonList.add(btnClaim);
+        this.buttonList.add(btnUnclaim);
+        this.buttonList.add(btnToggleForce);
+        updateButtonStates();
+    }
+
+    @Override
+    protected void actionPerformed(net.minecraft.client.gui.GuiButton button) throws IOException {
+        // If a confirmation dialog is open, only handle confirm buttons
+        if (confirmOpen) {
+            if (button == confirmYes) {
+                // Execute confirmed action
+                if (confirmAction == 1) {
+                    ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(selectedRX, selectedRZ, 1));
+                } else if (confirmAction == 2) {
+                    ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(selectedRX, selectedRZ, 2));
+                }
+                closeConfirm();
+            } else if (button == confirmNo) {
+                closeConfirm();
+            }
+        } else {
+            if (button == btnClaim) {
+                ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(selectedRX, selectedRZ, 0));
+            } else if (button == btnUnclaim) {
+                // Ask for confirmation before unclaiming
+                openConfirm(1);
+            } else if (button == btnToggleForce) {
+                ClaimedChunkData d = ClientCache.get(selectedRX, selectedRZ);
+                // If disabling force, ask for confirmation; otherwise toggle immediately
+                if (d != null && d.isForceLoaded) {
+                    openConfirm(2);
+                } else {
+                    ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(selectedRX, selectedRZ, 2));
+                }
+            }
+        }
+        mc.player.playSound(net.minecraft.init.SoundEvents.UI_BUTTON_CLICK, 0.3F, 1.0F);
+    }
+
+    private void openConfirm(int action) {
+        this.confirmAction = action;
+        this.confirmOpen = true;
+        String title;
+        if (action == 1) {
+            title = String.format("Unclaim chunk %d, %d?", selectedRX, selectedRZ);
+            this.confirmMessage = "This will release the claim and unforce this chunk.";
+        } else {
+            title = String.format("Disable force on chunk %d, %d?", selectedRX, selectedRZ);
+            this.confirmMessage = "This will remove the force-load ticket for this chunk.";
+        }
+
+        int btnY = this.height / 2 + 20;
+        int btnW = 80;
+        int gap = 10;
+        int centerX = this.width / 2;
+        int yesX = centerX - btnW - (gap / 2);
+        int noX = centerX + (gap / 2);
+
+        confirmYes = new net.minecraft.client.gui.GuiButton(100, yesX, btnY, btnW, 20, "Yes");
+        confirmNo = new net.minecraft.client.gui.GuiButton(101, noX, btnW, 20, "No");
+        this.buttonList.add(confirmYes);
+        this.buttonList.add(confirmNo);
+        // Disable main buttons while confirming
+        if (btnClaim != null) btnClaim.enabled = false;
+        if (btnUnclaim != null) btnUnclaim.enabled = false;
+        if (btnToggleForce != null) btnToggleForce.enabled = false;
+    }
+
+    private void closeConfirm() {
+        this.confirmOpen = false;
+        this.confirmAction = 0;
+        this.confirmMessage = "";
+        if (confirmYes != null) this.buttonList.remove(confirmYes);
+        if (confirmNo != null) this.buttonList.remove(confirmNo);
+        confirmYes = null;
+        confirmNo = null;
+        updateButtonStates();
+    }
+
+    private void updateButtonStates() {
+        ClaimedChunkData d = ClientCache.get(selectedRX, selectedRZ);
+        boolean isOwner = (d != null && d.ownerUUID.equals(mc.player.getUniqueID()));
+        btnClaim.enabled = (d == null) && (countMyClaims() < ModConfig.maxClaimsPerPlayer);
+        btnUnclaim.enabled = isOwner;
+        btnToggleForce.enabled = isOwner || (d == null && countMyClaims() < ModConfig.maxClaimsPerPlayer && countMyForceLoads() < ModConfig.maxForceLoadsPerPlayer);
+        // Update button labels to reflect state
+        if (d != null && d.isForceLoaded) {
+            btnToggleForce.displayString = "Unforce";
+        } else {
+            btnToggleForce.displayString = "Force";
+        }
+    }
+
+    private void updateSelectedChunk(int mouseX, int mouseY) {
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+        int diffX = mouseX - centerX;
+        int diffY = mouseY - centerY;
+        int rx = (int) Math.floor((double) diffX / size) + mc.player.chunkCoordX;
+        int rz = (int) Math.floor((double) diffY / size) + mc.player.chunkCoordZ;
+        if (rx != selectedRX || rz != selectedRZ) {
+            selectedRX = rx;
+            selectedRZ = rz;
+            if (this.buttonList != null) updateButtonStates();
+        }
     }
 
     private void renderClaimOverlay(int rx, int rz, int dx, int dy) {
@@ -146,6 +311,29 @@ public class GuiChunkMap extends GuiScreen {
         Gui.drawModalRectWithCustomSizedTexture((int) relativeX, (int) relativeZ, 0, 0, 8, 8, 32, 32);
 
         GlStateManager.popMatrix();
+    }
+
+    private void drawInfoPanel() {
+        // Draw a semi-transparent rounded panel above the buttons
+        int panelWidth = 300;
+        int panelHeight = 48;
+        int x = (this.width / 2) - (panelWidth / 2);
+        int y = this.height - 30 - panelHeight - 8;
+
+        // Background
+        drawRect(x, y, x + panelWidth, y + panelHeight, 0xAA000000);
+
+        // Selected chunk info
+        String coords = String.format("Chunk: %d, %d", selectedRX, selectedRZ);
+        ClaimedChunkData d = ClientCache.get(selectedRX, selectedRZ);
+        String owner = (d == null) ? "Unclaimed" : d.ownerName;
+        String force = (d != null && d.isForceLoaded) ? "Force: ON" : "Force: OFF";
+
+        int textX = x + 8;
+        int textY = y + 8;
+        this.fontRenderer.drawStringWithShadow(coords, textX, textY, 0xFFFFFF);
+        this.fontRenderer.drawStringWithShadow("Owner: " + owner, textX, textY + 12, 0xFFFFFF);
+        this.fontRenderer.drawStringWithShadow(force, textX, textY + 24, (d != null && d.isForceLoaded) ? 0xFFAA0000 : 0xFFAAAAAA);
     }
 
     // GUIクラス内の変数

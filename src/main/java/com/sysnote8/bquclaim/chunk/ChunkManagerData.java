@@ -59,11 +59,19 @@ public class ChunkManagerData extends WorldSavedData {
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound c = list.getCompoundTagAt(i);
             String key = c.getInteger("x") + "," + c.getInteger("z");
+            // Backwards compatibility: older saves might use "is_force_loaded" key while
+            // newer code uses "force". Prefer "force" if present.
+            boolean force = false;
+            if (c.hasKey("force")) {
+                force = c.getBoolean("force");
+            } else if (c.hasKey("is_force_loaded")) {
+                force = c.getBoolean("is_force_loaded");
+            }
             claims.put(key, new ClaimedChunkData(c.getInteger("x"),
                     c.getInteger("z"),
                     c.getUniqueId("owner"),
                     c.getString("name"),
-                    c.getBoolean("is_force_loaded")));
+                    force));
         }
     }
 
@@ -76,7 +84,8 @@ public class ChunkManagerData extends WorldSavedData {
             c.setInteger("z", d.z);
             c.setUniqueId("owner", d.ownerUUID);
             c.setString("name", d.ownerName);
-            c.setBoolean("is_force_loaded", d.isForceLoaded);
+            // Use unified key name "force" for newer saves
+            c.setBoolean("force", d.isForceLoaded);
             list.appendTag(c);
         }
         nbt.setTag("list", list);

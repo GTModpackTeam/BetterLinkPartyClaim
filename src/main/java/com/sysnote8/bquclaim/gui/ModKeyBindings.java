@@ -14,7 +14,8 @@ public class ModKeyBindings {
         // "M" キーでマップを開く設定
         keyOpenMap = new KeyBinding("key.chunkmod.open_map", Keyboard.KEY_M, "key.categories.chunkmod");
         ClientRegistry.registerKeyBinding(keyOpenMap);
-        toggleMinimap = new KeyBinding("key.chunkmod.toggle", Keyboard.KEY_M, "key.categories.chunkmod");
+        // Use N for minimap toggle to avoid collision with open-map (M)
+        toggleMinimap = new KeyBinding("key.chunkmod.toggle", Keyboard.KEY_N, "key.categories.chunkmod");
         ClientRegistry.registerKeyBinding(toggleMinimap);
     }
 }

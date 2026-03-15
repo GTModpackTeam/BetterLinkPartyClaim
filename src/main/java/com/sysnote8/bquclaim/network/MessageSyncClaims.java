@@ -37,6 +37,8 @@ public class MessageSyncClaims implements IMessage {
         if (buf.readBoolean()) {
             this.owner = new UUID(buf.readLong(), buf.readLong());
             this.name = ByteBufUtils.readUTF8String(buf);
+            // Read force flag if present
+            this.isForceLoaded = buf.readBoolean();
         }
     }
 
@@ -50,6 +52,8 @@ public class MessageSyncClaims implements IMessage {
             buf.writeLong(owner.getMostSignificantBits());
             buf.writeLong(owner.getLeastSignificantBits());
             ByteBufUtils.writeUTF8String(buf, name);
+            // Write force flag so clients can render force-loaded state
+            buf.writeBoolean(isForceLoaded);
         }
     }
 
