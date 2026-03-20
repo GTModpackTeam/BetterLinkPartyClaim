@@ -25,7 +25,7 @@ Spotless is enabled and enforced. Run `spotlessApply` before committing. Formatt
 
 ## Architecture
 
-Base package: `com.sysnote8.bquclaim`
+Base package: `com.github.gtexpert.bquclaim`
 
 - **`BQuClaim`** — Main mod class (`@Mod` entry point). Registers network, keybindings, and event handlers. Client-side handlers are registered conditionally via `event.getSide().isClient()`.
 - **`BQPartyHelper`** — Queries BetterQuesting API to check if two players share a party. Central to the claim permission model.

@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.gui;
+package com.github.gtexpert.bquclaim.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
@@ -6,8 +6,8 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import com.cleanroommc.modularui.drawable.GuiDraw;
-import com.sysnote8.bquclaim.ModConfig;
-import com.sysnote8.bquclaim.map.ChunkMapRenderer;
+import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.map.ChunkMapRenderer;
 
 public class MinimapHUD {
 

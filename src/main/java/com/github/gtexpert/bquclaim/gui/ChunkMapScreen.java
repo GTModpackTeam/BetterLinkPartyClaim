@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.gui;
+package com.github.gtexpert.bquclaim.gui;
 
 import java.util.function.Consumer;
 
@@ -15,14 +15,14 @@ import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.TextWidget;
-import com.sysnote8.bquclaim.ModConfig;
-import com.sysnote8.bquclaim.Tags;
-import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
-import com.sysnote8.bquclaim.chunk.ClientCache;
-import com.sysnote8.bquclaim.map.AsyncMapRenderer;
-import com.sysnote8.bquclaim.map.TextureCache;
-import com.sysnote8.bquclaim.network.MessageClaimChunk;
-import com.sysnote8.bquclaim.network.ModNetwork;
+import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.Tags;
+import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
+import com.github.gtexpert.bquclaim.chunk.ClientCache;
+import com.github.gtexpert.bquclaim.map.AsyncMapRenderer;
+import com.github.gtexpert.bquclaim.map.TextureCache;
+import com.github.gtexpert.bquclaim.network.MessageClaimChunk;
+import com.github.gtexpert.bquclaim.network.ModNetwork;
 
 public class ChunkMapScreen extends CustomModularScreen {
 

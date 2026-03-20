@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.map;
+package com.github.gtexpert.bquclaim.map;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;

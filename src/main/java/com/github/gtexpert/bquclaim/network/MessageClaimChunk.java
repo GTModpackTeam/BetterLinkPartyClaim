@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.network;
+package com.github.gtexpert.bquclaim.network;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
@@ -7,9 +7,10 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import com.sysnote8.bquclaim.chunk.ChunkManagerData;
-import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
-import com.sysnote8.bquclaim.chunk.TicketManager;
+import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.chunk.ChunkManagerData;
+import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
+import com.github.gtexpert.bquclaim.chunk.TicketManager;
 
 import io.netty.buffer.ByteBuf;
 
@@ -80,7 +81,7 @@ public class MessageClaimChunk implements IMessage {
                             player.sendMessage(new TextComponentString("Chunk already claimed by someone else."));
                         }
                     } else {
-                        if (countMyClaims.get() >= com.sysnote8.bquclaim.ModConfig.maxClaimsPerPlayer) {
+                        if (countMyClaims.get() >= ModConfig.maxClaimsPerPlayer) {
                             player.sendMessage(new TextComponentString("You have reached the claim limit."));
                         } else {
                             data.setClaim(message.x, message.z, player.getUniqueID(), player.getName(), false);
@@ -108,9 +109,9 @@ public class MessageClaimChunk implements IMessage {
                 } else if (message.mode == 2) { // Toggle Force / Claim+Force
                     if (existing == null) {
                         // Claim+Force
-                        if (countMyClaims.get() >= com.sysnote8.bquclaim.ModConfig.maxClaimsPerPlayer) {
+                        if (countMyClaims.get() >= ModConfig.maxClaimsPerPlayer) {
                             player.sendMessage(new TextComponentString("You have reached the claim limit."));
-                        } else if (countMyForceLoads.get() >= com.sysnote8.bquclaim.ModConfig.maxForceLoadsPerPlayer) {
+                        } else if (countMyForceLoads.get() >= ModConfig.maxForceLoadsPerPlayer) {
                             player.sendMessage(new TextComponentString("You have reached the force-load limit."));
                         } else {
                             data.setClaim(message.x, message.z, player.getUniqueID(), player.getName(), true);
@@ -127,7 +128,7 @@ public class MessageClaimChunk implements IMessage {
                             // Toggle
                             boolean newState = !existing.isForceLoaded;
                             if (newState) { // enabling
-                                if (countMyForceLoads.get() >= com.sysnote8.bquclaim.ModConfig.maxForceLoadsPerPlayer) {
+                                if (countMyForceLoads.get() >= ModConfig.maxForceLoadsPerPlayer) {
                                     player.sendMessage(
                                             new TextComponentString("You have reached the force-load limit."));
                                 } else {

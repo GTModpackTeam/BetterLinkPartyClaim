@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.map;
+package com.github.gtexpert.bquclaim.map;
 
 import java.util.Arrays;
 import java.util.HashMap;

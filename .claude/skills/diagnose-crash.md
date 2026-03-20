@@ -9,7 +9,7 @@ Diagnose a Minecraft crash or error related to BQuClaim.
 
 Steps:
 1. If a file path is provided, read the crash report. Otherwise, analyze the pasted stacktrace.
-2. Look for BQuClaim classes (`com.sysnote8.bquclaim`) in the stacktrace to find the origin.
+2. Look for BQuClaim classes (`com.github.gtexpert.bquclaim`) in the stacktrace to find the origin.
 3. Read the identified source files at the relevant line numbers.
 4. Check for common 1.12.2 Forge mod issues:
    - Side-only class access on wrong side (client classes on server)

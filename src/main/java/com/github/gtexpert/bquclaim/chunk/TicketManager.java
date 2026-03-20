@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.chunk;
+package com.github.gtexpert.bquclaim.chunk;
 
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +10,7 @@ import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.LoadingCallback;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 
-import com.sysnote8.bquclaim.BQuClaim;
+import com.github.gtexpert.bquclaim.BQuClaim;
 
 public class TicketManager implements LoadingCallback {
 

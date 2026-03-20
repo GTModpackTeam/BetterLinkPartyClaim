@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim;
+package com.github.gtexpert.bquclaim;
 
 import java.util.UUID;
 

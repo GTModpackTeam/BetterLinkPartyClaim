@@ -1,13 +1,13 @@
-package com.sysnote8.bquclaim.network;
+package com.github.gtexpert.bquclaim.network;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 
-import com.sysnote8.bquclaim.ModConfig;
-import com.sysnote8.bquclaim.Tags;
-import com.sysnote8.bquclaim.chunk.ChunkManagerData;
+import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.Tags;
+import com.github.gtexpert.bquclaim.chunk.ChunkManagerData;
 
 @Mod.EventBusSubscriber(modid = Tags.MODID)
 public class PlayerLoginHandler {

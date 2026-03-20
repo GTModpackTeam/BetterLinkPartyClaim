@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.network;
+package com.github.gtexpert.bquclaim.network;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
@@ -7,7 +7,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import com.sysnote8.bquclaim.chunk.ClientCache;
+import com.github.gtexpert.bquclaim.chunk.ClientCache;
 
 import io.netty.buffer.ByteBuf;
 

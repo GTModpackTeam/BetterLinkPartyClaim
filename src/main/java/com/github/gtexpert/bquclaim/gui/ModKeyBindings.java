@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.gui;
+package com.github.gtexpert.bquclaim.gui;
 
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.fml.client.registry.ClientRegistry;

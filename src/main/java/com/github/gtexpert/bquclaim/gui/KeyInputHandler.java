@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.gui;
+package com.github.gtexpert.bquclaim.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.common.config.Config;
@@ -9,8 +9,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import com.cleanroommc.modularui.factory.ClientGUI;
-import com.sysnote8.bquclaim.ModConfig;
-import com.sysnote8.bquclaim.Tags;
+import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.Tags;
 
 public class KeyInputHandler {
 

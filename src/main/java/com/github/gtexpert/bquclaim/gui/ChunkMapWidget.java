@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.gui;
+package com.github.gtexpert.bquclaim.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
@@ -10,11 +10,11 @@ import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Color;
 import com.cleanroommc.modularui.utils.Platform;
 import com.cleanroommc.modularui.widget.Widget;
-import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
-import com.sysnote8.bquclaim.chunk.ClientCache;
-import com.sysnote8.bquclaim.map.ChunkMapRenderer;
-import com.sysnote8.bquclaim.network.MessageClaimChunk;
-import com.sysnote8.bquclaim.network.ModNetwork;
+import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
+import com.github.gtexpert.bquclaim.chunk.ClientCache;
+import com.github.gtexpert.bquclaim.map.ChunkMapRenderer;
+import com.github.gtexpert.bquclaim.network.MessageClaimChunk;
+import com.github.gtexpert.bquclaim.network.ModNetwork;
 
 public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactable {
 

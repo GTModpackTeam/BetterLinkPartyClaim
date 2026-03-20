@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.map;
+package com.github.gtexpert.bquclaim.map;
 
 import java.util.UUID;
 
@@ -8,9 +8,9 @@ import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.utils.Platform;
-import com.sysnote8.bquclaim.BQPartyHelper;
-import com.sysnote8.bquclaim.chunk.ClaimedChunkData;
-import com.sysnote8.bquclaim.chunk.ClientCache;
+import com.github.gtexpert.bquclaim.BQPartyHelper;
+import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
+import com.github.gtexpert.bquclaim.chunk.ClientCache;
 
 /**
  * フルマップとミニマップで共通のチャンク描画ロジック。

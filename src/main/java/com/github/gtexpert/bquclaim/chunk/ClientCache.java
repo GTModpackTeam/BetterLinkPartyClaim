@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim.chunk;
+package com.github.gtexpert.bquclaim.chunk;
 
 import java.util.Collection;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.sysnote8.bquclaim;
+package com.github.gtexpert.bquclaim;
 
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -10,11 +10,11 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.sysnote8.bquclaim.chunk.TicketManager;
-import com.sysnote8.bquclaim.gui.KeyInputHandler;
-import com.sysnote8.bquclaim.gui.MinimapHUD;
-import com.sysnote8.bquclaim.gui.ModKeyBindings;
-import com.sysnote8.bquclaim.network.ModNetwork;
+import com.github.gtexpert.bquclaim.chunk.TicketManager;
+import com.github.gtexpert.bquclaim.gui.KeyInputHandler;
+import com.github.gtexpert.bquclaim.gui.MinimapHUD;
+import com.github.gtexpert.bquclaim.gui.ModKeyBindings;
+import com.github.gtexpert.bquclaim.network.ModNetwork;
 
 @Mod(modid = Tags.MODID,
      version = Tags.VERSION,
