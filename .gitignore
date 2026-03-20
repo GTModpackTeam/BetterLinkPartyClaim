@@ -1,8 +1,9 @@
 .nopublish
 
-### Windows ###
+### OS ###
 
 thumbs.db
+.DS_Store
 *.db
 
 ### Java ###
@@ -81,3 +82,6 @@ local.properties
 run/
 
 logs/
+
+.DS_Store
+

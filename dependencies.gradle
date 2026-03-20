@@ -10,9 +10,9 @@
  *       Not available at all for mods depending on this mod, only visible at compiletime for this mod
  *  - compileOnlyApi("g:n:v:c"): like compileOnly, but also visible at compiletime for mods depending on this mod
  *       Available at compiletime but not runtime for mods depending on this mod
- *  - runtimeOnlyNonPublishable("g:n:v:c"): if you want to include a mod in this mod's runClient/runServer runs, but not publish it as a dependency
+ *  - runtimeOnly("g:n:v:c"): if you want to include a mod in this mod's runClient/runServer runs, but not publish it as a dependency
  *       Not available at all for mods depending on this mod, only visible at runtime for this mod
- *  - devOnlyNonPublishable("g:n:v:c"): a combination of runtimeOnlyNonPublishable and compileOnly for dependencies present at both compiletime and runtime,
+ *  - devOnlyNonPublishable("g:n:v:c"): a combination of runtimeOnly and compileOnly for dependencies present at both compiletime and runtime,
  *       but not published as Maven dependencies - useful for RFG-deobfuscated dependencies or local testing
  *  - runtimeOnly("g:n:v:c"): if you don't need this at compile time, but want it to be present at runtime
  *       Available at runtime for mods depending on this mod
@@ -21,7 +21,7 @@
  *
  *  - shadowImplementation("g:n:v:c"): effectively the same as API, but the dependency is included in your jar under a renamed package name
  *       Requires you to enable usesShadowedDependencies in gradle.properties
- *       For more info, see https://github.com/GregTechCEu/Buildscripts/blob/master/docs/shadow.md
+ *       For more info, see https://github.com/GTModpackTeam/Buildscripts/blob/master/docs/shadow.md
  *
  * You can exclude transitive dependencies (dependencies of the chosen dependency) by appending { transitive = false } if needed,
  * but use this sparingly as it can break using your mod as another mod's dependency if you're not careful.
@@ -33,16 +33,14 @@
  * Example: devOnlyNonPublishable(rfg.deobf("curse.maven:top-245211:2667280"))
  *
  * Gradle names for some of the configuration can be misleading, compileOnlyApi and runtimeOnly both get published as dependencies in Maven, but compileOnly does not.
- * The buildscript adds runtimeOnlyNonPublishable to also have a runtime dependency that's not published.
+ * The buildscript adds runtimeOnly to also have a runtime dependency that's not published.
  *
  * For more details, see https://docs.gradle.org/8.4/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
     // Hard Dependencies
-    devOnlyNonPublishable(rfg.deobf("curse.maven:better-questing-unofficial-629629:7421294")) // BetterQuestingUnofficial - 4.2.7
-
-    // Soft Dependencies
-    devOnlyNonPublishable(rfg.deobf("curse.maven:modularui-624243:7300254")) // ModularUI − 3.0.5
+    implementation("com.cleanroommc:modularui:3.1.5") { transitive false }
+    devOnlyNonPublishable(rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")) // BetterQuestingUnofficial - 4.2.7
 
     // Journey Map
     api("info.journeymap:journeymap-api:1.12-1.4") // JourneyMap API 1.12-1.4
