@@ -12,8 +12,8 @@ Arguments:
 - `direction`: Either `client_to_server` or `server_to_client`
 
 Steps:
-1. Read `src/main/java/com/sysnote8/bquclaim/network/ModNetwork.java` to see the current message registrations and the next discriminator ID.
-2. Create the new message class in `src/main/java/com/sysnote8/bquclaim/network/` following the existing pattern:
+1. Read `src/main/java/com/github/gtexpert/bquclaim/network/ModNetwork.java` to see the current message registrations and the next discriminator ID.
+2. Create the new message class in `src/main/java/com/github/gtexpert/bquclaim/network/` following the existing pattern:
    - Implement `IMessage` with `fromBytes`/`toBytes` for serialization.
    - Implement a static inner `Handler` class implementing `IMessageHandler`.
    - Use `IThreadListener.addScheduledTask()` in the handler to run on the main thread.

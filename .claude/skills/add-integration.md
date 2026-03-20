@@ -11,7 +11,7 @@ Arguments:
 - `mod_name`: The target mod to integrate with (e.g., `journeymap`, `theoneprobe`)
 
 Steps:
-1. Create the integration class in `src/main/java/com/sysnote8/bquclaim/integration/` package (create the package if it doesn't exist).
+1. Create the integration class in `src/main/java/com/github/gtexpert/bquclaim/integration/` package (create the package if it doesn't exist).
 2. Use `@Optional.Method` or `Loader.isModLoaded()` guards so the integration is safe when the target mod is absent.
 3. If the target mod needs a compile-time dependency, add it to `dependencies.gradle`:
    - Use `compileOnly` or `compileOnlyApi` for optional deps.
