@@ -8,53 +8,52 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 public class AsyncMapRenderer {
 
-    // スレッドプール（CPUのコア数に合わせて並列処理）
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
-    // すでに計算済みのデータキャッシュ
-    private static final Map<String, int[]> colorCache = new ConcurrentHashMap<>();
-    // 現在計算中のチャンクを記録（重複防止）
-    private static final Set<String> processing = ConcurrentHashMap.newKeySet();
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
+    private static final Map<Long, int[]> COLOR_CACHE = new ConcurrentHashMap<>();
+    private static final Set<Long> PROCESSING = ConcurrentHashMap.newKeySet();
+
+    private static long chunkKey(int cx, int cz) {
+        return ((long) cx << 32) | (cz & 0xFFFFFFFFL);
+    }
 
     public static void requestChunk(World world, int cx, int cz) {
-        String key = cx + "," + cz;
-        if (colorCache.containsKey(key) || processing.contains(key)) return;
+        MapColorHelper.init();
 
-        // 未読込チャンクはスキップ（次フレームで再試行される）
-        if (world.getChunkProvider().getLoadedChunk(cx, cz) == null) return;
+        long key = chunkKey(cx, cz);
+        if (COLOR_CACHE.containsKey(key) || PROCESSING.contains(key)) return;
 
-        processing.add(key);
+        Chunk chunk = world.getChunkProvider().getLoadedChunk(cx, cz);
+        if (chunk == null) return;
 
-        // 非同期タスクの実行
-        executor.submit(() -> {
+        // シェーディング用に北隣チャンクも事前取得（未ロードならnull）
+        Chunk northChunk = world.getChunkProvider().getLoadedChunk(cx, cz - 1);
+
+        PROCESSING.add(key);
+
+        EXECUTOR.submit(() -> {
             try {
-                int[] colors = new int[256];
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        colors[x + z * 16] = MapColorHelper.getBlockColor(world, (cx << 4) + x, (cz << 4) + z);
-                    }
-                }
-                colorCache.put(key, colors);
+                int[] colors = MapColorHelper.computeChunkColors(world, chunk, northChunk, cx, cz);
+                COLOR_CACHE.put(key, colors);
             } finally {
-                processing.remove(key);
+                PROCESSING.remove(key);
             }
         });
     }
 
     public static int[] getColors(int cx, int cz) {
-        return colorCache.get(cx + "," + cz);
+        return COLOR_CACHE.get(chunkKey(cx, cz));
     }
 
-    /** 表示範囲外のキャッシュを除去する。描画ループの先頭で呼び出す。 */
     public static void evict(int centerCX, int centerCZ, int radius) {
-        Iterator<String> it = colorCache.keySet().iterator();
+        Iterator<Long> it = COLOR_CACHE.keySet().iterator();
         while (it.hasNext()) {
-            String key = it.next();
-            int sep = key.indexOf(',');
-            int cx = Integer.parseInt(key.substring(0, sep));
-            int cz = Integer.parseInt(key.substring(sep + 1));
+            long key = it.next();
+            int cx = (int) (key >> 32);
+            int cz = (int) key;
             if (Math.abs(cx - centerCX) > radius || Math.abs(cz - centerCZ) > radius) {
                 it.remove();
             }
@@ -62,6 +61,6 @@ public class AsyncMapRenderer {
     }
 
     public static void clearCache() {
-        colorCache.clear();
+        COLOR_CACHE.clear();
     }
 }

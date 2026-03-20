@@ -13,10 +13,15 @@ import com.github.gtexpert.bquclaim.map.ChunkMapRenderer;
 
 public class MinimapHUD {
 
+    private static final int MAP_SIZE = 64;
+    private static final int CHUNK_SIZE = 4;
+    private static final int MARGIN = 5;
+    private static final int RANGE = (MAP_SIZE / CHUNK_SIZE) / 2;
+    private static final int GRID_LINE_COLOR = 0x20FFFFFF;
+    private static final int PLAYER_ICON_SIZE = 6;
+    private static final float COORD_SCALE = 0.5f;
+
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final int mapSize = 64;
-    private final int zoomSize = 4;
-    private final int margin = 5;
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
@@ -24,40 +29,41 @@ public class MinimapHUD {
         if (!ModConfig.showMinimap) return;
         if (mc.currentScreen != null) return;
 
-        int startX = event.getResolution().getScaledWidth() - mapSize - margin;
-        int startY = margin;
+        int startX = event.getResolution().getScaledWidth() - MAP_SIZE - MARGIN;
         int pX = mc.player.chunkCoordX;
         int pZ = mc.player.chunkCoordZ;
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(startX, startY, 0);
+        GlStateManager.translate(startX, MARGIN, 0);
 
-        // 背景
-        GuiDraw.drawRect(0, 0, mapSize, mapSize, 0xFF000000);
+        GuiDraw.drawRect(0, 0, MAP_SIZE, MAP_SIZE, 0xFF000000);
 
-        // 表示範囲外のキャッシュを除去
-        int range = (mapSize / zoomSize) / 2;
-        AsyncMapRenderer.evict(pX, pZ, range + 2);
+        AsyncMapRenderer.evict(pX, pZ, RANGE + 2);
 
-        // チャンク描画
-        for (int x = -range; x <= range; x++) {
-            for (int z = -range; z <= range; z++) {
-                int dx = (mapSize / 2) + (x * zoomSize);
-                int dy = (mapSize / 2) + (z * zoomSize);
-                ChunkMapRenderer.drawChunkTerrain(pX + x, pZ + z, dx, dy, zoomSize, mc.player.world);
-                ChunkMapRenderer.drawClaimOverlay(pX + x, pZ + z, dx, dy, zoomSize, mc.player.getUniqueID());
+        int half = MAP_SIZE / 2;
+        for (int x = -RANGE; x <= RANGE; x++) {
+            for (int z = -RANGE; z <= RANGE; z++) {
+                int dx = half + (x * CHUNK_SIZE);
+                int dy = half + (z * CHUNK_SIZE);
+                ChunkMapRenderer.drawChunkTerrain(pX + x, pZ + z, dx, dy, CHUNK_SIZE, mc.player.world);
+                ChunkMapRenderer.drawClaimOverlay(pX + x, pZ + z, dx, dy, CHUNK_SIZE, mc.player.getUniqueID());
             }
         }
 
-        // プレイヤーアイコン（中心固定、サブオフセットなし）
-        ChunkMapRenderer.drawPlayerIcon(mapSize / 2f, mapSize / 2f, mc.player.rotationYaw + 180.0f, 6, 0, 0);
+        for (int x = -RANGE; x <= RANGE + 1; x++) {
+            GuiDraw.drawRect(half + (x * CHUNK_SIZE), 0, 1, MAP_SIZE, GRID_LINE_COLOR);
+        }
+        for (int z = -RANGE; z <= RANGE + 1; z++) {
+            GuiDraw.drawRect(0, half + (z * CHUNK_SIZE), MAP_SIZE, 1, GRID_LINE_COLOR);
+        }
 
-        // 座標表示（50%スケール）
+        ChunkMapRenderer.drawPlayerIcon(half, half, mc.player.rotationYaw, PLAYER_ICON_SIZE);
+
         String coords = String.format("%d, %d", (int) mc.player.posX, (int) mc.player.posZ);
-        GlStateManager.scale(0.5, 0.5, 0.5);
+        GlStateManager.scale(COORD_SCALE, COORD_SCALE, COORD_SCALE);
         mc.fontRenderer.drawStringWithShadow(coords,
-                mapSize - (float) mc.fontRenderer.getStringWidth(coords) / 2,
-                (mapSize * 2) + 4, 0xFFFFFFFF);
+                MAP_SIZE - (float) mc.fontRenderer.getStringWidth(coords) / 2,
+                (MAP_SIZE * 2) + 4, 0xFFFFFFFF);
 
         GlStateManager.popMatrix();
     }

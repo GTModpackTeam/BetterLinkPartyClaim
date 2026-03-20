@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 
 import com.cleanroommc.modularui.api.widget.Interactable;
+import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.drawable.Stencil;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
@@ -20,8 +21,11 @@ import com.github.gtexpert.bquclaim.network.ModNetwork;
 
 public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactable {
 
-    public static final int GRID = 15; // 15x15チャンク
-    private static final int RADIUS = GRID / 2; // ±7
+    public static final int GRID = 15;
+    private static final int RADIUS = GRID / 2;
+    private static final int GRID_LINE_COLOR = 0x30FFFFFF;
+    private static final int BORDER_COLOR = 0xFFFFFFFF;
+    private static final int HATCHING_COLOR = 0xAAFF0000;
 
     private int selectedRX = Integer.MIN_VALUE;
     private int selectedRZ = Integer.MIN_VALUE;
@@ -36,21 +40,33 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         return selectedRZ;
     }
 
+    private int getChunkSize() {
+        return Math.min(getArea().width, getArea().height) / GRID;
+    }
+
+    private int getMapPixels() {
+        return getChunkSize() * GRID;
+    }
+
+    private int getOriginX() {
+        return (getArea().width - getMapPixels()) / 2;
+    }
+
+    private int getOriginY() {
+        return (getArea().height - getMapPixels()) / 2;
+    }
+
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
         Minecraft mc = Minecraft.getMinecraft();
-        int w = getArea().width;
-        int h = getArea().height;
-        int side = Math.min(w, h); // 正方形に使うサイズ
-        int cs = side / GRID; // 1チャンクあたりのピクセル数（動的）
-        int mapPx = cs * GRID; // 実際に描画する正方形サイズ
-        int ox = (w - mapPx) / 2; // 余りをセンタリング
-        int oy = (h - mapPx) / 2;
+        int cs = getChunkSize();
+        int mapPx = getMapPixels();
+        int ox = getOriginX();
+        int oy = getOriginY();
         int pX = mc.player.chunkCoordX;
         int pZ = mc.player.chunkCoordZ;
 
         AsyncMapRenderer.evict(pX, pZ, RADIUS + 2);
-
         updateSelectedChunk(context.getMouseX(), context.getMouseY(), ox, oy, cs, pX, pZ);
 
         Stencil.apply(ox, oy, mapPx, mapPx, context);
@@ -67,18 +83,30 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
 
                 ClaimedChunkData d = ClientCache.get(rx, rz);
                 if (d != null && d.isForceLoaded) {
-                    drawHatching(dx, dy, cs, cs, 0xAAFF0000);
+                    drawHatching(dx, dy, cs, cs, HATCHING_COLOR);
                 }
             }
         }
 
-        // マップ枠線（正方形部分のみ）
-        com.cleanroommc.modularui.drawable.GuiDraw.drawRect(ox - 1, oy - 1, mapPx + 2, 1, 0xFFFFFFFF);
-        com.cleanroommc.modularui.drawable.GuiDraw.drawRect(ox - 1, oy + mapPx, mapPx + 2, 1, 0xFFFFFFFF);
-        com.cleanroommc.modularui.drawable.GuiDraw.drawRect(ox - 1, oy, 1, mapPx, 0xFFFFFFFF);
-        com.cleanroommc.modularui.drawable.GuiDraw.drawRect(ox + mapPx, oy, 1, mapPx, 0xFFFFFFFF);
+        drawGridLines(ox, oy, mapPx, cs);
+        drawBorder(ox, oy, mapPx);
+        drawPlayerIcon(mc, ox, oy, cs);
 
-        // プレイヤーアイコン
+        Stencil.remove();
+    }
+
+    private void drawGridLines(int ox, int oy, int mapPx, int cs) {
+        for (int i = 1; i < GRID; i++) {
+            GuiDraw.drawRect(ox + i * cs, oy, 1, mapPx, GRID_LINE_COLOR);
+            GuiDraw.drawRect(ox, oy + i * cs, mapPx, 1, GRID_LINE_COLOR);
+        }
+    }
+
+    private void drawBorder(int ox, int oy, int mapPx) {
+        GuiDraw.drawBorderOutsideXYWH(ox, oy, mapPx, mapPx, 1, BORDER_COLOR);
+    }
+
+    private void drawPlayerIcon(Minecraft mc, int ox, int oy, int cs) {
         float relX = (float) (mc.player.posX % 16) / 16.0f * cs;
         float relZ = (float) (mc.player.posZ % 16) / 16.0f * cs;
         if (relX < 0) relX += cs;
@@ -86,20 +114,14 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         float iconCX = ox + RADIUS * cs + relX;
         float iconCY = oy + RADIUS * cs + relZ;
         int iconSize = Math.max(4, cs / 2);
-        ChunkMapRenderer.drawPlayerIcon(iconCX, iconCY, mc.player.rotationYaw, iconSize, 0, 0);
-
-        Stencil.remove();
+        ChunkMapRenderer.drawPlayerIcon(iconCX, iconCY, mc.player.rotationYaw, iconSize);
     }
 
     private void updateSelectedChunk(int mouseX, int mouseY, int ox, int oy, int cs, int pX, int pZ) {
         if (cs <= 0) return;
-        int rx = (mouseX - ox) / cs - RADIUS + pX;
-        int rz = (mouseY - oy) / cs - RADIUS + pZ;
-        selectedRX = rx;
-        selectedRZ = rz;
+        selectedRX = (mouseX - ox) / cs - RADIUS + pX;
+        selectedRZ = (mouseY - oy) / cs - RADIUS + pZ;
     }
-
-    // --- Mouse interaction ---
 
     @Override
     public Result onMousePressed(int mouseButton) {
@@ -120,15 +142,12 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
     }
 
     private void handleAction(int mouseButton) {
-        Minecraft mc = Minecraft.getMinecraft();
-        int w = getArea().width;
-        int h = getArea().height;
-        int side = Math.min(w, h);
-        int cs = side / GRID;
+        int cs = getChunkSize();
         if (cs <= 0) return;
-        int ox = (w - cs * GRID) / 2;
-        int oy = (h - cs * GRID) / 2;
 
+        Minecraft mc = Minecraft.getMinecraft();
+        int ox = getOriginX();
+        int oy = getOriginY();
         int mouseX = getContext().getMouseX();
         int mouseY = getContext().getMouseY();
         int rx = (mouseX - ox) / cs - RADIUS + mc.player.chunkCoordX;
@@ -137,10 +156,10 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         if (rx == lastDragX && rz == lastDragZ) return;
 
         if (mouseButton == 0) {
-            int mode = Interactable.hasShiftDown() ? 2 : 0;
+            int mode = Interactable.hasShiftDown() ? MessageClaimChunk.MODE_TOGGLE_FORCE : MessageClaimChunk.MODE_CLAIM;
             ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(rx, rz, mode));
         } else if (mouseButton == 1) {
-            ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(rx, rz, 1));
+            ModNetwork.INSTANCE.sendToServer(new MessageClaimChunk(rx, rz, MessageClaimChunk.MODE_UNCLAIM));
         }
 
         if (mouseButton == 0 || mouseButton == 1) {
@@ -149,8 +168,6 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
             Interactable.playButtonClickSound();
         }
     }
-
-    // --- フルマップ専用描画 ---
 
     private void drawHatching(int x, int y, int w, int h, int color) {
         int spacing = 4;
@@ -162,12 +179,8 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
             int b = Color.getBlue(color);
             int a = Color.getAlpha(color);
             for (int i = 0; i <= w + h; i += spacing) {
-                int xStart = Math.max(0, i - h);
-                int yStart = Math.min(i, h);
-                int xEnd = Math.min(i, w);
-                int yEnd = Math.max(0, i - w);
-                buffer.pos(x + xStart, y + yStart, 0).color(r, g, b, a).endVertex();
-                buffer.pos(x + xEnd, y + yEnd, 0).color(r, g, b, a).endVertex();
+                buffer.pos(x + Math.max(0, i - h), y + Math.min(i, h), 0).color(r, g, b, a).endVertex();
+                buffer.pos(x + Math.min(i, w), y + Math.max(0, i - w), 0).color(r, g, b, a).endVertex();
             }
         });
     }

@@ -1,7 +1,8 @@
 package com.github.gtexpert.bquclaim.network;
 
+import java.util.UUID;
+
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -16,11 +17,14 @@ import io.netty.buffer.ByteBuf;
 
 public class MessageClaimChunk implements IMessage {
 
+    public static final int MODE_CLAIM = 0;
+    public static final int MODE_UNCLAIM = 1;
+    public static final int MODE_TOGGLE_FORCE = 2;
+
     private int x;
     private int z;
-    private int mode; // 0: Claim, 1: Unclaim
+    private int mode;
 
-    // Forgeのパケットには必須の空コンストラクタ
     public MessageClaimChunk() {}
 
     public MessageClaimChunk(int x, int z, int mode) {
@@ -43,115 +47,87 @@ public class MessageClaimChunk implements IMessage {
         buf.writeInt(this.mode);
     }
 
-    // サーバー側での処理担当
     public static class Handler implements IMessageHandler<MessageClaimChunk, IMessage> {
 
         @Override
         public IMessage onMessage(MessageClaimChunk message, MessageContext ctx) {
-            // サーバーのスレッドで安全に実行
             FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
                 EntityPlayerMP player = ctx.getServerHandler().player;
                 ChunkManagerData data = ChunkManagerData.get(player.world);
+                ClaimedChunkData existing = data.getClaim(message.x, message.z);
+                UUID playerId = player.getUniqueID();
 
-                String key = message.x + "," + message.z;
-                ClaimedChunkData existing = data.claims.get(key);
-
-                // Helper lambdas
-                java.util.function.Supplier<Integer> countMyClaims = () -> {
-                    int c = 0;
-                    for (ClaimedChunkData d : data.claims.values()) {
-                        if (d.ownerUUID.equals(player.getUniqueID())) c++;
-                    }
-                    return c;
-                };
-
-                java.util.function.Supplier<Integer> countMyForceLoads = () -> {
-                    int c = 0;
-                    for (ClaimedChunkData d : data.claims.values()) {
-                        if (d.ownerUUID.equals(player.getUniqueID()) && d.isForceLoaded) c++;
-                    }
-                    return c;
-                };
-
-                if (message.mode == 0) { // Claim
-                    if (existing != null) {
-                        if (existing.ownerUUID.equals(player.getUniqueID())) {
-                            player.sendMessage(new TextComponentString("You already own this chunk."));
-                        } else {
-                            player.sendMessage(new TextComponentString("Chunk already claimed by someone else."));
-                        }
-                    } else {
-                        if (countMyClaims.get() >= ModConfig.maxClaimsPerPlayer) {
-                            player.sendMessage(new TextComponentString("You have reached the claim limit."));
-                        } else {
-                            data.setClaim(message.x, message.z, player.getUniqueID(), player.getName(), false);
-                            player.sendMessage(
-                                    new TextComponentString("Chunk [" + message.x + ", " + message.z + "] claimed!"));
-                            ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(message.x, message.z,
-                                    player.getUniqueID(), player.getName(), false));
-                        }
-                    }
-                } else if (message.mode == 1) { // Unclaim
-                    if (existing == null) {
-                        player.sendMessage(new TextComponentString("Chunk is not claimed."));
-                    } else if (!existing.ownerUUID.equals(player.getUniqueID()) && !player.canUseCommand(2, "")) {
-                        // canUseCommand(2, "") is a basic OP check fallback
-                        player.sendMessage(new TextComponentString("You are not the owner of this chunk."));
-                    } else {
-                        if (existing.isForceLoaded) {
-                            TicketManager.unforceChunk(player.world, message.x, message.z);
-                        }
-                        data.setClaim(message.x, message.z, null, "", false);
-                        player.sendMessage(
-                                new TextComponentString("Chunk [" + message.x + ", " + message.z + "] unclaimed!"));
-                        ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(message.x, message.z, null, "", false));
-                    }
-                } else if (message.mode == 2) { // Toggle Force / Claim+Force
-                    if (existing == null) {
-                        // Claim+Force
-                        if (countMyClaims.get() >= ModConfig.maxClaimsPerPlayer) {
-                            player.sendMessage(new TextComponentString("You have reached the claim limit."));
-                        } else if (countMyForceLoads.get() >= ModConfig.maxForceLoadsPerPlayer) {
-                            player.sendMessage(new TextComponentString("You have reached the force-load limit."));
-                        } else {
-                            data.setClaim(message.x, message.z, player.getUniqueID(), player.getName(), true);
-                            TicketManager.forceChunk(player.world, message.x, message.z, null);
-                            player.sendMessage(new TextComponentString(
-                                    "Chunk [" + message.x + ", " + message.z + "] claimed & force-loaded!"));
-                            ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(message.x, message.z,
-                                    player.getUniqueID(), player.getName(), true));
-                        }
-                    } else {
-                        if (!existing.ownerUUID.equals(player.getUniqueID()) && !player.canUseCommand(2, "")) {
-                            player.sendMessage(new TextComponentString("You are not the owner of this chunk."));
-                        } else {
-                            // Toggle
-                            boolean newState = !existing.isForceLoaded;
-                            if (newState) { // enabling
-                                if (countMyForceLoads.get() >= ModConfig.maxForceLoadsPerPlayer) {
-                                    player.sendMessage(
-                                            new TextComponentString("You have reached the force-load limit."));
-                                } else {
-                                    existing.isForceLoaded = true;
-                                    TicketManager.forceChunk(player.world, message.x, message.z, null);
-                                    player.sendMessage(new TextComponentString("Force-load enabled."));
-                                    data.markDirty();
-                                    ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(message.x, message.z,
-                                            existing.ownerUUID, existing.ownerName, true));
-                                }
-                            } else { // disabling
-                                existing.isForceLoaded = false;
-                                TicketManager.unforceChunk(player.world, message.x, message.z);
-                                player.sendMessage(new TextComponentString("Force-load disabled."));
-                                data.markDirty();
-                                ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(message.x, message.z,
-                                        existing.ownerUUID, existing.ownerName, false));
-                            }
-                        }
-                    }
+                switch (message.mode) {
+                    case MODE_CLAIM:
+                        handleClaim(message, player, data, existing, playerId);
+                        break;
+                    case MODE_UNCLAIM:
+                        handleUnclaim(message, player, data, existing, playerId);
+                        break;
+                    case MODE_TOGGLE_FORCE:
+                        handleToggleForce(message, player, data, existing, playerId);
+                        break;
                 }
             });
             return null;
+        }
+
+        private void handleClaim(MessageClaimChunk msg, EntityPlayerMP player,
+                                 ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
+            if (existing != null) return;
+            if (data.countClaims(playerId) >= ModConfig.maxClaimsPerPlayer) return;
+
+            data.setClaim(msg.x, msg.z, playerId, player.getName(), false);
+            syncToAll(msg.x, msg.z, playerId, player.getName(), false);
+        }
+
+        private void handleUnclaim(MessageClaimChunk msg, EntityPlayerMP player,
+                                   ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
+            if (existing == null) return;
+            if (!isOwnerOrOp(existing, player, playerId)) return;
+
+            if (existing.isForceLoaded) {
+                TicketManager.unforceChunk(player.world, msg.x, msg.z);
+            }
+            data.setClaim(msg.x, msg.z, null, "", false);
+            syncToAll(msg.x, msg.z, null, "", false);
+        }
+
+        private void handleToggleForce(MessageClaimChunk msg, EntityPlayerMP player,
+                                       ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
+            if (existing == null) {
+                // Claim + Force
+                if (data.countClaims(playerId) >= ModConfig.maxClaimsPerPlayer) return;
+                if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) return;
+
+                data.setClaim(msg.x, msg.z, playerId, player.getName(), true);
+                TicketManager.forceChunk(player.world, msg.x, msg.z, null);
+                syncToAll(msg.x, msg.z, playerId, player.getName(), true);
+            } else if (isOwnerOrOp(existing, player, playerId)) {
+                toggleForceLoad(msg, player, data, existing, playerId);
+            }
+        }
+
+        private void toggleForceLoad(MessageClaimChunk msg, EntityPlayerMP player,
+                                     ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
+            if (existing.isForceLoaded) {
+                existing.isForceLoaded = false;
+                TicketManager.unforceChunk(player.world, msg.x, msg.z);
+            } else {
+                if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) return;
+                existing.isForceLoaded = true;
+                TicketManager.forceChunk(player.world, msg.x, msg.z, null);
+            }
+            data.markDirty();
+            syncToAll(msg.x, msg.z, existing.ownerUUID, existing.ownerName, existing.isForceLoaded);
+        }
+
+        private boolean isOwnerOrOp(ClaimedChunkData claim, EntityPlayerMP player, UUID playerId) {
+            return claim.ownerUUID.equals(playerId) || player.canUseCommand(2, "");
+        }
+
+        private void syncToAll(int x, int z, UUID owner, String name, boolean forceLoaded) {
+            ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(x, z, owner, name, forceLoaded));
         }
     }
 }

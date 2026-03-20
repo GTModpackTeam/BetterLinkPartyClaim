@@ -14,40 +14,61 @@ import net.minecraftforge.common.util.Constants;
 public class ChunkManagerData extends WorldSavedData {
 
     private static final String DATA_NAME = "MyChunkClaims";
-    public final Map<String, ClaimedChunkData> claims = new HashMap<>();
+    private final Map<String, ClaimedChunkData> claims = new HashMap<>();
 
     public ChunkManagerData(String name) {
         super(name);
     }
 
     public static ChunkManagerData get(World world) {
-        MapStorage mapStorage = world.getMapStorage();
-        assert mapStorage != null;
-        ChunkManagerData data = (ChunkManagerData) mapStorage.getOrLoadData(ChunkManagerData.class, DATA_NAME);
+        MapStorage storage = world.getMapStorage();
+        assert storage != null;
+        ChunkManagerData data = (ChunkManagerData) storage.getOrLoadData(ChunkManagerData.class, DATA_NAME);
         if (data == null) {
             data = new ChunkManagerData(DATA_NAME);
-            mapStorage.setData(DATA_NAME, data);
+            storage.setData(DATA_NAME, data);
         }
         return data;
     }
 
+    public static String chunkKey(int x, int z) {
+        return x + "," + z;
+    }
+
+    public ClaimedChunkData getClaim(int x, int z) {
+        return claims.get(chunkKey(x, z));
+    }
+
     public void setClaim(int x, int z, UUID owner, String name, boolean isForceLoaded) {
-        if (owner == null) claims.remove(x + "," + z);
-        else claims.put(x + "," + z, new ClaimedChunkData(x, z, owner, name, isForceLoaded));
+        String key = chunkKey(x, z);
+        if (owner == null) {
+            claims.remove(key);
+        } else {
+            claims.put(key, new ClaimedChunkData(x, z, owner, name, isForceLoaded));
+        }
         markDirty();
+    }
+
+    public int countClaims(UUID owner) {
+        int count = 0;
+        for (ClaimedChunkData d : claims.values()) {
+            if (d.ownerUUID.equals(owner)) count++;
+        }
+        return count;
+    }
+
+    public int countForceLoads(UUID owner) {
+        int count = 0;
+        for (ClaimedChunkData d : claims.values()) {
+            if (d.ownerUUID.equals(owner) && d.isForceLoaded) count++;
+        }
+        return count;
     }
 
     public NBTTagCompound serializeAll() {
         NBTTagCompound all = new NBTTagCompound();
         for (Map.Entry<String, ClaimedChunkData> entry : claims.entrySet()) {
-            NBTTagCompound tag = new NBTTagCompound();
-            ClaimedChunkData d = entry.getValue();
-            tag.setInteger("x", d.x);
-            tag.setInteger("z", d.z);
-            tag.setUniqueId("owner", d.ownerUUID);
-            tag.setString("name", d.ownerName);
-            tag.setBoolean("force", d.isForceLoaded);
-            all.setTag(entry.getKey(), tag);
+            all.setTag(entry.getKey(), entry.getValue().toNBT());
         }
         return all;
     }
@@ -57,21 +78,8 @@ public class ChunkManagerData extends WorldSavedData {
         NBTTagList list = nbt.getTagList("list", Constants.NBT.TAG_COMPOUND);
         claims.clear();
         for (int i = 0; i < list.tagCount(); i++) {
-            NBTTagCompound c = list.getCompoundTagAt(i);
-            String key = c.getInteger("x") + "," + c.getInteger("z");
-            // Backwards compatibility: older saves might use "is_force_loaded" key while
-            // newer code uses "force". Prefer "force" if present.
-            boolean force = false;
-            if (c.hasKey("force")) {
-                force = c.getBoolean("force");
-            } else if (c.hasKey("is_force_loaded")) {
-                force = c.getBoolean("is_force_loaded");
-            }
-            claims.put(key, new ClaimedChunkData(c.getInteger("x"),
-                    c.getInteger("z"),
-                    c.getUniqueId("owner"),
-                    c.getString("name"),
-                    force));
+            ClaimedChunkData d = ClaimedChunkData.fromNBT(list.getCompoundTagAt(i));
+            claims.put(chunkKey(d.x, d.z), d);
         }
     }
 
@@ -79,14 +87,7 @@ public class ChunkManagerData extends WorldSavedData {
     public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
         NBTTagList list = new NBTTagList();
         for (ClaimedChunkData d : claims.values()) {
-            NBTTagCompound c = new NBTTagCompound();
-            c.setInteger("x", d.x);
-            c.setInteger("z", d.z);
-            c.setUniqueId("owner", d.ownerUUID);
-            c.setString("name", d.ownerName);
-            // Use unified key name "force" for newer saves
-            c.setBoolean("force", d.isForceLoaded);
-            list.appendTag(c);
+            list.appendTag(d.toNBT());
         }
         nbt.setTag("list", list);
         return nbt;

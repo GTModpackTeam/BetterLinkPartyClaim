@@ -14,18 +14,13 @@ public class PlayerLoginHandler {
 
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!event.player.world.isRemote) {
-            EntityPlayerMP player = (EntityPlayerMP) event.player;
-            ChunkManagerData data = ChunkManagerData.get(player.world);
+        if (event.player.world.isRemote) return;
 
-            // 全データをパケットにして送信
-            ModNetwork.INSTANCE.sendTo(new MessageSyncAllClaims(data.serializeAll()), player);
+        EntityPlayerMP player = (EntityPlayerMP) event.player;
+        ChunkManagerData data = ChunkManagerData.get(player.world);
 
-            // ついでにConfigの最大値なども同期したい場合は、別のパケットや
-            // このパケットの中にConfig用のタグを追加して送れば完璧です。
-            ModNetwork.INSTANCE.sendTo(new MessageSyncConfig(
-                    ModConfig.maxClaimsPerPlayer,
-                    ModConfig.maxForceLoadsPerPlayer), player);
-        }
+        ModNetwork.INSTANCE.sendTo(new MessageSyncAllClaims(data.serializeAll()), player);
+        ModNetwork.INSTANCE.sendTo(
+                new MessageSyncConfig(ModConfig.maxClaimsPerPlayer, ModConfig.maxForceLoadsPerPlayer), player);
     }
 }

@@ -7,6 +7,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
 import com.github.gtexpert.bquclaim.chunk.ClientCache;
 
 import io.netty.buffer.ByteBuf;
@@ -35,19 +36,11 @@ public class MessageSyncAllClaims implements IMessage {
 
         @Override
         public IMessage onMessage(MessageSyncAllClaims message, MessageContext ctx) {
-            // クライアント側で受信
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                ClientCache.clear(); // 一度リセット
-                NBTTagCompound nbt = message.data;
-                for (String key : nbt.getKeySet()) {
-                    NBTTagCompound tag = nbt.getCompoundTag(key);
-                    // ClientCacheに復元
-                    ClientCache.update(
-                            tag.getInteger("x"),
-                            tag.getInteger("z"),
-                            tag.getUniqueId("owner"),
-                            tag.getString("name"),
-                            tag.getBoolean("force"));
+                ClientCache.clear();
+                for (String key : message.data.getKeySet()) {
+                    ClaimedChunkData d = ClaimedChunkData.fromNBT(message.data.getCompoundTag(key));
+                    ClientCache.update(d.x, d.z, d.ownerUUID, d.ownerName, d.isForceLoaded);
                 }
             });
             return null;
