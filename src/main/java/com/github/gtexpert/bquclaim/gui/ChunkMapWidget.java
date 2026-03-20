@@ -10,8 +10,10 @@ import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Color;
 import com.cleanroommc.modularui.utils.Platform;
 import com.cleanroommc.modularui.widget.Widget;
+
 import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
 import com.github.gtexpert.bquclaim.chunk.ClientCache;
+import com.github.gtexpert.bquclaim.map.AsyncMapRenderer;
 import com.github.gtexpert.bquclaim.map.ChunkMapRenderer;
 import com.github.gtexpert.bquclaim.network.MessageClaimChunk;
 import com.github.gtexpert.bquclaim.network.ModNetwork;
@@ -46,6 +48,8 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         int oy = (h - mapPx) / 2;
         int pX = mc.player.chunkCoordX;
         int pZ = mc.player.chunkCoordZ;
+
+        AsyncMapRenderer.evict(pX, pZ, RADIUS + 2);
 
         updateSelectedChunk(context.getMouseX(), context.getMouseY(), ox, oy, cs, pX, pZ);
 

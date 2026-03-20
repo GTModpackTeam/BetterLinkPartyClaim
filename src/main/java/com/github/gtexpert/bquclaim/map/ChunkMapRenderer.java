@@ -8,6 +8,7 @@ import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.utils.Platform;
+
 import com.github.gtexpert.bquclaim.BQPartyHelper;
 import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
 import com.github.gtexpert.bquclaim.chunk.ClientCache;

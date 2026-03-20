@@ -1,0 +1,27 @@
+# Key bindings
+key.chunkmod.open_map=Open Chunk Map
+key.chunkmod.toggle=Toggle Minimap
+key.categories.chunkmod=BQuClaim
+
+# GUI
+bquclaim.gui.close=Close
+bquclaim.gui.redraw=Redraw map
+bquclaim.gui.unclaim_all=Unclaim all chunks
+bquclaim.gui.unload_all=Unload all chunks
+bquclaim.gui.help=Help
+bquclaim.gui.yes=Yes
+bquclaim.gui.no=No
+bquclaim.gui.unclaimed=Unclaimed
+bquclaim.gui.chunk_info=Chunk %d, %d - %s%s
+bquclaim.gui.force_loaded_suffix= [F]
+bquclaim.gui.claimed_chunks=Claimed Chunks: %d / %d
+bquclaim.gui.loaded_chunks=Loaded Chunks: %d / %d
+bquclaim.gui.confirm_unclaim_title=Unclaim all chunks?
+bquclaim.gui.confirm_unload_title=Unload all chunks?
+bquclaim.gui.confirm_unclaim_msg=All your claimed chunks will be released.
+bquclaim.gui.confirm_unload_msg=All your force-loaded chunks will be unloaded.
+bquclaim.gui.controls=Controls
+bquclaim.gui.help_claim=Left click: Claim
+bquclaim.gui.help_unclaim=Right click: Unclaim
+bquclaim.gui.help_force=Shift+Left: Claim+Force
+bquclaim.gui.help_drag=Drag: Bulk operation

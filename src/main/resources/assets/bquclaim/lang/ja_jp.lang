@@ -1,0 +1,27 @@
+# Key bindings
+key.chunkmod.open_map=チャンクマップを開く
+key.chunkmod.toggle=ミニマップ切替
+key.categories.chunkmod=BQuClaim
+
+# GUI
+bquclaim.gui.close=閉じる
+bquclaim.gui.redraw=マップ再描画
+bquclaim.gui.unclaim_all=全チャンク解放
+bquclaim.gui.unload_all=全チャンク読込解除
+bquclaim.gui.help=ヘルプ
+bquclaim.gui.yes=はい
+bquclaim.gui.no=いいえ
+bquclaim.gui.unclaimed=未確保
+bquclaim.gui.chunk_info=チャンク %d, %d - %s%s
+bquclaim.gui.force_loaded_suffix= [常時]
+bquclaim.gui.claimed_chunks=確保チャンク数: %d / %d
+bquclaim.gui.loaded_chunks=常時読込数: %d / %d
+bquclaim.gui.confirm_unclaim_title=全チャンクを解放しますか？
+bquclaim.gui.confirm_unload_title=全チャンクの常時読込を解除しますか？
+bquclaim.gui.confirm_unclaim_msg=確保中の全チャンクが解放されます。
+bquclaim.gui.confirm_unload_msg=常時読込中の全チャンクが解除されます。
+bquclaim.gui.controls=操作方法
+bquclaim.gui.help_claim=左クリック: 確保
+bquclaim.gui.help_unclaim=右クリック: 解放
+bquclaim.gui.help_force=Shift+左: 確保＆常時読込
+bquclaim.gui.help_drag=ドラッグ: 一括操作

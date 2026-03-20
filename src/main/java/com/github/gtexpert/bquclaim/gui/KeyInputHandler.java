@@ -9,6 +9,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import com.cleanroommc.modularui.factory.ClientGUI;
+
 import com.github.gtexpert.bquclaim.ModConfig;
 import com.github.gtexpert.bquclaim.Tags;
 

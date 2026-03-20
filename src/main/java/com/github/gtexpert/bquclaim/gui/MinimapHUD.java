@@ -6,7 +6,9 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import com.cleanroommc.modularui.drawable.GuiDraw;
+
 import com.github.gtexpert.bquclaim.ModConfig;
+import com.github.gtexpert.bquclaim.map.AsyncMapRenderer;
 import com.github.gtexpert.bquclaim.map.ChunkMapRenderer;
 
 public class MinimapHUD {
@@ -33,8 +35,11 @@ public class MinimapHUD {
         // 背景
         GuiDraw.drawRect(0, 0, mapSize, mapSize, 0xFF000000);
 
-        // チャンク描画
+        // 表示範囲外のキャッシュを除去
         int range = (mapSize / zoomSize) / 2;
+        AsyncMapRenderer.evict(pX, pZ, range + 2);
+
+        // チャンク描画
         for (int x = -range; x <= range; x++) {
             for (int z = -range; z <= range; z++) {
                 int dx = (mapSize / 2) + (x * zoomSize);

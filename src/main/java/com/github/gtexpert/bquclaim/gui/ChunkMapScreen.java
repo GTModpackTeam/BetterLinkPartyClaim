@@ -3,6 +3,7 @@ package com.github.gtexpert.bquclaim.gui;
 import java.util.function.Consumer;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.I18n;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -15,6 +16,7 @@ import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.TextWidget;
+
 import com.github.gtexpert.bquclaim.ModConfig;
 import com.github.gtexpert.bquclaim.Tags;
 import com.github.gtexpert.bquclaim.chunk.ClaimedChunkData;
@@ -63,16 +65,17 @@ public class ChunkMapScreen extends CustomModularScreen {
                     int rx = mapWidget.getSelectedRX();
                     int rz = mapWidget.getSelectedRZ();
                     ClaimedChunkData d = ClientCache.get(rx, rz);
-                    String owner = (d == null) ? "Unclaimed" : d.ownerName;
-                    String force = (d != null && d.isForceLoaded) ? " [F]" : "";
-                    return String.format("Chunk %d, %d - %s%s", rx, rz, owner, force);
+                    String owner = (d == null) ? I18n.format("bquclaim.gui.unclaimed") : d.ownerName;
+                    String force = (d != null && d.isForceLoaded) ? I18n.format("bquclaim.gui.force_loaded_suffix") :
+                            "";
+                    return I18n.format("bquclaim.gui.chunk_info", rx, rz, owner, force);
                 })).color(0xFFFFFFFF).shadow(true).right(4).bottom(28))
-                .child(new TextWidget<>(IKey.dynamic(() -> String.format(
-                        "Claimed Chunks: %d / %d", countMyClaims(), ModConfig.maxClaimsPerPlayer)))
+                .child(new TextWidget<>(IKey.dynamic(() -> I18n.format(
+                        "bquclaim.gui.claimed_chunks", countMyClaims(), ModConfig.maxClaimsPerPlayer)))
                                 .color(() -> countMyClaims() >= ModConfig.maxClaimsPerPlayer ? 0xFFFF5555 : 0xFFFFFFFF)
                                 .shadow(true).right(4).bottom(16))
-                .child(new TextWidget<>(IKey.dynamic(() -> String.format(
-                        "Loaded Chunks: %d / %d", countMyForceLoads(), ModConfig.maxForceLoadsPerPlayer)))
+                .child(new TextWidget<>(IKey.dynamic(() -> I18n.format(
+                        "bquclaim.gui.loaded_chunks", countMyForceLoads(), ModConfig.maxForceLoadsPerPlayer)))
                                 .color(() -> countMyForceLoads() >= ModConfig.maxForceLoadsPerPlayer ? 0xFFFF5555 :
                                         0xFFFFFFFF)
                                 .shadow(true).right(4).bottom(4));
@@ -91,7 +94,7 @@ public class ChunkMapScreen extends CustomModularScreen {
                     }
                     return false;
                 })
-                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.str("Close")));
+                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.lang("bquclaim.gui.close")));
         y += BTN_SIZE + BTN_GAP;
 
         ButtonWidget<?> btnRedraw = new ButtonWidget<>();
@@ -105,7 +108,7 @@ public class ChunkMapScreen extends CustomModularScreen {
                     }
                     return false;
                 })
-                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.str("Redraw map")));
+                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.lang("bquclaim.gui.redraw")));
         y += BTN_SIZE + BTN_GAP;
 
         ButtonWidget<?> btnUnclaimAll = new ButtonWidget<>();
@@ -118,7 +121,7 @@ public class ChunkMapScreen extends CustomModularScreen {
                     }
                     return false;
                 })
-                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.str("Unclaim all chunks")));
+                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.lang("bquclaim.gui.unclaim_all")));
         y += BTN_SIZE + BTN_GAP;
 
         ButtonWidget<?> btnUnloadAll = new ButtonWidget<>();
@@ -131,7 +134,7 @@ public class ChunkMapScreen extends CustomModularScreen {
                     }
                     return false;
                 })
-                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.str("Unload all chunks")));
+                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.lang("bquclaim.gui.unload_all")));
         y += BTN_SIZE + BTN_GAP;
 
         ButtonWidget<?> btnHelp = new ButtonWidget<>();
@@ -144,7 +147,7 @@ public class ChunkMapScreen extends CustomModularScreen {
                     }
                     return false;
                 })
-                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.str("Help")));
+                .tooltip((Consumer<RichTooltip>) t -> t.addLine(IKey.lang("bquclaim.gui.help")));
 
         int totalH = BTN_SIZE * 5 + BTN_GAP * 4;
         return new ParentWidget<>()
@@ -168,9 +171,10 @@ public class ChunkMapScreen extends CustomModularScreen {
     }
 
     private Dialog<Boolean> buildConfirmDialog() {
-        String title = (pendingConfirmAction == 1) ? "Unclaim all chunks?" : "Unload all chunks?";
-        String message = (pendingConfirmAction == 1) ? "All your claimed chunks will be released." :
-                "All your force-loaded chunks will be unloaded.";
+        String title = I18n.format((pendingConfirmAction == 1) ? "bquclaim.gui.confirm_unclaim_title" :
+                "bquclaim.gui.confirm_unload_title");
+        String message = I18n.format((pendingConfirmAction == 1) ? "bquclaim.gui.confirm_unclaim_msg" :
+                "bquclaim.gui.confirm_unload_msg");
 
         Dialog<Boolean> dialog = new Dialog<>("confirm_dialog", result -> {
             if (Boolean.TRUE.equals(result)) {
@@ -187,13 +191,13 @@ public class ChunkMapScreen extends CustomModularScreen {
                 .child(new ParentWidget<>()
                         .bottom(6).horizontalCenter().size(170, 20)
                         .child(new ButtonWidget<>().size(80, 20).pos(0, 0)
-                                .overlay(IKey.str("Yes"))
+                                .overlay(IKey.lang("bquclaim.gui.yes"))
                                 .onMousePressed(btn -> {
                                     dialog.closeWith(true);
                                     return true;
                                 }))
                         .child(new ButtonWidget<>().size(80, 20).pos(90, 0)
-                                .overlay(IKey.str("No"))
+                                .overlay(IKey.lang("bquclaim.gui.no"))
                                 .onMousePressed(btn -> {
                                     dialog.closeWith(false);
                                     return true;
@@ -220,11 +224,16 @@ public class ChunkMapScreen extends CustomModularScreen {
             dialog.size(200, 100)
                     .background(new Rectangle().color(0xDD000000))
                     .overlay(new Rectangle().color(0xFFFFFFFF).hollow(1))
-                    .child(new TextWidget<>("Controls").color(0xFFFFFFFF).shadow(true).top(6).left(8))
-                    .child(new TextWidget<>("Left click: Claim").color(0xFFAAAAAA).shadow(true).top(20).left(8))
-                    .child(new TextWidget<>("Right click: Unclaim").color(0xFFAAAAAA).shadow(true).top(32).left(8))
-                    .child(new TextWidget<>("Shift+Left: Claim+Force").color(0xFFAAAAAA).shadow(true).top(44).left(8))
-                    .child(new TextWidget<>("Drag: Bulk operation").color(0xFFAAAAAA).shadow(true).top(56).left(8))
+                    .child(new TextWidget<>(IKey.lang("bquclaim.gui.controls")).color(0xFFFFFFFF).shadow(true).top(6)
+                            .left(8))
+                    .child(new TextWidget<>(IKey.lang("bquclaim.gui.help_claim")).color(0xFFAAAAAA).shadow(true).top(20)
+                            .left(8))
+                    .child(new TextWidget<>(IKey.lang("bquclaim.gui.help_unclaim")).color(0xFFAAAAAA).shadow(true)
+                            .top(32).left(8))
+                    .child(new TextWidget<>(IKey.lang("bquclaim.gui.help_force")).color(0xFFAAAAAA).shadow(true).top(44)
+                            .left(8))
+                    .child(new TextWidget<>(IKey.lang("bquclaim.gui.help_drag")).color(0xFFAAAAAA).shadow(true).top(56)
+                            .left(8))
                     .child(ButtonWidget.panelCloseButton());
             return dialog;
         }, true).openPanel();
