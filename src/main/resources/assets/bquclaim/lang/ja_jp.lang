@@ -12,7 +12,6 @@ bquclaim.gui.help=ヘルプ
 bquclaim.gui.yes=はい
 bquclaim.gui.no=いいえ
 bquclaim.gui.unclaimed=未確保
-bquclaim.gui.chunk_info=チャンク %d, %d - %s%s
 bquclaim.gui.force_loaded_suffix= [常時]
 bquclaim.gui.claimed_chunks=確保チャンク数: %d / %d
 bquclaim.gui.loaded_chunks=常時読込数: %d / %d

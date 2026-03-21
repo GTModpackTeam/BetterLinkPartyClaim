@@ -12,7 +12,6 @@ bquclaim.gui.help=Help
 bquclaim.gui.yes=Yes
 bquclaim.gui.no=No
 bquclaim.gui.unclaimed=Unclaimed
-bquclaim.gui.chunk_info=Chunk %d, %d - %s%s
 bquclaim.gui.force_loaded_suffix= [F]
 bquclaim.gui.claimed_chunks=Claimed Chunks: %d / %d
 bquclaim.gui.loaded_chunks=Loaded Chunks: %d / %d

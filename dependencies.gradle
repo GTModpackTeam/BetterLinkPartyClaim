@@ -40,9 +40,17 @@
 dependencies {
     // Hard Dependencies
     implementation("com.cleanroommc:modularui:3.1.5") { transitive false }
-    devOnlyNonPublishable(rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")) // BetterQuestingUnofficial - 4.2.7
 
-    // Journey Map
+    // Debug BQu: 4.2.8
+    compileOnly rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")
+    if (project.debug_all.toBoolean() || project.debug_bqu.toBoolean()) {
+        runtimeOnly rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")
+    }
+
+    // Debug Journey Map: 5.7.1p3
     api("info.journeymap:journeymap-api:1.12-1.4") // JourneyMap API 1.12-1.4
-    devOnlyNonPublishable(rfg.deobf("curse.maven:journeymap-32274:5172461")) // JourneyMap 5.7.1p3
+    compileOnly rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")
+    if (project.debug_all.toBoolean() || project.debug_bqu.toBoolean()) {
+        runtimeOnly rfg.deobf("curse.maven:better-questing-unofficial-629629:7779333")
+    }
 }
