@@ -1,0 +1,41 @@
+# Key bindings
+key.blpc.open_map=Open Chunk Map
+key.blpc.toggle=Toggle Minimap
+key.categories.blpc=Better Link Party Claim
+
+# Map
+blpc.map.close=Close
+blpc.map.redraw=Redraw map
+blpc.map.unclaim_all=Unclaim all chunks
+blpc.map.unload_all=Unload all chunks
+blpc.map.help=Help
+blpc.map.yes=Yes
+blpc.map.no=No
+blpc.map.claimed_chunks=Claimed Chunks: %d / %d
+blpc.map.loaded_chunks=Loaded Chunks: %d / %d
+blpc.map.confirm_unclaim_title=Unclaim all chunks?
+blpc.map.confirm_unload_title=Unload all chunks?
+blpc.map.confirm_unclaim_msg=All your claimed chunks will be released.
+blpc.map.confirm_unload_msg=All your force-loaded chunks will be unloaded.
+blpc.map.controls=Controls
+blpc.map.help_claim=Left click: Claim
+blpc.map.help_unclaim=Right click: Unclaim
+blpc.map.help_force=Shift+Left: Claim+Force
+blpc.map.help_drag=Drag: Bulk operation
+blpc.map.party=Party
+
+# Party
+blpc.party.default_name=New Party
+blpc.party.create_title=Create Party
+blpc.party.create=Create
+blpc.party.invite=Invite
+blpc.party.invite_title=Invite Player
+blpc.party.send=Send
+blpc.party.leave=Leave
+blpc.party.disband=Disband
+blpc.party.open_native=Manage Party
+blpc.party.disband_confirm_title=Disband party?
+blpc.party.disband_confirm_msg=All members' claimed chunks will be released.
+blpc.party.disband_yes=Yes, disband
+blpc.party.disband_no=Cancel
+blpc.party.link_bqu=Link BQu

@@ -1,0 +1,41 @@
+# Key bindings
+key.blpc.open_map=チャンクマップを開く
+key.blpc.toggle=ミニマップ切替
+key.categories.blpc=Better Link Party Claim
+
+# Map
+blpc.map.close=閉じる
+blpc.map.redraw=マップ再描画
+blpc.map.unclaim_all=全チャンク解放
+blpc.map.unload_all=全チャンク読込解除
+blpc.map.help=ヘルプ
+blpc.map.yes=はい
+blpc.map.no=いいえ
+blpc.map.claimed_chunks=確保チャンク数: %d / %d
+blpc.map.loaded_chunks=常時読込数: %d / %d
+blpc.map.confirm_unclaim_title=全チャンクを解放しますか？
+blpc.map.confirm_unload_title=全チャンクの常時読込を解除しますか？
+blpc.map.confirm_unclaim_msg=確保中の全チャンクが解放されます。
+blpc.map.confirm_unload_msg=常時読込中の全チャンクが解除されます。
+blpc.map.controls=操作方法
+blpc.map.help_claim=左クリック: 確保
+blpc.map.help_unclaim=右クリック: 解放
+blpc.map.help_force=Shift+左: 確保＆常時読込
+blpc.map.help_drag=ドラッグ: 一括操作
+blpc.map.party=パーティ
+
+# Party
+blpc.party.default_name=新規パーティ
+blpc.party.create_title=パーティ作成
+blpc.party.create=作成
+blpc.party.invite=招待
+blpc.party.invite_title=プレイヤーを招待
+blpc.party.send=送信
+blpc.party.leave=脱退
+blpc.party.disband=解散
+blpc.party.open_native=パーティ管理
+blpc.party.disband_confirm_title=パーティを解散しますか？
+blpc.party.disband_confirm_msg=全メンバーの保護チャンクが解放されます。
+blpc.party.disband_yes=はい、解散する
+blpc.party.disband_no=キャンセル
+blpc.party.link_bqu=BQu連携

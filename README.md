@@ -1,6 +1,6 @@
-# TeamClaim
+# BetterLinkPartyClaim
 
-TeamClaim is a Minecraft Forge mod for Minecraft 1.12.2 that provides chunk claiming integrated with the BetterQuesting party system. Players can claim chunks, share access with party members, and optionally force-load claimed chunks. It includes a full-screen claim map (ModularUI) and a small minimap HUD.
+BetterLinkPartyClaim is a Minecraft Forge mod for Minecraft 1.12.2 that provides chunk claiming integrated with the BetterQuesting party system. Players can claim chunks, share access with party members, and optionally force-load claimed chunks. It includes a full-screen claim map (ModularUI) and a small minimap HUD.
 
 ## Features
 
@@ -83,7 +83,7 @@ The code reads both `force` and legacy `is_force_loaded` flags for backwards com
 
 ## Code pointers
 
-- Mod entry: `src/main/java/com/github/gtexpert/teamclaim/TeamClaimMod.java`
+- Mod entry: `src/main/java/com/github/gtexpert/teamclaim/BetterLinkPartyClaimMod.java`
 - Claim storage: `src/main/java/com/github/gtexpert/bquclaim/chunk/ChunkManagerData.java`
 - Network: `src/main/java/com/github/gtexpert/bquclaim/network/ModNetwork.java`
 - GUI: `src/main/java/com/github/gtexpert/bquclaim/gui/` (map, widgets, HUD, keybinds)

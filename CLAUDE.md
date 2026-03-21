@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TeamClaim is a Minecraft 1.12.2 Forge mod that adds chunk claiming with party-based sharing. It has its own party system and optionally integrates with BetterQuesting — when BQu is present, TeamClaim uses BQu's party system directly (no data duplication). It uses ModularUI for GUI.
+Better Link Party Claim (BLPC) is a Minecraft 1.12.2 Forge mod that adds chunk claiming with party-based sharing. It has its own party system and optionally integrates with BetterQuesting — when BQu is present, BLPC uses BQu's party system directly (no data duplication). It uses ModularUI for GUI.
 
 ## Build System
 
@@ -25,7 +25,7 @@ Spotless is enforced. Formatting rules: `spotless.importorder` (local) and `spot
 
 ## Architecture
 
-Base package: `com.github.gtexpert.teamclaim`
+Base package: `com.github.gtexpert.blpc`
 
 ### Module System
 
@@ -37,28 +37,40 @@ Annotation-driven module framework (same pattern as GTMoreTools/GTWoodProcessing
 - **`integration/IntegrationModule`** — Parent gate for all integration submodules.
 - **`integration/IntegrationSubmodule`** — Abstract base for mod-specific integrations.
 
-Modules are discovered at FML Construction via `@TModule` annotation scanning. The `modDependencies` field gates loading on `Loader.isModLoaded()`. Module enable/disable config: `config/teamclaim/modules.cfg`.
+Modules are discovered at FML Construction via `@TModule` annotation scanning. The `modDependencies` field gates loading on `Loader.isModLoaded()`. Module enable/disable config: `config/blpc/modules.cfg`.
 
 ### Party Provider SPI
 
 Party management is abstracted via `IPartyProvider`, allowing transparent switching between self-managed parties and BQu's party system:
 
-- **`api/party/IPartyProvider`** — Full interface with query methods (`areInSameParty`, `getPartyName`, `getPartyId`, `getPartyMembers`, `getRole`) and mutation methods (`createParty`, `disbandParty`, `renameParty`, `invitePlayer`, `acceptInvite`, `kickOrLeave`, `changeRole`, `syncToAll`).
+- **`api/party/IPartyProvider`** — Full interface with query methods (`areInSameParty`, `getPartyName`, `getPartyMembers`, `getRole`) and mutation methods (`createParty`, `disbandParty`, `renameParty`, `invitePlayer`, `acceptInvite`, `kickOrLeave`, `changeRole`, `syncToAll`). All mutation methods identify the party via the acting player's UUID — there is no `partyId` parameter on mutation calls.
 - **`api/party/PartyProviderRegistry`** — Holds the active provider.
-- **`common/party/DefaultPartyProvider`** — Self-managed implementation using `PartyManagerData` (WorldSavedData). Registered by `CoreModule`.
-- **`integration/bqu/BQPartyProvider`** — BQu implementation that directly operates on BQu's `PartyManager`, `PartyInvitations`, and `NetPartySync`. When BQu is present, this **replaces** the default provider — no data duplication or migration.
+- **`common/party/DefaultPartyProvider`** — Self-managed implementation backed by `PartyManagerData`. Registered by `CoreModule`.
+- **`integration/bqu/BQPartyProvider`** — BQu implementation that directly operates on BQu's `PartyManager`, `PartyInvitations`, and `NetPartySync`, with fallback to `DefaultPartyProvider` for players not in a BQu party. When BQu is present, this **replaces** the default provider — no data duplication.
 
-**Design principle (Approach A):** When BQu is present, TeamClaim integrates INTO BQu's party system. TeamClaim's UI sends operations that `BQPartyProvider` translates into BQu API calls. BQu's quest sharing works unchanged.
+**Design principle (Approach A):** When BQu is present, BLPC integrates INTO BQu's party system. BLPC's UI sends operations that `BQPartyProvider` translates into BQu API calls. BQu's quest sharing works unchanged.
+
+### BQu Linking Toggle (P4)
+
+Players can individually toggle whether their party is backed by BQu. The linking state is stored in `PartyManagerData.bquLinkedPlayers` (a `Set<UUID>`) and persisted in `config.dat` via `BLPCSaveHandler`. Clients receive the current link flags in `MessageTeamSync` as part of the `serializeForClient` payload. `TeamScreen` branches its UI based on `ClientPartyCache.isBQuLinked(playerId)`:
+
+| BQu installed | Link toggle | Party management UI |
+|---|---|---|
+| No | — | Full self-managed UI (Invite / Leave / Disband) |
+| Yes | OFF | Full self-managed UI (uses local `PartyManagerData`) |
+| Yes | ON | Member list + "Open BQu Party Screen" button |
+
+Toggle changes are sent as `MessageTeamAction(ACTION_TOGGLE_BQU_LINK = 7)`.
 
 ### Naming Conventions
 
-- **Panel IDs:** `teamclaim.map`, `teamclaim.party`, `teamclaim.map.dialog.confirm`, `teamclaim.party.dialog.invite`
-- **Lang keys:** `teamclaim.map.*` for map screen, `teamclaim.party.*` for party screen
+- **Panel IDs:** `blpc.map`, `blpc.party`, `blpc.map.dialog.confirm`, `blpc.party.dialog.invite`
+- **Lang keys:** `blpc.map.*` for map screen, `blpc.party.*` for party screen
 - **Mod ID constants:** `api/util/Mods.Names`
 
 ### Package Layout
 
-- **`common/party/`** — Party data: `Party`, `PartyRole`, `PartyManagerData` (WorldSavedData), `DefaultPartyProvider`, `ClientPartyCache`.
+- **`common/party/`** — Party data: `Party`, `PartyRole`, `PartyManagerData`, `DefaultPartyProvider`, `ClientPartyCache`.
 - **`common/chunk/`** — Claim data: `ChunkManagerData`, `ClaimedChunkData`, `ClientCache`, `TicketManager`.
 - **`common/network/`** — Messages: `MessageClaimChunk` (C→S), `MessageTeamAction` (C→S party ops), `MessageSyncClaims`/`MessageSyncAllClaims`/`MessageSyncConfig`/`MessageTeamSync` (S→C), `PlayerLoginHandler`.
 - **`client/gui/`** — ModularUI: `ChunkMapScreen`/`ChunkMapWidget`, `TeamScreen` (party management panel), `MinimapHUD`, `ModKeyBindings`/`KeyInputHandler`.
@@ -80,9 +92,25 @@ Messages use incrementing discriminator IDs in `ModNetwork.init()`. New messages
 
 ### Data Persistence
 
-Claims: `WorldSavedData` via `ChunkManagerData`. `ClaimedChunkData` includes `partyName` resolved server-side via `PartyProviderRegistry`. NBT key `"team"` for party name.
+BLPC uses **file-based persistence** (FTB Lib style) instead of `WorldSavedData`. All data is managed by `BLPCSaveHandler.INSTANCE` and stored under `world/betterlink/pc/`:
 
-Parties (self-managed mode only): `WorldSavedData` via `PartyManagerData`. Not used when BQu is present.
+```
+world/betterlink/pc/
+├── config.dat          # migrated flag + bquLinkedPlayers set
+├── parties/
+│   ├── 0.dat           # one compressed NBT file per party (keyed by partyId)
+│   └── ...
+└── claims/
+    ├── global.dat      # claims belonging to players with no party
+    ├── 0.dat           # claims belonging to members of party 0
+    └── ...
+```
+
+`BLPCSaveHandler.loadAll(server)` and `saveAll()` are called by `CoreEventHandler` on world load/save/unload. Neither `ChunkManagerData` nor `PartyManagerData` is a `WorldSavedData` subclass — they are plain singletons reset via their `reset()` static methods.
+
+Claims: `ClaimedChunkData` includes `partyName` resolved server-side via `PartyProviderRegistry`. NBT key `"team"` for party name.
+
+Parties (self-managed mode only): `PartyManagerData`. Not used for storage when BQu is the active backend.
 
 ### Adding a New Integration Module
 
