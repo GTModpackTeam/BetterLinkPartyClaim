@@ -19,6 +19,7 @@ import com.github.gtexpert.blpc.api.modules.TModule;
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.chunk.TicketManager;
+import com.github.gtexpert.blpc.common.command.BLPCCommand;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.DefaultPartyProvider;
 import com.github.gtexpert.blpc.module.Modules;
@@ -52,6 +53,7 @@ public class CoreModule implements IModule {
     @Override
     public void serverStarting(FMLServerStartingEvent event) {
         BLPCSaveHandler.INSTANCE.loadAll(event.getServer());
+        event.registerServerCommand(new BLPCCommand());
     }
 
     @Override

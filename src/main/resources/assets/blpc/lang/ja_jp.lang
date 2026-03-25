@@ -3,6 +3,9 @@ key.blpc.open_map=チャンクマップを開く
 key.blpc.toggle=ミニマップ切替
 key.categories.blpc=Better Link Party Claim
 
+# Commands
+command.blpc.move_owner.success=パーティ(id:%d)の所有者を%sに変更しました。
+
 # Map
 blpc.map.close=閉じる
 blpc.map.redraw=マップ再描画

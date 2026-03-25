@@ -3,6 +3,9 @@ key.blpc.open_map=Open Chunk Map
 key.blpc.toggle=Toggle Minimap
 key.categories.blpc=Better Link Party Claim
 
+# Commands
+command.blpc.move_owner.success=Party (id: %d) owner changed to %s
+
 # Map
 blpc.map.close=Close
 blpc.map.redraw=Redraw map
