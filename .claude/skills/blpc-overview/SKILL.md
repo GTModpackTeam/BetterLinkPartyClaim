@@ -61,9 +61,9 @@ world/betterlink/pc/
     └── ...
 ```
 
-`BLPCSaveHandler.loadAll(server)` and `saveAll()` are called by `CoreEventHandler` on world load/save/unload. Neither `ChunkManagerData` nor `PartyManagerData` is a `WorldSavedData` subclass — they are plain singletons reset via their `reset()` static methods.
+`BLPCSaveHandler.loadAll(server)` is called by `CoreModule.serverStarting()` (FMLServerStartingEvent). `saveAll()` is called by both `CoreEventHandler.onWorldSave()` (WorldEvent.Save) and `CoreModule.serverStopping()` (FMLServerStoppingEvent). Neither `ChunkManagerData` nor `PartyManagerData` is a `WorldSavedData` subclass — they are plain singletons reset via their `reset()` static methods.
 
-Claims: `ClaimedChunkData` includes `partyName` resolved server-side via `PartyProviderRegistry`. NBT key `"team"` for party name.
+Claims: `ClaimedChunkData` includes `partyName` resolved server-side via `PartyProviderRegistry`. NBT key `"party"` for party name.
 
 Parties (self-managed mode only): `PartyManagerData`. Not used for storage when BQu is the active backend.
 
@@ -115,7 +115,6 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 |---|---|---|
 | `ModLog.ROOT` | `blpc` | General |
 | `ModLog.IO` | `blpc/IO` | File I/O |
-| `ModLog.NET` | `blpc/Net` | Network |
 | `ModLog.PARTY` | `blpc/Party` | Party operations |
 | `ModLog.MODULE` | `blpc/Module` | Module system |
 | `ModLog.SYNC` | `blpc/Sync` | Client sync |
@@ -156,7 +155,7 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 | `Dialog<T>` | Modal confirmations (disband, link/unlink BQu) | `closeWith(result)` triggers the result consumer and closes; extends `ModularPanel` |
 | `Flow.col()` / `Flow.row()` | Automatic vertical/horizontal layout | `childPadding(n)` for spacing; eliminates manual `y += ROW_H` positioning |
 
-MUI source reference: `/mnt/data/git/ModularUI/src/` — always check here for API details.
+For ModularUI API details, consult the ModularUI source code or documentation.
 
 ## UI Reusable Templates
 

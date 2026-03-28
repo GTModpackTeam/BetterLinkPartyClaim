@@ -87,8 +87,8 @@ public class PartyProviderRegistry {
         }
     };
 
-    private static IPartyProvider provider = NO_OP;
-    private static Runnable nativePartyScreenOpener;
+    private static volatile IPartyProvider provider = NO_OP;
+    private static volatile Runnable nativePartyScreenOpener;
 
     public static void register(IPartyProvider teamProvider) {
         provider = teamProvider;

@@ -32,7 +32,6 @@ tmp/
 *.bak
 *.swp
 *~.nib
-*.fuse_hidden*
 local.properties
 .settings/
 .loadpath

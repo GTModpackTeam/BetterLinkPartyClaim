@@ -13,6 +13,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
+import com.github.gtexpert.blpc.common.party.TrustAction;
 
 import betterquesting.api.enums.EnumPartyStatus;
 import betterquesting.api.events.DatabaseEvent;
@@ -41,6 +42,25 @@ public class BQPartyEventHandler {
                 EnumPartyStatus status = bqParty.getStatus(memberId);
                 party.addMember(memberId, BQPartyProvider.mapRole(status));
                 bquMembers.add(memberId);
+            }
+            // Preserve BLPC settings from existing cache
+            Party cachedParty = ClientPartyCache.getParty(entry.getID());
+            if (cachedParty != null) {
+                party.setTitle(cachedParty.getTitle());
+                party.setDescription(cachedParty.getDescription());
+                party.setColor(cachedParty.getColor());
+                party.setFreeToJoin(cachedParty.isFreeToJoin());
+                party.setFakePlayerTrustLevel(cachedParty.getFakePlayerTrustLevel());
+                party.setProtectExplosions(cachedParty.protectsExplosions());
+                for (TrustAction ta : TrustAction.values()) {
+                    party.setTrustLevel(ta, cachedParty.getTrustLevel(ta));
+                }
+                for (UUID allyId : cachedParty.getAllies()) {
+                    party.addAlly(allyId);
+                }
+                for (UUID enemyId : cachedParty.getEnemies()) {
+                    party.addEnemy(enemyId);
+                }
             }
             list.appendTag(party.toNBT());
         }

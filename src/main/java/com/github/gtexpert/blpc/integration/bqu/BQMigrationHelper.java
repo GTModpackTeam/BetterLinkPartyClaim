@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import net.minecraft.world.World;
 
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.ModLog;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
@@ -60,6 +61,7 @@ public class BQMigrationHelper {
             }
 
             data.setMigrated(true);
+            BLPCSaveHandler.INSTANCE.saveConfig(data);
         } catch (Exception e) {
             ModLog.MIGRATION.error("BQu party migration failed", e);
         }

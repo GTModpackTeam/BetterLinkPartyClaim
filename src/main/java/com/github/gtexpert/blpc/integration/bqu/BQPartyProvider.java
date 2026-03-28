@@ -15,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.util.Constants;
 
 import com.github.gtexpert.blpc.api.party.IPartyProvider;
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.network.MessagePartySync;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
@@ -51,6 +52,7 @@ public class BQPartyProvider implements IPartyProvider {
         try {
             for (DBEntry<IParty> entry : QuestingAPI.getAPI(ApiReference.PARTY_DB).getEntries()) {
                 IParty party = entry.getValue();
+                if (party == null) continue;
                 if (party.getStatus(playerA) != null && party.getStatus(playerB) != null) {
                     return true;
                 }
@@ -123,6 +125,12 @@ public class BQPartyProvider implements IPartyProvider {
         for (UUID memberId : party.getMembers()) {
             chunkData.releaseAllClaims(memberId, player.world);
         }
+
+        PartyManagerData pmData = PartyManagerData.getInstance();
+        for (UUID memberId : party.getMembers()) {
+            pmData.setBQuLinked(memberId, false);
+        }
+        BLPCSaveHandler.INSTANCE.saveConfig(pmData);
 
         PartyManager.INSTANCE.removeID(entry.getID());
         PartyInvitations.INSTANCE.purgeInvites(entry.getID());
@@ -265,6 +273,7 @@ public class BQPartyProvider implements IPartyProvider {
         PartyManagerData pmData = PartyManagerData.getInstance();
         for (DBEntry<IParty> entry : PartyManager.INSTANCE.getEntries()) {
             IParty bqParty = entry.getValue();
+            if (bqParty == null) continue;
             if (bqParty.getMembers().isEmpty()) continue;
             Party party = new Party(entry.getID(),
                     bqParty.getProperties().getProperty(NativeProps.NAME),
@@ -279,31 +288,38 @@ public class BQPartyProvider implements IPartyProvider {
                 hasLinkedMember = true;
             }
             if (!hasLinkedMember) continue;
-            // Copy BLPC settings from self-managed party (BLPC data takes priority)
+            // Copy BLPC settings from self-managed party (prefer owner's party)
+            Party ownerSelfParty = null;
+            Party fallbackSelfParty = null;
             for (UUID memberId : party.getMemberUUIDs()) {
                 Party selfParty = pmData.getPartyByPlayer(memberId);
                 if (selfParty != null) {
-                    // Name and metadata: BLPC's own values override BQu
-                    party.setName(selfParty.getName());
-                    party.setTitle(selfParty.getTitle());
-                    party.setDescription(selfParty.getDescription());
-                    party.setColor(selfParty.getColor());
-                    party.setFreeToJoin(selfParty.isFreeToJoin());
-                    // Protection settings
-                    party.setFakePlayerTrustLevel(selfParty.getFakePlayerTrustLevel());
-                    party.setProtectExplosions(selfParty.protectsExplosions());
-                    for (com.github.gtexpert.blpc.common.party.TrustAction ta : com.github.gtexpert.blpc.common.party.TrustAction
-                            .values()) {
-                        party.setTrustLevel(ta, selfParty.getTrustLevel(ta));
+                    if (party.getRole(memberId) == PartyRole.OWNER) {
+                        ownerSelfParty = selfParty;
+                        break;
                     }
-                    // Allies and enemies
-                    for (UUID allyId : selfParty.getAllies()) {
-                        party.addAlly(allyId);
+                    if (fallbackSelfParty == null) {
+                        fallbackSelfParty = selfParty;
                     }
-                    for (UUID enemyId : selfParty.getEnemies()) {
-                        party.addEnemy(enemyId);
-                    }
-                    break;
+                }
+            }
+            Party sourceSelfParty = ownerSelfParty != null ? ownerSelfParty : fallbackSelfParty;
+            if (sourceSelfParty != null) {
+                party.setTitle(sourceSelfParty.getTitle());
+                party.setDescription(sourceSelfParty.getDescription());
+                party.setColor(sourceSelfParty.getColor());
+                party.setFreeToJoin(sourceSelfParty.isFreeToJoin());
+                party.setFakePlayerTrustLevel(sourceSelfParty.getFakePlayerTrustLevel());
+                party.setProtectExplosions(sourceSelfParty.protectsExplosions());
+                for (com.github.gtexpert.blpc.common.party.TrustAction ta : com.github.gtexpert.blpc.common.party.TrustAction
+                        .values()) {
+                    party.setTrustLevel(ta, sourceSelfParty.getTrustLevel(ta));
+                }
+                for (UUID allyId : sourceSelfParty.getAllies()) {
+                    party.addAlly(allyId);
+                }
+                for (UUID enemyId : sourceSelfParty.getEnemies()) {
+                    party.addEnemy(enemyId);
                 }
             }
             party.resolvePlayerNames();

@@ -1,5 +1,8 @@
 package com.github.gtexpert.blpc.common.network;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -12,6 +15,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import com.github.gtexpert.blpc.api.party.IPartyProvider;
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.party.DefaultPartyProvider;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
@@ -187,12 +191,13 @@ public class MessagePartyAction implements IMessage {
                     case ACTION_CREATE: {
                         String name = msg.stringArg.trim();
                         if (name.isEmpty()) name = "New Party";
+                        if (name.length() > 64) name = name.substring(0, 64);
                         success = selfProvider.createParty(player, name);
                         break;
                     }
                     case ACTION_DISBAND: {
                         // Ensure self-managed party exists (may need to create from BQu data)
-                        Party ensured = getOrCreateSelfParty(player, provider);
+                        getOrCreateSelfParty(player, provider);
                         PartyManagerData pmDisband = PartyManagerData.getInstance();
                         Party disbandParty = pmDisband.getPartyByPlayer(player.getUniqueID());
                         if (disbandParty != null) {
@@ -201,13 +206,20 @@ public class MessagePartyAction implements IMessage {
                                 break;
                             }
                         }
+                        List<UUID> disbandMembers = disbandParty != null ?
+                                new ArrayList<>(disbandParty.getMemberUUIDs()) : Collections.emptyList();
                         boolean disbanded = selfProvider.disbandParty(player);
-                        pmDisband.setBQuLinked(player.getUniqueID(), false);
-                        success = true;
+                        if (disbanded) {
+                            for (UUID memberId : disbandMembers) {
+                                pmDisband.setBQuLinked(memberId, false);
+                            }
+                            success = true;
+                        }
                         break;
                     }
                     case ACTION_RENAME: {
                         String newName = msg.stringArg.trim();
+                        if (newName.length() > 64) newName = newName.substring(0, 64);
                         if (!newName.isEmpty()) {
                             success = activeProvider.renameParty(player, newName);
                         }
@@ -236,6 +248,7 @@ public class MessagePartyAction implements IMessage {
                         boolean linked = "true".equals(msg.stringArg);
                         PartyManagerData pmLink = PartyManagerData.getInstance();
                         Party linkParty = pmLink.getPartyByPlayer(player.getUniqueID());
+                        // Permission check: if player has an existing party, they need ADMIN+ role
                         if (linkParty != null) {
                             PartyRole linkRole = linkParty.getRole(player.getUniqueID());
                             if (linkRole != null && !linkRole.canInvite() && !player.canUseCommand(2, "")) {
@@ -249,15 +262,17 @@ public class MessagePartyAction implements IMessage {
                             }
                             pmLink.setBQuLinked(player.getUniqueID(), true);
                         } else {
+                            // Only unlink if currently linked
+                            if (!pmLink.isBQuLinked(player.getUniqueID())) break;
                             pmLink.setBQuLinked(player.getUniqueID(), false);
-                            Party created = getOrCreateSelfParty(player, provider);
+                            getOrCreateSelfParty(player, provider);
                         }
                         success = true;
                         break;
                     }
                     case ACTION_TOGGLE_FAKE_PLAYERS: {
                         // Legacy: cycle NONE -> ALLY -> MEMBER -> NONE
-                        Party toggleParty = getOrCreateSelfParty(player, provider);
+                        Party toggleParty = getOrCreateSelfParty(player, activeProvider);
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
                             if (toggleRole != null && toggleRole.canInvite()) {
@@ -271,7 +286,7 @@ public class MessagePartyAction implements IMessage {
                         break;
                     }
                     case ACTION_TOGGLE_EXPLOSION_PROTECTION: {
-                        Party toggleParty = getOrCreateSelfParty(player, provider);
+                        Party toggleParty = getOrCreateSelfParty(player, activeProvider);
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
                             if (toggleRole != null && toggleRole.canInvite()) {
@@ -285,7 +300,7 @@ public class MessagePartyAction implements IMessage {
                     case ACTION_REMOVE_ALLY:
                     case ACTION_ADD_ENEMY:
                     case ACTION_REMOVE_ENEMY: {
-                        Party allyParty = getOrCreateSelfParty(player, provider);
+                        Party allyParty = getOrCreateSelfParty(player, activeProvider);
                         if (allyParty == null) break;
                         PartyRole allyRole = allyParty.getRole(player.getUniqueID());
                         if (allyRole == null || !allyRole.canInvite()) break;
@@ -314,7 +329,7 @@ public class MessagePartyAction implements IMessage {
                         break;
                     }
                     case ACTION_TRANSFER_OWNERSHIP: {
-                        Party tParty = getOrCreateSelfParty(player, provider);
+                        Party tParty = getOrCreateSelfParty(player, activeProvider);
                         if (tParty == null) break;
                         PartyRole tRole = tParty.getRole(player.getUniqueID());
                         if (tRole != PartyRole.OWNER && !player.canUseCommand(2, "")) break;
@@ -329,7 +344,7 @@ public class MessagePartyAction implements IMessage {
                         break;
                     }
                     case ACTION_SET_TRUST_LEVEL: {
-                        Party trustParty = getOrCreateSelfParty(player, provider);
+                        Party trustParty = getOrCreateSelfParty(player, activeProvider);
                         if (trustParty == null) break;
                         PartyRole trustRole = trustParty.getRole(player.getUniqueID());
                         if (trustRole == null || !trustRole.canInvite()) break;
@@ -337,7 +352,7 @@ public class MessagePartyAction implements IMessage {
                         if (tp.length == 2) {
                             TrustAction ta = TrustAction.fromNbtKey(tp[0]);
                             TrustLevel tl = TrustLevel.fromName(tp[1]);
-                            if (ta != null) {
+                            if (ta != null && tl.ordinal() <= TrustLevel.MEMBER.ordinal()) {
                                 trustParty.setTrustLevel(ta, tl);
                                 success = true;
                             }
@@ -345,16 +360,19 @@ public class MessagePartyAction implements IMessage {
                         break;
                     }
                     case ACTION_SET_FAKEPLAYER_TRUST: {
-                        Party fpParty = getOrCreateSelfParty(player, provider);
+                        Party fpParty = getOrCreateSelfParty(player, activeProvider);
                         if (fpParty == null) break;
                         PartyRole fpRole = fpParty.getRole(player.getUniqueID());
                         if (fpRole == null || !fpRole.canInvite()) break;
-                        fpParty.setFakePlayerTrustLevel(TrustLevel.fromName(msg.stringArg));
-                        success = true;
+                        TrustLevel fpLevel = TrustLevel.fromName(msg.stringArg);
+                        if (fpLevel.ordinal() <= TrustLevel.MEMBER.ordinal()) {
+                            fpParty.setFakePlayerTrustLevel(fpLevel);
+                            success = true;
+                        }
                         break;
                     }
                     case ACTION_SET_FREE_TO_JOIN: {
-                        Party fjParty = getOrCreateSelfParty(player, provider);
+                        Party fjParty = getOrCreateSelfParty(player, activeProvider);
                         if (fjParty == null) break;
                         PartyRole fjRole = fjParty.getRole(player.getUniqueID());
                         if (fjRole == null || !fjRole.canInvite()) break;
@@ -363,31 +381,35 @@ public class MessagePartyAction implements IMessage {
                         break;
                     }
                     case ACTION_SET_COLOR: {
-                        Party cParty = getOrCreateSelfParty(player, provider);
+                        Party cParty = getOrCreateSelfParty(player, activeProvider);
                         if (cParty == null) break;
                         PartyRole cRole = cParty.getRole(player.getUniqueID());
                         if (cRole == null || !cRole.canInvite()) break;
                         try {
                             cParty.setColor(Integer.parseInt(msg.stringArg));
+                            success = true;
                         } catch (NumberFormatException ignored) {}
-                        success = true;
                         break;
                     }
                     case ACTION_SET_TITLE: {
-                        Party titleParty = getOrCreateSelfParty(player, provider);
+                        Party titleParty = getOrCreateSelfParty(player, activeProvider);
                         if (titleParty == null) break;
                         PartyRole titleRole = titleParty.getRole(player.getUniqueID());
                         if (titleRole == null || !titleRole.canInvite()) break;
-                        titleParty.setTitle(msg.stringArg.trim());
+                        String title = msg.stringArg.trim();
+                        if (title.length() > 64) title = title.substring(0, 64);
+                        titleParty.setTitle(title);
                         success = true;
                         break;
                     }
                     case ACTION_SET_DESCRIPTION: {
-                        Party descParty = getOrCreateSelfParty(player, provider);
+                        Party descParty = getOrCreateSelfParty(player, activeProvider);
                         if (descParty == null) break;
                         PartyRole descRole = descParty.getRole(player.getUniqueID());
                         if (descRole == null || !descRole.canInvite()) break;
-                        descParty.setDescription(msg.stringArg.trim());
+                        String desc = msg.stringArg.trim();
+                        if (desc.length() > 256) desc = desc.substring(0, 256);
+                        descParty.setDescription(desc);
                         success = true;
                         break;
                     }
@@ -408,6 +430,7 @@ public class MessagePartyAction implements IMessage {
 
                 if (success) {
                     provider.syncToAll();
+                    BLPCSaveHandler.INSTANCE.markDirty();
                 }
             });
             return null;

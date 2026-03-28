@@ -40,6 +40,7 @@ public class MessageSyncAllClaims implements IMessage {
                 ClientCache.clear();
                 for (String key : message.data.getKeySet()) {
                     ClaimedChunkData d = ClaimedChunkData.fromNBT(message.data.getCompoundTag(key));
+                    if (d == null) continue;
                     ClientCache.update(d.x, d.z, d.ownerUUID, d.ownerName, d.partyName, d.isForceLoaded);
                 }
             });

@@ -11,6 +11,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.entity.EntityMobGriefingEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
@@ -169,8 +170,8 @@ public class ChunkProtectionHandler {
         Iterator<Entity> entityIt = event.getAffectedEntities().iterator();
         while (entityIt.hasNext()) {
             Entity entity = entityIt.next();
-            int chunkX = entity.chunkCoordX;
-            int chunkZ = entity.chunkCoordZ;
+            int chunkX = MathHelper.floor(entity.posX) >> 4;
+            int chunkZ = MathHelper.floor(entity.posZ) >> 4;
             ClaimedChunkData claim = ChunkManagerData.getInstance().getClaim(chunkX, chunkZ);
             if (claim == null) continue;
             Party party = getPartyForClaim(claim);
@@ -219,8 +220,8 @@ public class ChunkProtectionHandler {
         Entity entity = event.getEntity();
         if (entity.world.isRemote) return;
 
-        int chunkX = entity.chunkCoordX;
-        int chunkZ = entity.chunkCoordZ;
+        int chunkX = MathHelper.floor(entity.posX) >> 4;
+        int chunkZ = MathHelper.floor(entity.posZ) >> 4;
         if (isChunkClaimed(chunkX, chunkZ)) {
             event.setResult(Event.Result.DENY);
         }
@@ -241,6 +242,7 @@ public class ChunkProtectionHandler {
                 event.setCanceled(true);
             }
         } else {
+            if (!ModConfig.protectMobGriefing) return;
             int chunkX = event.getPos().getX() >> 4;
             int chunkZ = event.getPos().getZ() >> 4;
             if (isChunkClaimed(chunkX, chunkZ)) {

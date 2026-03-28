@@ -10,21 +10,21 @@ import net.minecraftforge.common.util.Constants;
 
 public class PartyManagerData {
 
-    private static PartyManagerData instance;
+    private static volatile PartyManagerData instance;
 
     private final Map<Integer, Party> parties = new TreeMap<>();
     private final BitSet usedIds = new BitSet();
     private boolean migrated;
     private final Set<UUID> bquLinkedPlayers = new HashSet<>();
 
-    public static PartyManagerData getInstance() {
+    public static synchronized PartyManagerData getInstance() {
         if (instance == null) {
             instance = new PartyManagerData();
         }
         return instance;
     }
 
-    public static void reset() {
+    public static synchronized void reset() {
         instance = new PartyManagerData();
     }
 

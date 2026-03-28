@@ -8,6 +8,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 
+import com.github.gtexpert.blpc.common.ModLog;
+
 /**
  * Represents a party with members, roles, trust settings, and invitations.
  * <p>
@@ -383,6 +385,13 @@ public class Party {
         int id = tag.getInteger("id");
         String name = tag.getString("name");
         long created = tag.getLong("created");
+
+        // Validate critical fields
+        if (name.isEmpty()) {
+            name = "Party " + id;
+            ModLog.IO.warn("Party {} has empty name, using default", id);
+        }
+
         Party party = new Party(id, name, created);
 
         // Members

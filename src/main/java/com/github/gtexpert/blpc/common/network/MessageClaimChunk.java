@@ -3,12 +3,14 @@ package com.github.gtexpert.blpc.common.network;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.ModConfig;
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
@@ -54,6 +56,16 @@ public class MessageClaimChunk implements IMessage {
         public IMessage onMessage(MessageClaimChunk message, MessageContext ctx) {
             FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
                 EntityPlayerMP player = ctx.getServerHandler().player;
+
+                // Validate chunk coordinates - must be within reasonable distance
+                int playerChunkX = MathHelper.floor(player.posX) >> 4;
+                int playerChunkZ = MathHelper.floor(player.posZ) >> 4;
+                int maxChunkDistance = 64; // ~1024 blocks
+                if (Math.abs(message.x - playerChunkX) > maxChunkDistance ||
+                        Math.abs(message.z - playerChunkZ) > maxChunkDistance) {
+                    return;
+                }
+
                 ChunkManagerData data = ChunkManagerData.getInstance();
                 ClaimedChunkData existing = data.getClaim(message.x, message.z);
                 UUID playerId = player.getUniqueID();
@@ -81,6 +93,7 @@ public class MessageClaimChunk implements IMessage {
             String partyName = resolveTeamName(playerId);
             data.setClaim(msg.x, msg.z, playerId, player.getName(), partyName, false);
             syncToAll(msg.x, msg.z, playerId, player.getName(), partyName, false);
+            BLPCSaveHandler.INSTANCE.markDirty();
         }
 
         private void handleUnclaim(MessageClaimChunk msg, EntityPlayerMP player,
@@ -93,6 +106,7 @@ public class MessageClaimChunk implements IMessage {
             }
             data.setClaim(msg.x, msg.z, null, "", "", false);
             syncToAll(msg.x, msg.z, null, "", "", false);
+            BLPCSaveHandler.INSTANCE.markDirty();
         }
 
         private void handleToggleForce(MessageClaimChunk msg, EntityPlayerMP player,
@@ -103,9 +117,10 @@ public class MessageClaimChunk implements IMessage {
                 if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) return;
 
                 String partyName = resolveTeamName(playerId);
-                data.setClaim(msg.x, msg.z, playerId, player.getName(), partyName, true);
-                TicketManager.forceChunk(player.world, msg.x, msg.z, null);
-                syncToAll(msg.x, msg.z, playerId, player.getName(), partyName, true);
+                boolean forced = TicketManager.forceChunk(player.world, msg.x, msg.z, null);
+                data.setClaim(msg.x, msg.z, playerId, player.getName(), partyName, forced);
+                syncToAll(msg.x, msg.z, playerId, player.getName(), partyName, forced);
+                BLPCSaveHandler.INSTANCE.markDirty();
             } else if (isOwnerOrOp(existing, player, playerId)) {
                 toggleForceLoad(msg, player, data, existing, playerId);
             }
@@ -118,11 +133,13 @@ public class MessageClaimChunk implements IMessage {
                 TicketManager.unforceChunk(player.world, msg.x, msg.z);
             } else {
                 if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) return;
+                boolean forced = TicketManager.forceChunk(player.world, msg.x, msg.z, null);
+                if (!forced) return;  // Ticket acquisition failed, don't update state
                 existing.isForceLoaded = true;
-                TicketManager.forceChunk(player.world, msg.x, msg.z, null);
             }
             syncToAll(msg.x, msg.z, existing.ownerUUID, existing.ownerName, existing.partyName,
                     existing.isForceLoaded);
+            BLPCSaveHandler.INSTANCE.markDirty();
         }
 
         private boolean isOwnerOrOp(ClaimedChunkData claim, EntityPlayerMP player, UUID playerId) {

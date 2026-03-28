@@ -1,6 +1,7 @@
 package com.github.gtexpert.blpc.common.chunk;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -15,18 +16,18 @@ import com.github.gtexpert.blpc.common.network.ModNetwork;
  */
 public class ChunkManagerData {
 
-    private static ChunkManagerData instance;
+    private static volatile ChunkManagerData instance;
 
-    private final Map<String, ClaimedChunkData> claims = new HashMap<>();
+    private final Map<String, ClaimedChunkData> claims = new ConcurrentHashMap<>();
 
-    public static ChunkManagerData getInstance() {
+    public static synchronized ChunkManagerData getInstance() {
         if (instance == null) {
             instance = new ChunkManagerData();
         }
         return instance;
     }
 
-    public static void reset() {
+    public static synchronized void reset() {
         instance = new ChunkManagerData();
     }
 

@@ -7,6 +7,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
 import betterquesting.api.questing.party.IParty;
@@ -31,5 +33,7 @@ public class PartyManagerMixin {
                 data.setBQuLinked(memberId, false);
             }
         }
+        BLPCSaveHandler.INSTANCE.saveConfig(data);
+        PartyProviderRegistry.get().syncToAll();
     }
 }

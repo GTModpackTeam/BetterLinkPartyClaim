@@ -4,6 +4,8 @@ import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
 
+import com.github.gtexpert.blpc.common.ModLog;
+
 public class ClaimedChunkData {
 
     public final int x, z;
@@ -35,8 +37,14 @@ public class ClaimedChunkData {
     public static ClaimedChunkData fromNBT(NBTTagCompound tag) {
         int x = tag.getInteger("x");
         int z = tag.getInteger("z");
+        UUID owner = tag.getUniqueId("owner");
+        if (owner == null || owner.equals(new UUID(0L, 0L))) {
+            ModLog.IO.warn("Claim at ({},{}) has invalid owner UUID, skipping", x, z);
+            return null;
+        }
+        String name = tag.getString("name");
         String team = tag.hasKey("party") ? tag.getString("party") : "";
         boolean force = tag.getBoolean("force");
-        return new ClaimedChunkData(x, z, tag.getUniqueId("owner"), tag.getString("name"), team, force);
+        return new ClaimedChunkData(x, z, owner, name, team, force);
     }
 }

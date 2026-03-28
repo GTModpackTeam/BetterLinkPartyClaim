@@ -161,6 +161,8 @@ public class DefaultPartyProvider implements IPartyProvider {
         EntityPlayerMP target = server.getPlayerList().getPlayerByUsername(targetUsername);
         if (target == null) return false;
         if (!party.isMember(target.getUniqueID())) return false;
+        PartyRole actorRole = party.getRole(actor.getUniqueID());
+        if (actorRole == null || !actorRole.canChangeRole()) return false;
         PartyRole role;
         try {
             role = PartyRole.valueOf(newRole);

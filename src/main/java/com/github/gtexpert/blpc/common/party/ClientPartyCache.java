@@ -16,14 +16,14 @@ public class ClientPartyCache {
 
     private static final Map<Integer, Party> parties = new TreeMap<>();
     private static final Set<UUID> bquLinkedPlayers = new HashSet<>();
-    private static Runnable onSyncCallback;
+    private static final List<Runnable> syncListeners = new ArrayList<>();
 
-    public static void setOnSyncCallback(Runnable callback) {
-        onSyncCallback = callback;
+    public static void addSyncListener(Runnable listener) {
+        syncListeners.add(listener);
     }
 
-    public static void clearOnSyncCallback() {
-        onSyncCallback = null;
+    public static void removeSyncListener(Runnable listener) {
+        syncListeners.remove(listener);
     }
 
     public static void loadFromNBT(NBTTagCompound data) {
@@ -41,10 +41,8 @@ public class ClientPartyCache {
                 bquLinkedPlayers.add(linkedList.getCompoundTagAt(i).getUniqueId("uuid"));
             }
         }
-        if (onSyncCallback != null) {
-            Runnable cb = onSyncCallback;
-            onSyncCallback = null;
-            cb.run();
+        for (Runnable listener : new ArrayList<>(syncListeners)) {
+            listener.run();
         }
     }
 
@@ -63,6 +61,8 @@ public class ClientPartyCache {
 
     public static void clear() {
         parties.clear();
+        bquLinkedPlayers.clear();
+        syncListeners.clear();
     }
 
     @Nullable

@@ -52,6 +52,19 @@ public class MainPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(W, H);
 
+        // Register a persistent sync listener to rebuild the panel on every server sync
+        // while the panel remains open. The listener self-removes when the panel closes.
+        final UUID finalPlayerId = playerId;
+        final Runnable[] listenerRef = new Runnable[1];
+        listenerRef[0] = () -> Minecraft.getMinecraft().addScheduledTask(() -> {
+            if (!panel.isOpen()) {
+                ClientPartyCache.removeSyncListener(listenerRef[0]);
+                return;
+            }
+            PartyWidgets.reopenPanel(panel, () -> build(finalPlayerId));
+        });
+        ClientPartyCache.addSyncListener(listenerRef[0]);
+
         // Display title if set, otherwise party name
         String displayName = !party.getTitle().isEmpty() ? party.getTitle() : party.getName();
         panel.child(IKey.str(displayName).color(0xFFFFFFFF).shadow(true)
@@ -103,11 +116,14 @@ public class MainPanel {
 
         // BQu Manage Party
         if (bquAvailable && bquLinked) {
-            menuList.child(PartyWidgets.createActionButton(
-                    IKey.lang("blpc.party.open_native"), "Open BQu native screen", () -> {
+            menuList.child((ButtonWidget<?>) new ButtonWidget<>().size(W - 16, 18)
+                    .padding(4, 0, 0, 0)
+                    .overlay(IKey.lang("blpc.party.open_native").alignment(Alignment.CenterLeft))
+                    .onMousePressed(btn -> {
                         panel.closeIfOpen();
                         Minecraft.getMinecraft().addScheduledTask(PartyProviderRegistry::openNativeScreen);
-                    }).size(W - 16, 18));
+                        return true;
+                    }));
         }
 
         panel.child(menuList);

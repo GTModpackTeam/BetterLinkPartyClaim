@@ -253,7 +253,7 @@ public class ModuleManager implements IModuleManager {
                     changed = true;
                     TModule annotation = module.getClass().getAnnotation(TModule.class);
                     String moduleID = annotation.moduleID();
-                    toLoad.remove(new ResourceLocation(moduleID));
+                    toLoad.remove(new ResourceLocation(annotation.containerID(), moduleID));
                     ModLog.MODULE.debug(
                             "Module {} is missing at least one of module dependencies: {}, skipping loading...",
                             moduleID, dependencies);

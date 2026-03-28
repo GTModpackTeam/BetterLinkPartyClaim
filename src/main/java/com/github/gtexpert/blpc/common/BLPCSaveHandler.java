@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.nbt.CompressedStreamTools;
@@ -16,6 +18,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
+import com.github.gtexpert.blpc.common.chunk.TicketManager;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
@@ -27,6 +30,9 @@ import com.github.gtexpert.blpc.common.party.PartyManagerData;
  * <pre>
  * betterlink/pc/
  * ├── config.dat          — metadata (migration flag, BQu link flags)
+ * ├── backup/
+ * │   ├── parties/        — most recent backup of parties/
+ * │   └── claims/         — most recent backup of claims/
  * ├── parties/
  * │   └── &lt;id&gt;.dat       — per-party NBT (gzip compressed)
  * └── claims/
@@ -44,8 +50,19 @@ public class BLPCSaveHandler {
     private File dataDir;
     private File partiesDir;
     private File claimsDir;
+    private volatile boolean dirty = false;
 
     private BLPCSaveHandler() {}
+
+    public void markDirty() {
+        dirty = true;
+    }
+
+    public synchronized void saveIfDirty() {
+        if (!dirty) return;
+        dirty = false;
+        saveAllInternal();
+    }
 
     public void initWorldDir(MinecraftServer server) {
         File worldDir = server.getEntityWorld().getSaveHandler().getWorldDirectory();
@@ -71,13 +88,26 @@ public class BLPCSaveHandler {
     }
 
     public void saveConfig(PartyManagerData data) {
-        File file = new File(dataDir, "config.dat");
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+        File tmpFile = new File(dataDir, "config.dat.tmp");
+        File finalFile = new File(dataDir, "config.dat");
+        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
             NBTTagCompound nbt = new NBTTagCompound();
             data.writeConfigNBT(nbt);
             CompressedStreamTools.writeCompressed(nbt, fos);
+            try {
+                fos.getFD().sync();
+            } catch (java.io.SyncFailedException ignored) {
+                ModLog.IO.debug("fsync not supported for config.dat.tmp");
+            }
         } catch (IOException e) {
-            ModLog.IO.error("Failed to save config.dat", e);
+            ModLog.IO.error("Failed to write config.dat.tmp", e);
+            tmpFile.delete();
+            return;
+        }
+        finalFile.delete();
+        if (!tmpFile.renameTo(finalFile)) {
+            ModLog.IO.error("Failed to rename config.dat.tmp to config.dat");
+            tmpFile.delete();
         }
     }
 
@@ -98,16 +128,44 @@ public class BLPCSaveHandler {
     }
 
     public void saveParties(PartyManagerData data) {
+        List<File> tmpFiles = new ArrayList<>();
+        boolean allOk = true;
+
+        for (Party party : data.getAllParties()) {
+            File tmpFile = new File(partiesDir, party.getPartyId() + ".dat.tmp");
+            try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+                CompressedStreamTools.writeCompressed(party.toNBT(), fos);
+                try {
+                    fos.getFD().sync();
+                } catch (java.io.SyncFailedException ignored) {
+                    ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
+                }
+                tmpFiles.add(tmpFile);
+            } catch (IOException e) {
+                ModLog.IO.error("Failed to write party temp file: {}", tmpFile.getName(), e);
+                allOk = false;
+                break;
+            }
+        }
+
+        if (!allOk) {
+            for (File tmp : tmpFiles) tmp.delete();
+            ModLog.IO.error("Party save aborted; old files preserved");
+            return;
+        }
+
+        backupDir(partiesDir, "parties");
+
         File[] oldFiles = partiesDir.listFiles((dir, name) -> name.endsWith(".dat"));
         if (oldFiles != null) {
             for (File f : oldFiles) f.delete();
         }
-        for (Party party : data.getAllParties()) {
-            File file = new File(partiesDir, party.getPartyId() + ".dat");
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                CompressedStreamTools.writeCompressed(party.toNBT(), fos);
-            } catch (IOException e) {
-                ModLog.IO.error("Failed to save party file: {}", file.getName(), e);
+
+        for (File tmp : tmpFiles) {
+            String finalName = tmp.getName().replace(".dat.tmp", ".dat");
+            File finalFile = new File(partiesDir, finalName);
+            if (!tmp.renameTo(finalFile)) {
+                ModLog.IO.error("Failed to rename party temp file: {}", tmp.getName());
             }
         }
     }
@@ -123,6 +181,7 @@ public class BLPCSaveHandler {
                 NBTTagList list = nbt.getTagList("claims", Constants.NBT.TAG_COMPOUND);
                 for (int i = 0; i < list.tagCount(); i++) {
                     ClaimedChunkData claim = ClaimedChunkData.fromNBT(list.getCompoundTagAt(i));
+                    if (claim == null) continue;
                     data.setClaim(claim.x, claim.z, claim.ownerUUID, claim.ownerName, claim.partyName,
                             claim.isForceLoaded);
                 }
@@ -133,11 +192,6 @@ public class BLPCSaveHandler {
     }
 
     public void saveClaims(ChunkManagerData chunkData, PartyManagerData partyData) {
-        File[] oldFiles = claimsDir.listFiles((dir, name) -> name.endsWith(".dat"));
-        if (oldFiles != null) {
-            for (File f : oldFiles) f.delete();
-        }
-
         Map<Integer, NBTTagList> partyLists = new HashMap<>();
         NBTTagList globalList = new NBTTagList();
 
@@ -150,29 +204,101 @@ public class BLPCSaveHandler {
             }
         }
 
-        saveClaimList(new File(claimsDir, "global.dat"), globalList);
+        // Build full map of filename -> NBTTagList for temp-write
+        Map<String, NBTTagList> toWrite = new HashMap<>();
+        if (globalList.tagCount() > 0) {
+            toWrite.put("global", globalList);
+        }
         for (Map.Entry<Integer, NBTTagList> entry : partyLists.entrySet()) {
-            saveClaimList(new File(claimsDir, entry.getKey() + ".dat"), entry.getValue());
+            if (entry.getValue().tagCount() > 0) {
+                toWrite.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+        }
+
+        // Write all temp files first
+        List<File> tmpFiles = new ArrayList<>();
+        boolean allOk = true;
+        for (Map.Entry<String, NBTTagList> entry : toWrite.entrySet()) {
+            File tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
+            if (!saveClaimListTemp(tmpFile, entry.getValue())) {
+                allOk = false;
+                break;
+            }
+            tmpFiles.add(tmpFile);
+        }
+
+        if (!allOk) {
+            for (File tmp : tmpFiles) tmp.delete();
+            ModLog.IO.error("Claims save aborted; old files preserved");
+            return;
+        }
+
+        backupDir(claimsDir, "claims");
+
+        // Swap: delete old .dat files then rename .tmp to .dat
+        File[] oldFiles = claimsDir.listFiles((dir, name) -> name.endsWith(".dat"));
+        if (oldFiles != null) {
+            for (File f : oldFiles) f.delete();
+        }
+
+        for (File tmp : tmpFiles) {
+            String finalName = tmp.getName().replace(".dat.tmp", ".dat");
+            File finalFile = new File(claimsDir, finalName);
+            if (!tmp.renameTo(finalFile)) {
+                ModLog.IO.error("Failed to rename claim temp file: {}", tmp.getName());
+            }
         }
     }
 
-    private void saveClaimList(File file, NBTTagList list) {
-        if (list.tagCount() == 0) return;
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+    private boolean saveClaimListTemp(File tmpFile, NBTTagList list) {
+        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
             NBTTagCompound nbt = new NBTTagCompound();
             nbt.setTag("claims", list);
             CompressedStreamTools.writeCompressed(nbt, fos);
+            try {
+                fos.getFD().sync();
+            } catch (java.io.SyncFailedException ignored) {
+                ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
+            }
+            return true;
         } catch (IOException e) {
-            ModLog.IO.error("Failed to save claim file: {}", file.getName(), e);
+            ModLog.IO.error("Failed to write claim temp file: {}", tmpFile.getName(), e);
+            tmpFile.delete();
+            return false;
+        }
+    }
+
+    // --- Backup helper ---
+
+    private void backupDir(File sourceDir, String subDirName) {
+        File backupDir = new File(dataDir, "backup/" + subDirName);
+        backupDir.mkdirs();
+        // Clear old backup
+        File[] oldBackups = backupDir.listFiles();
+        if (oldBackups != null) {
+            for (File f : oldBackups) f.delete();
+        }
+        // Copy current .dat files to backup
+        File[] currentFiles = sourceDir.listFiles((dir, name) -> name.endsWith(".dat"));
+        if (currentFiles != null) {
+            for (File src : currentFiles) {
+                try {
+                    java.nio.file.Files.copy(src.toPath(), new File(backupDir, src.getName()).toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    ModLog.IO.warn("Failed to backup file: {}", src.getName(), e);
+                }
+            }
         }
     }
 
     // --- Full save/load ---
 
-    public void loadAll(MinecraftServer server) {
+    public synchronized void loadAll(MinecraftServer server) {
         initWorldDir(server);
         ChunkManagerData.reset();
         PartyManagerData.reset();
+        TicketManager.reset();
         PartyManagerData partyData = PartyManagerData.getInstance();
         ChunkManagerData chunkData = ChunkManagerData.getInstance();
         loadConfig(partyData);
@@ -180,7 +306,12 @@ public class BLPCSaveHandler {
         loadClaims(chunkData);
     }
 
-    public void saveAll() {
+    public synchronized void saveAll() {
+        dirty = false;
+        saveAllInternal();
+    }
+
+    private void saveAllInternal() {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server == null || dataDir == null) return;
         PartyManagerData partyData = PartyManagerData.getInstance();
