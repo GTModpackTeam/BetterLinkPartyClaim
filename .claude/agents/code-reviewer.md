@@ -28,7 +28,7 @@ Project architecture is provided via the blpc-overview skill.
 ### Code Quality
 - No duplicate logic that should use existing templates (`ConfirmDialog`, `InputDialog`, `PlayerListPanel`)
 - `PartyWidgets` utility methods used where applicable
-- Proper use of `BLPCLog` categories for logging
+- Proper use of `ModLog` categories for logging
 - Trust level / trust action consistency
 
 ### Comments & Javadoc

@@ -41,8 +41,8 @@ Party management is abstracted via `IPartyProvider`, allowing transparent switch
 
 - **`common/party/`** — Party data: `Party`, `PartyRole`, `PartyManagerData`, `DefaultPartyProvider`, `ClientPartyCache`.
 - **`common/chunk/`** — Claim data: `ChunkManagerData`, `ClaimedChunkData`, `ClientCache`, `TicketManager`.
-- **`common/network/`** — Messages: `MessageClaimChunk` (C→S), `MessageTeamAction` (C→S party ops), `MessageSyncClaims`/`MessageSyncAllClaims`/`MessageSyncConfig`/`MessageTeamSync` (S→C), `PlayerLoginHandler`.
-- **`client/gui/`** — ModularUI: `ChunkMapScreen`/`ChunkMapWidget`, `TeamScreen` (party management panel), `MinimapHUD`, `ModKeyBindings`/`KeyInputHandler`.
+- **`common/network/`** — Messages: `MessageClaimChunk` (C→S), `MessagePartyAction` (C→S party ops), `MessageSyncClaims`/`MessageSyncAllClaims`/`MessageSyncConfig`/`MessagePartySync` (S→C), `PlayerLoginHandler`.
+- **`client/gui/`** — ModularUI: `ChunkMapScreen`/`ChunkMapWidget`, party panels in `party/` subpackage (`MainPanel`, `CreatePanel`, `SettingsPanel`, etc.), `MinimapHUD`, `ModKeyBindings`/`KeyInputHandler`.
 - **`client/map/`** — Async chunk rendering, texture caching, claim overlay.
 
 ## Data Persistence
@@ -109,18 +109,20 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 | `blpc.party.dialog.unlink_bqu` | `UnlinkBQuDialog.java` | Unlink BQu confirmation |
 | `blpc.party.dialog.transfer` | `TransferOwnerDialog.java` | Transfer ownership |
 
-## BLPCLog Categories
+## ModLog Categories
 
 | Category | Logger | Purpose |
 |---|---|---|
-| `BLPCLog.ROOT` | `blpc` | General |
-| `BLPCLog.IO` | `blpc/IO` | File I/O |
-| `BLPCLog.PARTY` | `blpc/Party` | Party operations |
-| `BLPCLog.SYNC` | `blpc/Sync` | Client sync |
-| `BLPCLog.BQU` | `blpc/BQu` | BQu integration |
-| `BLPCLog.MIGRATION` | `blpc/Migration` | Data migration |
-| `BLPCLog.UI` | `blpc/UI` | Panel navigation |
-| `BLPCLog.PROTECTION` | `blpc/Protection` | Chunk protection |
+| `ModLog.ROOT` | `blpc` | General |
+| `ModLog.IO` | `blpc/IO` | File I/O |
+| `ModLog.NET` | `blpc/Net` | Network |
+| `ModLog.PARTY` | `blpc/Party` | Party operations |
+| `ModLog.MODULE` | `blpc/Module` | Module system |
+| `ModLog.SYNC` | `blpc/Sync` | Client sync |
+| `ModLog.BQU` | `blpc/BQu` | BQu integration |
+| `ModLog.MIGRATION` | `blpc/Migration` | Data migration |
+| `ModLog.UI` | `blpc/UI` | Panel navigation |
+| `ModLog.PROTECTION` | `blpc/Protection` | Chunk protection |
 
 ## BQu Link/Unlink/Disband Flow
 
@@ -129,7 +131,7 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 2. Adds player UUID to `PartyManagerData.bquLinkedPlayers` set.
 3. `BLPCSaveHandler` persists the updated set to `config.dat`.
 4. `syncToAll()` broadcasts updated party state (including link flags) to all clients.
-5. Client-side `TeamScreen` switches to BQu-linked UI (member list + "Open BQu Party Screen" button).
+5. Client-side `MainPanel` switches to BQu-linked UI (member list + "Open BQu Party Screen" button).
 
 **Unlink** (`MessagePartyAction.toggleBQuLink(false)`):
 1. Server receives action, verifies player is ADMIN+.
@@ -172,7 +174,7 @@ Shared utilities in `client/gui/party/PartyWidgets`:
 
 ## Commands
 
-`/blpc move-owner <partyId> <newOwner>` — Op-only (permission level 3) command to transfer party ownership. Registered in `CoreModule` via `ServerCommandEvent`. Lang key: `command.blpc.move_owner.success`.
+`/blpc move-owner <partyId> <newOwner>` — Op-only (permission level 3) command to transfer party ownership. Registered in `CoreModule` via `FMLServerStartingEvent`. Lang key: `command.blpc.move_owner.success`.
 
 ## Mixins
 

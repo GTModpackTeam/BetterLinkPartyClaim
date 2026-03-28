@@ -30,7 +30,6 @@ Spotless is enforced. Formatting rules: `spotless.importorder` (local) and `spot
 - **Module system**: Annotation-driven (`@TModule`). Modules discovered at FML Construction via ASM scanning. `modDependencies` gates on `Loader.isModLoaded()`.
 - **File-based persistence**: `BLPCSaveHandler` stores data under `world/betterlink/pc/` (not `WorldSavedData`).
 - **Network protocol**: Messages use incrementing discriminator IDs in `ModNetwork.init()`. New messages must be appended.
-- **MUI source reference**: `/mnt/data/git/ModularUI/src/` — always check here for API details.
 
 ## Key Dependencies
 

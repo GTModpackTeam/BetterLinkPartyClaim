@@ -28,7 +28,7 @@ You receive tasks from the QA lead or the user. Your job is to:
 - BQu integration: only through `integration/bqu/` package
 - Use existing UI templates: `ConfirmDialog`, `InputDialog`, `PlayerListPanel`
 - Use `PartyWidgets` utility methods
-- Use appropriate `BLPCLog.*` categories for logging
+- Use appropriate `ModLog.*` categories for logging
 
 ## Output Format
 
