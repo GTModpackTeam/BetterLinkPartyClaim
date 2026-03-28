@@ -98,16 +98,35 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 |---|---|---|
 | `blpc.party` | `MainPanel.java` | Party menu |
 | `blpc.party.create` | `CreatePanel.java` | Create party |
-| `blpc.party.settings` | `SettingsPanel.java` | Protection settings |
+| `blpc.party.settings` | `SettingsPanel.java` | Protection settings, ally/enemy management |
 | `blpc.party.members` | `MembersPanel.java` | Member list |
 | `blpc.party.moderators` | `ModeratorsPanel.java` | Moderator promote/demote |
-| `blpc.party.allies` | `AlliesPanel.java` | Ally management |
-| `blpc.party.enemies` | `EnemiesPanel.java` | Enemy management |
 | `blpc.party.dialog.invite` | `InviteDialog.java` | Invite player |
 | `blpc.party.dialog.disband` | `DisbandDialog.java` | Disband confirmation |
 | `blpc.party.dialog.link_bqu` | `LinkBQuDialog.java` | Link BQu confirmation |
 | `blpc.party.dialog.unlink_bqu` | `UnlinkBQuDialog.java` | Unlink BQu confirmation |
 | `blpc.party.dialog.transfer` | `TransferOwnerDialog.java` | Transfer ownership |
+| `blpc.party.dialog.rename` | SettingsPanel (InputDialog) | Rename party |
+| `blpc.party.dialog.description` | SettingsPanel (InputDialog) | Edit party description |
+| `blpc.party.dialog.add_ally` | SettingsPanel (Dialog) | Select ally party to add |
+| `blpc.party.dialog.add_enemy` | SettingsPanel (Dialog) | Select enemy party to add |
+
+## Color Conventions
+
+All GUI colors are defined as ARGB constants in `client/gui/GuiColors`:
+
+| Constant | Value | Matches | Usage |
+|---|---|---|---|
+| `WHITE` | `0xFFFFFFFF` | `TextFormatting.WHITE` (§f) | Titles, default text |
+| `GOLD` | `0xFFFFAA00` | `TextFormatting.GOLD` (§6) | OWNER role, section headers |
+| `GREEN` | `0xFF55FF55` | `TextFormatting.GREEN` (§a) | ADMIN role, active items |
+| `RED` | `0xFFFF5555` | `TextFormatting.RED` (§c) | Warnings, limit exceeded |
+| `GRAY` | `0xFFAAAAAA` | `TextFormatting.GRAY` (§7) | Sub-text, messages |
+| `GRAY_LIGHT` | `0xFFCCCCCC` | — | Inactive items, non-members |
+
+`GuiColors` is at the `client/gui` package level — shared by all GUI components (party panels, chunk map, minimap). Party-specific role color logic is in `PartyWidgets.getRoleColor(PartyRole)`.
+
+For Minecraft formatting codes in tooltip strings, use `TextFormatting` enum constants (e.g. `TextFormatting.GREEN + "text"`) instead of raw `\u00a7X` escape sequences.
 
 ## ModLog Categories
 
@@ -162,14 +181,20 @@ For ModularUI API details, consult the ModularUI source code or documentation.
 All party panels use builder-pattern templates in `client/gui/party/widget/`:
 
 - **`ConfirmDialog`** — Yes/No confirmation dialog (`Dialog<Boolean>`). Used by: DisbandDialog, LinkBQuDialog, UnlinkBQuDialog.
-- **`InputDialog`** — Text field + submit dialog (`Dialog<Void>`). Used by: InviteDialog, TransferOwnerDialog.
-- **`PlayerListPanel`** — Scrollable player list with optional Add/Remove (`ModularPanel`). Used by: AlliesPanel, EnemiesPanel.
+- **`InputDialog`** — Text field + submit dialog (`Dialog<Void>`). Used by: InviteDialog, TransferOwnerDialog, SettingsPanel (rename/description).
+- **`PlayerListPanel`** — Scrollable player list with optional Add/Remove (`ModularPanel`). Used by: MembersPanel, ModeratorsPanel.
+
+**Allies/Enemies Management**: Handled directly in SettingsPanel via inline ListWidget children (not via PlayerListPanel). Each section displays removable entries with a single "Add" button that opens a party selection dialog.
+
+Shared color constants in `client/gui/GuiColors`:
+- `WHITE`, `GOLD`, `GREEN`, `RED`, `GRAY`, `GRAY_LIGHT` — ARGB constants matching Minecraft TextFormatting palette
 
 Shared utilities in `client/gui/party/PartyWidgets`:
 - `getDisplayName(UUID)` — resolve player UUID to display name
-- `getRoleColor(PartyRole)` — ARGB color for role
-- `openSubPanel(parent, child)` — open a sub-panel with logging
+- `getRoleColor(PartyRole)` — ARGB color for party role (OWNER=gold, ADMIN=green, default=white)
+- `openSubPanel(parent, child)` — open a sub-panel exclusively
 - `reopenPanel(current, factory)` — close and reopen a panel (for list refresh)
+- `createActionButton(label, name, action)` — button with click handler
 
 ## Commands
 

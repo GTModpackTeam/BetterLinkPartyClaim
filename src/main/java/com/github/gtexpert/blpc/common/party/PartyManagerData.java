@@ -12,8 +12,7 @@ public class PartyManagerData {
 
     private static volatile PartyManagerData instance;
 
-    private final Map<Integer, Party> parties = new TreeMap<>();
-    private final BitSet usedIds = new BitSet();
+    private final Map<UUID, Party> parties = new LinkedHashMap<>();
     private boolean migrated;
     private final Set<UUID> bquLinkedPlayers = new HashSet<>();
 
@@ -31,26 +30,23 @@ public class PartyManagerData {
     // --- CRUD ---
 
     public Party createParty(String name, UUID owner) {
-        int id = nextId();
+        UUID id = UUID.randomUUID();
         Party party = new Party(id, name, System.currentTimeMillis());
         party.addMember(owner, PartyRole.OWNER);
         parties.put(id, party);
-        usedIds.set(id);
         return party;
     }
 
     public void addParty(Party party) {
         parties.put(party.getPartyId(), party);
-        usedIds.set(party.getPartyId());
     }
 
-    public void removeParty(int partyId) {
+    public void removeParty(UUID partyId) {
         parties.remove(partyId);
-        usedIds.clear(partyId);
     }
 
     @Nullable
-    public Party getParty(int partyId) {
+    public Party getParty(UUID partyId) {
         return parties.get(partyId);
     }
 
@@ -112,10 +108,6 @@ public class PartyManagerData {
             linkedList.appendTag(tag);
         }
         nbt.setTag("bquLinked", linkedList);
-    }
-
-    private int nextId() {
-        return usedIds.nextClearBit(0);
     }
 
     // --- Client sync ---

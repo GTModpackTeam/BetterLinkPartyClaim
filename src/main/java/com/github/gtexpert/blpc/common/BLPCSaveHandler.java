@@ -4,10 +4,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.SyncFailedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
@@ -96,7 +102,7 @@ public class BLPCSaveHandler {
             CompressedStreamTools.writeCompressed(nbt, fos);
             try {
                 fos.getFD().sync();
-            } catch (java.io.SyncFailedException ignored) {
+            } catch (SyncFailedException ignored) {
                 ModLog.IO.debug("fsync not supported for config.dat.tmp");
             }
         } catch (IOException e) {
@@ -137,7 +143,7 @@ public class BLPCSaveHandler {
                 CompressedStreamTools.writeCompressed(party.toNBT(), fos);
                 try {
                     fos.getFD().sync();
-                } catch (java.io.SyncFailedException ignored) {
+                } catch (SyncFailedException ignored) {
                     ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
                 }
                 tmpFiles.add(tmpFile);
@@ -192,7 +198,7 @@ public class BLPCSaveHandler {
     }
 
     public void saveClaims(ChunkManagerData chunkData, PartyManagerData partyData) {
-        Map<Integer, NBTTagList> partyLists = new HashMap<>();
+        Map<UUID, NBTTagList> partyLists = new HashMap<>();
         NBTTagList globalList = new NBTTagList();
 
         for (ClaimedChunkData claim : chunkData.getAllClaims()) {
@@ -209,9 +215,9 @@ public class BLPCSaveHandler {
         if (globalList.tagCount() > 0) {
             toWrite.put("global", globalList);
         }
-        for (Map.Entry<Integer, NBTTagList> entry : partyLists.entrySet()) {
+        for (Map.Entry<UUID, NBTTagList> entry : partyLists.entrySet()) {
             if (entry.getValue().tagCount() > 0) {
-                toWrite.put(String.valueOf(entry.getKey()), entry.getValue());
+                toWrite.put(entry.getKey().toString(), entry.getValue());
             }
         }
 
@@ -257,7 +263,7 @@ public class BLPCSaveHandler {
             CompressedStreamTools.writeCompressed(nbt, fos);
             try {
                 fos.getFD().sync();
-            } catch (java.io.SyncFailedException ignored) {
+            } catch (SyncFailedException ignored) {
                 ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
             }
             return true;
@@ -283,8 +289,8 @@ public class BLPCSaveHandler {
         if (currentFiles != null) {
             for (File src : currentFiles) {
                 try {
-                    java.nio.file.Files.copy(src.toPath(), new File(backupDir, src.getName()).toPath(),
-                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(src.toPath(), new File(backupDir, src.getName()).toPath(),
+                            StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
                     ModLog.IO.warn("Failed to backup file: {}", src.getName(), e);
                 }
@@ -303,7 +309,51 @@ public class BLPCSaveHandler {
         ChunkManagerData chunkData = ChunkManagerData.getInstance();
         loadConfig(partyData);
         loadParties(partyData);
+        // Migrate old player-UUID-based allies/enemies to party-UUID-based
+        migrateAlliesToPartyBased(partyData);
         loadClaims(chunkData);
+    }
+
+    private void migrateAlliesToPartyBased(PartyManagerData partyData) {
+        for (Party party : partyData.getAllParties()) {
+            Set<UUID> oldAllies = new LinkedHashSet<>(party.getAllies());
+            Set<UUID> oldEnemies = new LinkedHashSet<>(party.getEnemies());
+            boolean changed = false;
+
+            for (UUID id : oldAllies) {
+                // Check if this UUID is already a party UUID
+                if (partyData.getParty(id) != null) continue;
+                // It's a player UUID — find their party
+                Party playerParty = partyData.getPartyByPlayer(id);
+                if (playerParty != null) {
+                    party.removeAlly(id);
+                    party.addAlly(playerParty.getPartyId());
+                    changed = true;
+                } else {
+                    party.removeAlly(id);
+                    changed = true;
+                    ModLog.IO.info("Dropped orphaned ally player {} from party {}", id, party.getName());
+                }
+            }
+
+            for (UUID id : oldEnemies) {
+                if (partyData.getParty(id) != null) continue;
+                Party playerParty = partyData.getPartyByPlayer(id);
+                if (playerParty != null) {
+                    party.removeEnemy(id);
+                    party.addEnemy(playerParty.getPartyId());
+                    changed = true;
+                } else {
+                    party.removeEnemy(id);
+                    changed = true;
+                    ModLog.IO.info("Dropped orphaned enemy player {} from party {}", id, party.getName());
+                }
+            }
+
+            if (changed) {
+                ModLog.IO.info("Migrated allies/enemies for party {} to party-based UUIDs", party.getName());
+            }
+        }
     }
 
     public synchronized void saveAll() {

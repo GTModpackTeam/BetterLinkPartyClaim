@@ -18,6 +18,9 @@ import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.TextWidget;
 
 import com.github.gtexpert.blpc.Tags;
+import com.github.gtexpert.blpc.client.gui.party.MainPanel;
+import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
+import com.github.gtexpert.blpc.client.gui.party.widget.ConfirmDialog;
 import com.github.gtexpert.blpc.client.map.AsyncMapRenderer;
 import com.github.gtexpert.blpc.client.map.TextureCache;
 import com.github.gtexpert.blpc.common.ModConfig;
@@ -31,7 +34,7 @@ public class ChunkMapScreen extends CustomModularScreen {
     private static final int BTN_SIZE = 16;
     private static final int BTN_GAP = 2;
     private static final int MAP_PX = 195;
-    private static final int DIALOG_BORDER = 0xFFFFFFFF;
+    private static final int DIALOG_BORDER = GuiColors.WHITE;
 
     private ChunkMapWidget mapWidget;
     private IPanelHandler confirmHandler;
@@ -68,7 +71,7 @@ public class ChunkMapScreen extends CustomModularScreen {
     private TextWidget<?> createCounterText(String langKey,
                                             IntSupplier counter, int max, int bottom) {
         return new TextWidget<>(IKey.lang(langKey, () -> new Object[] { counter.getAsInt(), max }))
-                .color(() -> counter.getAsInt() >= max ? 0xFFFF5555 : 0xFFFFFFFF)
+                .color(() -> counter.getAsInt() >= max ? GuiColors.RED : GuiColors.WHITE)
                 .shadow(true).right(4).bottom(bottom);
     }
 
@@ -127,36 +130,13 @@ public class ChunkMapScreen extends CustomModularScreen {
 
     private Dialog<Boolean> buildConfirmDialog() {
         boolean isUnclaim = pendingConfirmAction == 1;
-        IKey title = IKey.lang(isUnclaim ? "blpc.map.confirm_unclaim_title" :
-                "blpc.map.confirm_unload_title");
-        IKey message = IKey.lang(isUnclaim ? "blpc.map.confirm_unclaim_msg" :
-                "blpc.map.confirm_unload_msg");
-
-        Dialog<Boolean> dialog = new Dialog<>("blpc.map.dialog.confirm", result -> {
-            if (Boolean.TRUE.equals(result)) {
-                executeBulkAction(pendingConfirmAction);
-            }
-        });
-        dialog.setDisablePanelsBelow(true);
-        dialog.setCloseOnOutOfBoundsClick(true);
-        dialog.size(220, 70)
-                .child(title.color(0xFFFFFFFF).shadow(true).asWidget().top(6).left(8))
-                .child(message.color(0xFFAAAAAA).shadow(true).asWidget().top(18).left(8))
-                .child(new ParentWidget<>()
-                        .bottom(6).horizontalCenter().size(170, 20)
-                        .child(new ButtonWidget<>().size(80, 20).pos(0, 0)
-                                .overlay(IKey.lang("blpc.map.yes"))
-                                .onMousePressed(btn -> {
-                                    dialog.closeWith(true);
-                                    return true;
-                                }))
-                        .child(new ButtonWidget<>().size(80, 20).pos(90, 0)
-                                .overlay(IKey.lang("blpc.map.no"))
-                                .onMousePressed(btn -> {
-                                    dialog.closeWith(false);
-                                    return true;
-                                })));
-        return dialog;
+        int action = pendingConfirmAction;
+        return ConfirmDialog.builder("blpc.map.dialog.confirm")
+                .title(isUnclaim ? "blpc.map.confirm_unclaim_title" : "blpc.map.confirm_unload_title")
+                .message(isUnclaim ? "blpc.map.confirm_unclaim_msg" : "blpc.map.confirm_unload_msg")
+                .onConfirm(() -> executeBulkAction(action))
+                .closeParent(false)
+                .build(getMainPanel());
     }
 
     private void executeBulkAction(int action) {
@@ -176,15 +156,15 @@ public class ChunkMapScreen extends CustomModularScreen {
             Dialog<Void> dialog = new Dialog<>("blpc.map.dialog.help");
             dialog.setCloseOnOutOfBoundsClick(true);
             dialog.size(200, 100)
-                    .child(IKey.lang("blpc.map.controls").color(0xFFFFFFFF).shadow(true).asWidget()
+                    .child(IKey.lang("blpc.map.controls").color(GuiColors.WHITE).shadow(true).asWidget()
                             .top(6).left(8))
-                    .child(IKey.lang("blpc.map.help_claim").color(0xFFAAAAAA).shadow(true).asWidget()
+                    .child(IKey.lang("blpc.map.help_claim").color(GuiColors.GRAY).shadow(true).asWidget()
                             .top(20).left(8))
-                    .child(IKey.lang("blpc.map.help_unclaim").color(0xFFAAAAAA).shadow(true).asWidget()
+                    .child(IKey.lang("blpc.map.help_unclaim").color(GuiColors.GRAY).shadow(true).asWidget()
                             .top(32).left(8))
-                    .child(IKey.lang("blpc.map.help_force").color(0xFFAAAAAA).shadow(true).asWidget()
+                    .child(IKey.lang("blpc.map.help_force").color(GuiColors.GRAY).shadow(true).asWidget()
                             .top(44).left(8))
-                    .child(IKey.lang("blpc.map.help_drag").color(0xFFAAAAAA).shadow(true).asWidget()
+                    .child(IKey.lang("blpc.map.help_drag").color(GuiColors.GRAY).shadow(true).asWidget()
                             .top(56).left(8))
                     .child(ButtonWidget.panelCloseButton());
             return dialog;
@@ -192,12 +172,12 @@ public class ChunkMapScreen extends CustomModularScreen {
     }
 
     private void openPartyScreen() {
-        com.github.gtexpert.blpc.client.gui.party.PartyWidgets.resetSubPanelHandler();
+        PartyWidgets.resetSubPanelHandler();
         if (partyHandler != null) {
             partyHandler.deleteCachedPanel();
         } else {
             partyHandler = IPanelHandler.simple(getMainPanel(), (parentPanel, player) -> {
-                return com.github.gtexpert.blpc.client.gui.party.MainPanel.build(
+                return MainPanel.build(
                         Minecraft.getMinecraft().player.getUniqueID());
             }, true);
         }

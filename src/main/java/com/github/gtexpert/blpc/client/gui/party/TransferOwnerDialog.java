@@ -13,8 +13,10 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 
@@ -33,17 +35,17 @@ public class TransferOwnerDialog {
     /** Builds the transfer ownership panel with a member selection list. */
     public static ModularPanel build(ModularPanel parentPanel) {
         UUID myId = Minecraft.getMinecraft().player.getUniqueID();
-        Party party = com.github.gtexpert.blpc.common.party.ClientPartyCache.getPartyByPlayer(myId);
+        Party party = ClientPartyCache.getPartyByPlayer(myId);
         if (party == null) return new ModularPanel(PANEL_ID);
 
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(W, H);
 
         // Centered title
-        panel.child(IKey.lang("blpc.party.transfer_title").color(0xFFFFFFFF).shadow(true)
+        panel.child(IKey.lang("blpc.party.transfer_title").color(GuiColors.WHITE).shadow(true)
                 .asWidget().alignment(Alignment.Center).left(0).right(0).top(6).height(10));
         // Centered subtitle
-        panel.child(IKey.lang("blpc.party.transfer_msg").color(0xFFAAAAAA).shadow(true)
+        panel.child(IKey.lang("blpc.party.transfer_msg").color(GuiColors.GRAY).shadow(true)
                 .asWidget().alignment(Alignment.Center).left(0).right(0).top(18).height(10));
         panel.child(ButtonWidget.panelCloseButton());
 

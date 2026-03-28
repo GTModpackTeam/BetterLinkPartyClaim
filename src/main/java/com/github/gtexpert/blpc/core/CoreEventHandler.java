@@ -25,9 +25,12 @@ public class CoreEventHandler {
     }
 
     @SideOnly(Side.CLIENT)
-    @SubscribeEvent
-    public static void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
-        ClientCache.clear();
-        ClientPartyCache.clear();
+    public static class ClientHandler {
+
+        @SubscribeEvent
+        public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+            ClientCache.clearAll();
+            ClientPartyCache.clearAll();
+        }
     }
 }

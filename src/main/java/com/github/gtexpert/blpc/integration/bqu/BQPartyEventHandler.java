@@ -27,7 +27,7 @@ public class BQPartyEventHandler {
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public static void onPartyUpdate(DatabaseEvent.Update event) {
-        if (event.getType() != DatabaseEvent.DBType.PARTY && event.getType() != DatabaseEvent.DBType.ALL) return;
+        if (event.getType() != DatabaseEvent.DBType.PARTY) return;
 
         // Build party list from BQu
         NBTTagList list = new NBTTagList();
@@ -35,7 +35,7 @@ public class BQPartyEventHandler {
         for (DBEntry<IParty> entry : PartyManager.INSTANCE.getEntries()) {
             IParty bqParty = entry.getValue();
             if (bqParty.getMembers().isEmpty()) continue;
-            Party party = new Party(entry.getID(),
+            Party party = new Party(Party.uuidFromIntId(entry.getID()),
                     bqParty.getProperties().getProperty(NativeProps.NAME),
                     0L);
             for (UUID memberId : bqParty.getMembers()) {
@@ -44,9 +44,8 @@ public class BQPartyEventHandler {
                 bquMembers.add(memberId);
             }
             // Preserve BLPC settings from existing cache
-            Party cachedParty = ClientPartyCache.getParty(entry.getID());
+            Party cachedParty = ClientPartyCache.getParty(Party.uuidFromIntId(entry.getID()));
             if (cachedParty != null) {
-                party.setTitle(cachedParty.getTitle());
                 party.setDescription(cachedParty.getDescription());
                 party.setColor(cachedParty.getColor());
                 party.setFreeToJoin(cachedParty.isFreeToJoin());

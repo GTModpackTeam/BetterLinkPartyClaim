@@ -4,7 +4,7 @@ key.blpc.toggle=Toggle Minimap
 key.categories.blpc=Better Link Party Claim
 
 # Commands
-command.blpc.move_owner.success=Party (id: %d) owner changed to %s
+command.blpc.move_owner.success=Party (id: %s) owner changed to %s
 
 # Map
 blpc.map.close=Close
@@ -78,12 +78,18 @@ blpc.party.trust_level.owner=Owner
 
 # Protection settings
 blpc.party.settings_protection=-- Protection --
+blpc.party.settings_allies=-- Allies --
+blpc.party.settings_enemies=-- Enemies --
 blpc.party.settings_party=-- Party Info --
+blpc.party.add_ally=+ Add Ally Party
+blpc.party.add_enemy=+ Add Enemy Party
 blpc.party.fakeplayer_trust=Fake Player Status
 blpc.party.free_to_join_on=Free to Join: ON
 blpc.party.free_to_join_off=Free to Join: OFF
 blpc.party.color=Color
-blpc.party.title_field=Title
+blpc.party.name_field=Name
+blpc.party.tooltip.name=Change the party name
+blpc.party.dialog.rename=Rename Party
 blpc.party.description_field=Description
 blpc.party.join=Join
 blpc.party.free_parties=Open Parties
@@ -92,10 +98,6 @@ blpc.party.tooltip.accept_invite=Click to accept invitation
 blpc.party.tooltip.join_free=Click to join this party
 
 # Allies / Enemies
-blpc.party.allies=Allies
-blpc.party.allies_title=Allies
-blpc.party.enemies=Enemies
-blpc.party.enemies_title=Enemies
 blpc.party.add=Add
 blpc.party.remove=Remove
 blpc.party.promote=Promote
@@ -112,8 +114,7 @@ blpc.party.transfer_msg=Selected player becomes Owner. You become Moderator. BQu
 # Tooltips
 blpc.party.tooltip.free_to_join=Anyone can join without invitation
 blpc.party.tooltip.color=Team display color on the chunk map
-blpc.party.tooltip.title=Displays when you enter a claimed chunk
-blpc.party.tooltip.description=Displays under Title
+blpc.party.tooltip.description=Displays under party name
 blpc.party.tooltip.explosion=Enable or disable explosions in claimed chunks
 blpc.party.tooltip.fakeplayer=Trust level for automation mods (BuildCraft, EnderIO, etc.)
 blpc.party.tooltip.trust_level=Minimum trust level required to perform this action
@@ -121,7 +122,19 @@ blpc.party.tooltip.member=Click to kick / Click to invite
 blpc.party.tooltip.member_self=Click to leave party
 blpc.party.tooltip.ally=Click to toggle ally status
 blpc.party.tooltip.enemy=Click to toggle enemy status
+blpc.party.tooltip.remove_ally=Click to remove ally
+blpc.party.tooltip.remove_enemy=Click to remove enemy
 blpc.party.tooltip.moderator=Click to promote / demote
+blpc.party.tooltip.default=Default: %s
+blpc.party.tooltip.settings=Protection and party settings
+blpc.party.tooltip.members=View party members
+blpc.party.tooltip.allies=Manage allied parties
+blpc.party.tooltip.moderators=View moderators
+blpc.party.tooltip.enemies=Manage enemy parties
+blpc.party.tooltip.transfer=Transfer party ownership to another member
+blpc.party.dialog.add_ally=Select Ally Party
+blpc.party.dialog.add_enemy=Select Enemy Party
+blpc.party.tooltip.open_native=Open BetterQuesting party manager
 
 # Search
 blpc.party.search=Search...

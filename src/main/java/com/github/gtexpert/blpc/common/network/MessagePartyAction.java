@@ -46,9 +46,8 @@ public class MessagePartyAction implements IMessage {
     public static final int ACTION_SET_FAKEPLAYER_TRUST = 16;
     public static final int ACTION_SET_FREE_TO_JOIN = 17;
     public static final int ACTION_SET_COLOR = 18;
-    public static final int ACTION_SET_TITLE = 19;
-    public static final int ACTION_SET_DESCRIPTION = 20;
-    public static final int ACTION_JOIN_FREE_PARTY = 21;
+    public static final int ACTION_SET_DESCRIPTION = 19;
+    public static final int ACTION_JOIN_FREE_PARTY = 20;
 
     private int action;
     private String stringArg;
@@ -76,8 +75,8 @@ public class MessagePartyAction implements IMessage {
         return new MessagePartyAction(ACTION_INVITE, username);
     }
 
-    public static MessagePartyAction acceptInvite(int partyId) {
-        return new MessagePartyAction(ACTION_ACCEPT_INVITE, String.valueOf(partyId));
+    public static MessagePartyAction acceptInvite(UUID partyId) {
+        return new MessagePartyAction(ACTION_ACCEPT_INVITE, partyId.toString());
     }
 
     public static MessagePartyAction kickOrLeave(String username) {
@@ -100,20 +99,20 @@ public class MessagePartyAction implements IMessage {
         return new MessagePartyAction(ACTION_TOGGLE_EXPLOSION_PROTECTION, "");
     }
 
-    public static MessagePartyAction addAlly(String username) {
-        return new MessagePartyAction(ACTION_ADD_ALLY, username);
+    public static MessagePartyAction addAlly(UUID partyId) {
+        return new MessagePartyAction(ACTION_ADD_ALLY, partyId.toString());
     }
 
-    public static MessagePartyAction removeAlly(String username) {
-        return new MessagePartyAction(ACTION_REMOVE_ALLY, username);
+    public static MessagePartyAction removeAlly(UUID partyId) {
+        return new MessagePartyAction(ACTION_REMOVE_ALLY, partyId.toString());
     }
 
-    public static MessagePartyAction addEnemy(String username) {
-        return new MessagePartyAction(ACTION_ADD_ENEMY, username);
+    public static MessagePartyAction addEnemy(UUID partyId) {
+        return new MessagePartyAction(ACTION_ADD_ENEMY, partyId.toString());
     }
 
-    public static MessagePartyAction removeEnemy(String username) {
-        return new MessagePartyAction(ACTION_REMOVE_ENEMY, username);
+    public static MessagePartyAction removeEnemy(UUID partyId) {
+        return new MessagePartyAction(ACTION_REMOVE_ENEMY, partyId.toString());
     }
 
     public static MessagePartyAction transferOwnership(String username) {
@@ -136,16 +135,12 @@ public class MessagePartyAction implements IMessage {
         return new MessagePartyAction(ACTION_SET_COLOR, Integer.toString(color));
     }
 
-    public static MessagePartyAction setTitle(String title) {
-        return new MessagePartyAction(ACTION_SET_TITLE, title);
-    }
-
     public static MessagePartyAction setDescription(String desc) {
         return new MessagePartyAction(ACTION_SET_DESCRIPTION, desc);
     }
 
-    public static MessagePartyAction joinFreeParty(int partyId) {
-        return new MessagePartyAction(ACTION_JOIN_FREE_PARTY, String.valueOf(partyId));
+    public static MessagePartyAction joinFreeParty(UUID partyId) {
+        return new MessagePartyAction(ACTION_JOIN_FREE_PARTY, partyId.toString());
     }
 
     @Override
@@ -230,9 +225,9 @@ public class MessagePartyAction implements IMessage {
                         break;
                     case ACTION_ACCEPT_INVITE:
                         try {
-                            int partyId = Integer.parseInt(msg.stringArg);
+                            UUID partyId = UUID.fromString(msg.stringArg);
                             success = activeProvider.acceptInvite(player, partyId);
-                        } catch (NumberFormatException ignored) {}
+                        } catch (IllegalArgumentException ignored) {}
                         break;
                     case ACTION_KICK_OR_LEAVE:
                         success = activeProvider.kickOrLeave(player, msg.stringArg);
@@ -304,25 +299,26 @@ public class MessagePartyAction implements IMessage {
                         if (allyParty == null) break;
                         PartyRole allyRole = allyParty.getRole(player.getUniqueID());
                         if (allyRole == null || !allyRole.canInvite()) break;
-                        MinecraftServer srv = player.getServer();
-                        if (srv == null) break;
-                        EntityPlayerMP target = srv.getPlayerList()
-                                .getPlayerByUsername(msg.stringArg);
-                        if (target == null) break;
-                        UUID targetId = target.getUniqueID();
-                        if (allyParty.isMember(targetId)) break;
+                        UUID targetPartyId;
+                        try {
+                            targetPartyId = UUID.fromString(msg.stringArg);
+                        } catch (IllegalArgumentException e) {
+                            break;
+                        }
+                        // Don't allow self-reference
+                        if (targetPartyId.equals(allyParty.getPartyId())) break;
                         switch (msg.action) {
                             case ACTION_ADD_ALLY:
-                                allyParty.addAlly(targetId);
+                                allyParty.addAlly(targetPartyId);
                                 break;
                             case ACTION_REMOVE_ALLY:
-                                allyParty.removeAlly(targetId);
+                                allyParty.removeAlly(targetPartyId);
                                 break;
                             case ACTION_ADD_ENEMY:
-                                allyParty.addEnemy(targetId);
+                                allyParty.addEnemy(targetPartyId);
                                 break;
                             case ACTION_REMOVE_ENEMY:
-                                allyParty.removeEnemy(targetId);
+                                allyParty.removeEnemy(targetPartyId);
                                 break;
                         }
                         success = true;
@@ -391,17 +387,6 @@ public class MessagePartyAction implements IMessage {
                         } catch (NumberFormatException ignored) {}
                         break;
                     }
-                    case ACTION_SET_TITLE: {
-                        Party titleParty = getOrCreateSelfParty(player, activeProvider);
-                        if (titleParty == null) break;
-                        PartyRole titleRole = titleParty.getRole(player.getUniqueID());
-                        if (titleRole == null || !titleRole.canInvite()) break;
-                        String title = msg.stringArg.trim();
-                        if (title.length() > 64) title = title.substring(0, 64);
-                        titleParty.setTitle(title);
-                        success = true;
-                        break;
-                    }
                     case ACTION_SET_DESCRIPTION: {
                         Party descParty = getOrCreateSelfParty(player, activeProvider);
                         if (descParty == null) break;
@@ -415,7 +400,7 @@ public class MessagePartyAction implements IMessage {
                     }
                     case ACTION_JOIN_FREE_PARTY: {
                         try {
-                            int joinId = Integer.parseInt(msg.stringArg);
+                            UUID joinId = UUID.fromString(msg.stringArg);
                             PartyManagerData pmJoin = PartyManagerData.getInstance();
                             // Player must not already be in a party
                             if (pmJoin.getPartyByPlayer(player.getUniqueID()) != null) break;
@@ -423,7 +408,7 @@ public class MessagePartyAction implements IMessage {
                             if (joinParty == null || !joinParty.isFreeToJoin()) break;
                             joinParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
                             success = true;
-                        } catch (NumberFormatException ignored) {}
+                        } catch (IllegalArgumentException ignored) {}
                         break;
                     }
                 }

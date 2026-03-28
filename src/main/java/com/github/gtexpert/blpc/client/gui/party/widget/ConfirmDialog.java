@@ -7,6 +7,8 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
+
 /**
  * Reusable confirmation dialog template.
  * <p>
@@ -130,9 +132,9 @@ public final class ConfirmDialog {
                     .childPadding(4)
                     .crossAxisAlignment(Alignment.CrossAxis.START)
                     .left(8).right(8).top(6)
-                    .child(IKey.lang(titleKey).color(0xFFFFFFFF).shadow(true)
+                    .child(IKey.lang(titleKey).color(GuiColors.WHITE).shadow(true)
                             .asWidget())
-                    .child(IKey.lang(messageKey).color(0xFFAAAAAA).shadow(true)
+                    .child(IKey.lang(messageKey).color(GuiColors.GRAY).shadow(true)
                             .asWidget()));
 
             // Yes/No buttons pinned to the bottom

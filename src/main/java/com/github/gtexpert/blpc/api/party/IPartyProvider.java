@@ -54,7 +54,7 @@ public interface IPartyProvider {
     boolean invitePlayer(EntityPlayerMP inviter, String targetUsername);
 
     /** Accepts a pending invite to the specified party. */
-    boolean acceptInvite(EntityPlayerMP player, int partyId);
+    boolean acceptInvite(EntityPlayerMP player, UUID partyId);
 
     /** Kicks a player or leaves the party. Owner cannot leave without transferring ownership. */
     boolean kickOrLeave(EntityPlayerMP actor, String targetUsername);

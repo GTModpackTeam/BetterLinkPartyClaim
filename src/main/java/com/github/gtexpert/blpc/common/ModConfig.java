@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import com.github.gtexpert.blpc.Tags;
 
 @Config(modid = Tags.MODID,
-        name = Tags.MODID + "/" + Tags.MODNAME,
+        name = Tags.MODID + "/" + Tags.MODID,
         category = "BLPC Core")
 public class ModConfig {
 

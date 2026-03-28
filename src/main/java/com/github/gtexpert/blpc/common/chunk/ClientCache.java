@@ -1,7 +1,9 @@
 package com.github.gtexpert.blpc.common.chunk;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,6 +14,21 @@ import java.util.UUID;
 public class ClientCache {
 
     private static final Map<String, ClaimedChunkData> cache = new HashMap<>();
+    private static final List<Runnable> changeListeners = new ArrayList<>();
+
+    public static void addChangeListener(Runnable listener) {
+        changeListeners.add(listener);
+    }
+
+    public static void removeChangeListener(Runnable listener) {
+        changeListeners.remove(listener);
+    }
+
+    private static void fireChangeListeners() {
+        for (Runnable listener : new ArrayList<>(changeListeners)) {
+            listener.run();
+        }
+    }
 
     public static void update(int x, int z, UUID owner, String name, String partyName, boolean isForceLoaded) {
         String key = ChunkManagerData.chunkKey(x, z);
@@ -20,6 +37,7 @@ public class ClientCache {
         } else {
             cache.put(key, new ClaimedChunkData(x, z, owner, name, partyName, isForceLoaded));
         }
+        fireChangeListeners();
     }
 
     public static ClaimedChunkData get(int x, int z) {
@@ -28,6 +46,12 @@ public class ClientCache {
 
     public static void clear() {
         cache.clear();
+        fireChangeListeners();
+    }
+
+    public static void clearAll() {
+        cache.clear();
+        changeListeners.clear();
     }
 
     public static Collection<ClaimedChunkData> getAll() {

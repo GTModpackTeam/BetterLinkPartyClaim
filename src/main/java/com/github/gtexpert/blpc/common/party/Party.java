@@ -1,9 +1,11 @@
 package com.github.gtexpert.blpc.common.party;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
@@ -21,7 +23,11 @@ public class Party {
 
     public static final String DEFAULT_NAME_KEY = "blpc.party.default_name";
 
-    private final int partyId;
+    public static UUID uuidFromIntId(int id) {
+        return UUID.nameUUIDFromBytes(("blpc:party:" + id).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private final UUID partyId;
     private String name;
     private final Map<UUID, PartyRole> members = new LinkedHashMap<>();
     private final long createdAt;
@@ -37,22 +43,26 @@ public class Party {
 
     // Party metadata
     private boolean freeToJoin = false;
-    private int color = 0x0000FF;
-    private String title = "";
+    private int color = EnumDyeColor.BLUE.getColorValue();
     private String description = "";
 
     /** UUID → display name cache. Populated server-side before sync, read client-side. */
     private final Map<UUID, String> playerNames = new HashMap<>();
 
+    /** Party UUID → party name cache for ally/enemy display. Populated server-side before sync. */
+    private final Map<UUID, String> allyPartyNames = new HashMap<>();
+
+    private final Map<UUID, String> enemyPartyNames = new HashMap<>();
+
     private final Map<UUID, Long> invites = new HashMap<>();
 
-    public Party(int partyId, String name, long createdAt) {
+    public Party(UUID partyId, String name, long createdAt) {
         this.partyId = partyId;
         this.name = name;
         this.createdAt = createdAt;
     }
 
-    public int getPartyId() {
+    public UUID getPartyId() {
         return partyId;
     }
 
@@ -146,15 +156,21 @@ public class Party {
 
     /**
      * Resolves a player's effective trust level in this party.
+     * Allies and enemies are now keyed by party UUID, not player UUID.
      *
-     * @return the trust level, or {@code null} if the player is an enemy (absolute deny).
+     * @return the trust level, or {@code null} if the player's party is an enemy (absolute deny).
      */
     @Nullable
     public TrustLevel getEffectiveTrustLevel(UUID playerUUID) {
-        if (enemies.contains(playerUUID)) return null;
         PartyRole role = members.get(playerUUID);
         if (role != null) return role.toTrustLevel();
-        if (allies.contains(playerUUID)) return TrustLevel.ALLY;
+
+        // For non-members, resolve their party UUID and check allies/enemies
+        Party playerParty = PartyManagerData.getInstance().getPartyByPlayer(playerUUID);
+        UUID playerPartyId = playerParty != null ? playerParty.getPartyId() : null;
+
+        if (playerPartyId != null && enemies.contains(playerPartyId)) return null;
+        if (playerPartyId != null && allies.contains(playerPartyId)) return TrustLevel.ALLY;
         return TrustLevel.NONE;
     }
 
@@ -214,14 +230,6 @@ public class Party {
         this.color = color;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -247,20 +255,30 @@ public class Party {
     }
 
     /**
-     * Resolves display names for all known UUIDs (members, allies, enemies)
-     * using Forge's {@link net.minecraftforge.common.UsernameCache}.
-     * Call this server-side before serializing for client sync.
+     * Resolves display names for all known UUIDs (members) and party names for
+     * allies/enemies. Call this server-side before serializing for client sync.
      */
     public void resolvePlayerNames() {
         playerNames.clear();
         for (UUID uuid : members.keySet()) {
             resolveOne(uuid);
         }
-        for (UUID uuid : allies) {
-            resolveOne(uuid);
+
+        // Resolve ally party names
+        allyPartyNames.clear();
+        for (UUID partyId : allies) {
+            Party allyParty = PartyManagerData.getInstance().getParty(partyId);
+            if (allyParty != null) {
+                allyPartyNames.put(partyId, allyParty.getName());
+            }
         }
-        for (UUID uuid : enemies) {
-            resolveOne(uuid);
+        // Resolve enemy party names
+        enemyPartyNames.clear();
+        for (UUID partyId : enemies) {
+            Party enemyParty = PartyManagerData.getInstance().getParty(partyId);
+            if (enemyParty != null) {
+                enemyPartyNames.put(partyId, enemyParty.getName());
+            }
         }
     }
 
@@ -269,6 +287,14 @@ public class Party {
         if (cached != null) {
             playerNames.put(uuid, cached);
         }
+    }
+
+    public String getAllyPartyName(UUID partyId) {
+        return allyPartyNames.getOrDefault(partyId, partyId.toString().substring(0, 8));
+    }
+
+    public String getEnemyPartyName(UUID partyId) {
+        return enemyPartyNames.getOrDefault(partyId, partyId.toString().substring(0, 8));
     }
 
     // --- Invites (memory only, not persisted) ---
@@ -320,7 +346,7 @@ public class Party {
 
     public NBTTagCompound toNBT() {
         NBTTagCompound tag = new NBTTagCompound();
-        tag.setInteger("id", partyId);
+        tag.setUniqueId("partyId", partyId);
         tag.setString("name", name);
         tag.setLong("created", createdAt);
 
@@ -350,7 +376,6 @@ public class Party {
         // Metadata
         tag.setBoolean("freeToJoin", freeToJoin);
         tag.setInteger("color", color);
-        tag.setString("title", title);
         tag.setString("description", description);
 
         return tag;
@@ -373,6 +398,28 @@ public class Party {
             }
             tag.setTag("playerNames", nameList);
         }
+        // Ally party names
+        if (!allyPartyNames.isEmpty()) {
+            NBTTagList allyNameList = new NBTTagList();
+            for (Map.Entry<UUID, String> entry : allyPartyNames.entrySet()) {
+                NBTTagCompound nameTag = new NBTTagCompound();
+                nameTag.setUniqueId("uuid", entry.getKey());
+                nameTag.setString("name", entry.getValue());
+                allyNameList.appendTag(nameTag);
+            }
+            tag.setTag("allyPartyNames", allyNameList);
+        }
+        // Enemy party names
+        if (!enemyPartyNames.isEmpty()) {
+            NBTTagList enemyNameList = new NBTTagList();
+            for (Map.Entry<UUID, String> entry : enemyPartyNames.entrySet()) {
+                NBTTagCompound nameTag = new NBTTagCompound();
+                nameTag.setUniqueId("uuid", entry.getKey());
+                nameTag.setString("name", entry.getValue());
+                enemyNameList.appendTag(nameTag);
+            }
+            tag.setTag("enemyPartyNames", enemyNameList);
+        }
         // Pending invites (UUID only, no expiry)
         if (!invites.isEmpty()) {
             cleanExpiredInvites();
@@ -382,13 +429,26 @@ public class Party {
     }
 
     public static Party fromNBT(NBTTagCompound tag) {
-        int id = tag.getInteger("id");
+        UUID id;
+        if (tag.hasKey("partyIdMost")) {
+            // New UUID format
+            id = tag.getUniqueId("partyId");
+        } else {
+            // Old int format - migrate
+            int oldId = tag.getInteger("id");
+            id = uuidFromIntId(oldId);
+        }
         String name = tag.getString("name");
         long created = tag.getLong("created");
 
-        // Validate critical fields
+        // Validate
         if (name.isEmpty()) {
-            name = "Party " + id;
+            // Check if old title exists and use it
+            if (tag.hasKey("title") && !tag.getString("title").isEmpty()) {
+                name = tag.getString("title");
+            } else {
+                name = "Party " + id.toString().substring(0, 8);
+            }
             ModLog.IO.warn("Party {} has empty name, using default", id);
         }
 
@@ -430,10 +490,25 @@ public class Party {
             party.addEnemy(uuid);
         }
 
+        // Ally party names (sync only)
+        if (tag.hasKey("allyPartyNames")) {
+            NBTTagList allyNameList = tag.getTagList("allyPartyNames", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < allyNameList.tagCount(); i++) {
+                NBTTagCompound nameTag = allyNameList.getCompoundTagAt(i);
+                party.allyPartyNames.put(nameTag.getUniqueId("uuid"), nameTag.getString("name"));
+            }
+        }
+        if (tag.hasKey("enemyPartyNames")) {
+            NBTTagList enemyNameList = tag.getTagList("enemyPartyNames", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < enemyNameList.tagCount(); i++) {
+                NBTTagCompound nameTag = enemyNameList.getCompoundTagAt(i);
+                party.enemyPartyNames.put(nameTag.getUniqueId("uuid"), nameTag.getString("name"));
+            }
+        }
+
         // Metadata
         if (tag.hasKey("freeToJoin")) party.setFreeToJoin(tag.getBoolean("freeToJoin"));
         if (tag.hasKey("color")) party.setColor(tag.getInteger("color"));
-        if (tag.hasKey("title")) party.setTitle(tag.getString("title"));
         if (tag.hasKey("description")) party.setDescription(tag.getString("description"));
 
         // Player name cache

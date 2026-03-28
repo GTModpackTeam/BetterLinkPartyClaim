@@ -11,6 +11,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
@@ -21,7 +22,7 @@ import com.github.gtexpert.blpc.common.party.PartyRole;
  * Entry point for all party management. Conditionally shows buttons
  * based on the player's role and BQu link status:
  * <ul>
- * <li>Settings, Allies, Enemies, Transfer - ADMIN+ only</li>
+ * <li>Settings (includes allies/enemies management), Transfer - ADMIN+ only</li>
  * <li>Members, Invite - hidden when BQu-linked (managed via BQu screen)</li>
  * <li>Open BQu Party Screen - shown when BQu-linked</li>
  * <li>Link/Unlink BQu, Leave, Disband - bottom-pinned buttons</li>
@@ -52,22 +53,8 @@ public class MainPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(W, H);
 
-        // Register a persistent sync listener to rebuild the panel on every server sync
-        // while the panel remains open. The listener self-removes when the panel closes.
-        final UUID finalPlayerId = playerId;
-        final Runnable[] listenerRef = new Runnable[1];
-        listenerRef[0] = () -> Minecraft.getMinecraft().addScheduledTask(() -> {
-            if (!panel.isOpen()) {
-                ClientPartyCache.removeSyncListener(listenerRef[0]);
-                return;
-            }
-            PartyWidgets.reopenPanel(panel, () -> build(finalPlayerId));
-        });
-        ClientPartyCache.addSyncListener(listenerRef[0]);
-
-        // Display title if set, otherwise party name
-        String displayName = !party.getTitle().isEmpty() ? party.getTitle() : party.getName();
-        panel.child(IKey.str(displayName).color(0xFFFFFFFF).shadow(true)
+        String displayName = party.getName();
+        panel.child(IKey.str(displayName).color(GuiColors.WHITE).shadow(true)
                 .asWidget().pos(8, 8));
         panel.child(ButtonWidget.panelCloseButton());
 
@@ -85,33 +72,21 @@ public class MainPanel {
         // Settings
         if (canManage) {
             menuList.child(createMenuButton(IKey.lang("blpc.party.settings"), panel,
-                    () -> SettingsPanel.build(party)));
+                    () -> SettingsPanel.build(party), "blpc.party.tooltip.settings"));
         }
 
         // Members
         menuList.child(createMenuButton(IKey.lang("blpc.party.members"), panel,
-                () -> MembersPanel.build(party)));
-
-        // Allies
-        if (canManage) {
-            menuList.child(createMenuButton(IKey.lang("blpc.party.allies"), panel,
-                    () -> AlliesPanel.build(party)));
-        }
+                () -> MembersPanel.build(party), "blpc.party.tooltip.members"));
 
         // Moderators
         menuList.child(createMenuButton(IKey.lang("blpc.party.moderators"), panel,
-                () -> ModeratorsPanel.build(party)));
-
-        // Enemies
-        if (canManage) {
-            menuList.child(createMenuButton(IKey.lang("blpc.party.enemies"), panel,
-                    () -> EnemiesPanel.build(party)));
-        }
+                () -> ModeratorsPanel.build(party), "blpc.party.tooltip.moderators"));
 
         // Transfer Ownership
         if (isOwner) {
             menuList.child(createMenuButton(IKey.lang("blpc.party.transfer"), panel,
-                    () -> TransferOwnerDialog.build(panel)));
+                    () -> TransferOwnerDialog.build(panel), "blpc.party.tooltip.transfer"));
         }
 
         // BQu Manage Party
@@ -119,6 +94,7 @@ public class MainPanel {
             menuList.child((ButtonWidget<?>) new ButtonWidget<>().size(W - 16, 18)
                     .padding(4, 0, 0, 0)
                     .overlay(IKey.lang("blpc.party.open_native").alignment(Alignment.CenterLeft))
+                    .addTooltipLine(IKey.lang("blpc.party.tooltip.open_native"))
                     .onMousePressed(btn -> {
                         panel.closeIfOpen();
                         Minecraft.getMinecraft().addScheduledTask(PartyProviderRegistry::openNativeScreen);
@@ -154,14 +130,18 @@ public class MainPanel {
     }
 
     private static ButtonWidget<?> createMenuButton(IKey label, ModularPanel parent,
-                                                    PanelFactory factory) {
-        return (ButtonWidget<?>) new ButtonWidget<>().size(W - 16, 18)
+                                                    PanelFactory factory, String tooltipKey) {
+        ButtonWidget<?> btn = (ButtonWidget<?>) new ButtonWidget<>().size(W - 16, 18)
                 .padding(4, 0, 0, 0)
                 .overlay(label.alignment(Alignment.CenterLeft))
-                .onMousePressed(btn -> {
+                .onMousePressed(b -> {
                     PartyWidgets.openSubPanel(parent, factory.create());
                     return true;
                 });
+        if (tooltipKey != null) {
+            btn.addTooltipLine(IKey.lang(tooltipKey));
+        }
+        return btn;
     }
 
     @FunctionalInterface

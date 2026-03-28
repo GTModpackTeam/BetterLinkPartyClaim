@@ -15,6 +15,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
 
 /**
@@ -37,8 +38,8 @@ public final class PlayerListPanel {
         private final String panelId;
         private String titleKey = "";
         private Set<UUID> activeSet = Collections.emptySet();
-        private int activeColor = 0xFF55FF55;
-        private int inactiveColor = 0xFFCCCCCC;
+        private int activeColor = GuiColors.GREEN;
+        private int inactiveColor = GuiColors.GRAY_LIGHT;
         private Consumer<String> onActivate;
         private Consumer<String> onDeactivate;
         private Set<UUID> excludeUUIDs = Collections.emptySet();
@@ -46,7 +47,6 @@ public final class PlayerListPanel {
         private Collection<UUID> fixedPlayerSet;
         private Predicate<UUID> canClick = uuid -> true;
         private java.util.function.Function<UUID, String> suffixProvider;
-        private java.util.function.IntFunction<Integer> colorOverride;
         private String tooltipKey;
         private int width = 220;
         private int height = 180;
@@ -134,7 +134,7 @@ public final class PlayerListPanel {
             ModularPanel panel = new ModularPanel(panelId);
             panel.size(width, height);
 
-            panel.child(IKey.lang(titleKey).color(0xFFFFFFFF).shadow(true)
+            panel.child(IKey.lang(titleKey).color(GuiColors.WHITE).shadow(true)
                     .asWidget().alignment(Alignment.Center).left(0).right(0).top(8).height(10));
             panel.child(ButtonWidget.panelCloseButton());
 

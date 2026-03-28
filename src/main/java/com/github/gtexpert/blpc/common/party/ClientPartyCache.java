@@ -14,7 +14,7 @@ import net.minecraftforge.common.util.Constants;
  */
 public class ClientPartyCache {
 
-    private static final Map<Integer, Party> parties = new TreeMap<>();
+    private static final Map<UUID, Party> parties = new LinkedHashMap<>();
     private static final Set<UUID> bquLinkedPlayers = new HashSet<>();
     private static final List<Runnable> syncListeners = new ArrayList<>();
 
@@ -62,11 +62,17 @@ public class ClientPartyCache {
     public static void clear() {
         parties.clear();
         bquLinkedPlayers.clear();
+        // Don't clear syncListeners — they survive reconnects
+    }
+
+    public static void clearAll() {
+        parties.clear();
+        bquLinkedPlayers.clear();
         syncListeners.clear();
     }
 
     @Nullable
-    public static Party getParty(int partyId) {
+    public static Party getParty(UUID partyId) {
         return parties.get(partyId);
     }
 

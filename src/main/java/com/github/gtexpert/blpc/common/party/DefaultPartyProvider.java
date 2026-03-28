@@ -113,7 +113,7 @@ public class DefaultPartyProvider implements IPartyProvider {
     }
 
     @Override
-    public boolean acceptInvite(EntityPlayerMP player, int partyId) {
+    public boolean acceptInvite(EntityPlayerMP player, UUID partyId) {
         PartyManagerData data = PartyManagerData.getInstance();
         UUID playerId = player.getUniqueID();
         if (data.getPartyByPlayer(playerId) != null) return false;

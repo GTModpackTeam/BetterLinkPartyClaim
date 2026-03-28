@@ -12,6 +12,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.Party;
@@ -31,10 +32,6 @@ public class ModeratorsPanel {
     private static final int W = 220;
     private static final int H = 180;
 
-    private static final int COLOR_OWNER = 0xFFFFAA00;
-    private static final int COLOR_ADMIN = 0xFF55FF55;
-    private static final int COLOR_MEMBER = 0xFFCCCCCC;
-
     public static ModularPanel build(Party party) {
         UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
         PartyRole myRole = party.getRole(playerId);
@@ -43,7 +40,7 @@ public class ModeratorsPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(W, H);
 
-        panel.child(IKey.lang("blpc.party.moderators_title").color(0xFFFFFFFF).shadow(true)
+        panel.child(IKey.lang("blpc.party.moderators_title").color(GuiColors.WHITE).shadow(true)
                 .asWidget().alignment(Alignment.Center).left(0).right(0).top(8).height(10));
         panel.child(ButtonWidget.panelCloseButton());
 
@@ -79,18 +76,7 @@ public class ModeratorsPanel {
         String memberName = PartyWidgets.getDisplayName(memberId);
         String roleStr = IKey.lang("blpc.party.role." + role.name().toLowerCase()).get();
 
-        int color;
-        switch (role) {
-            case OWNER:
-                color = COLOR_OWNER;
-                break;
-            case ADMIN:
-                color = COLOR_ADMIN;
-                break;
-            default:
-                color = COLOR_MEMBER;
-                break;
-        }
+        int color = role == PartyRole.MEMBER ? GuiColors.GRAY_LIGHT : PartyWidgets.getRoleColor(role);
 
         String label = memberName + " [" + roleStr + "]";
 

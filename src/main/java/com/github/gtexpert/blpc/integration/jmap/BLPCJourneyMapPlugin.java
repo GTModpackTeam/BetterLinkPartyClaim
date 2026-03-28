@@ -10,7 +10,6 @@ import java.util.UUID;
 import net.minecraft.client.Minecraft;
 
 import com.github.gtexpert.blpc.Tags;
-import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
 import com.github.gtexpert.blpc.common.chunk.ClientCache;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -164,7 +163,8 @@ public class BLPCJourneyMapPlugin implements IClientPlugin {
         if (claim.ownerUUID.equals(playerUUID)) {
             return COLOR_OWN;
         }
-        if (PartyProviderRegistry.get().areInSameParty(playerUUID, claim.ownerUUID)) {
+        Party localParty = ClientPartyCache.getPartyByPlayer(playerUUID);
+        if (localParty != null && localParty.isMember(claim.ownerUUID)) {
             return COLOR_PARTY;
         }
         return COLOR_OTHER;

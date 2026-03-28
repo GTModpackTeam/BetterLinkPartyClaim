@@ -81,7 +81,7 @@ public class MinimapHUD {
         float textWidth = mc.fontRenderer.getStringWidth(coords) * COORD_SCALE;
         float tx = (DISPLAY_SIZE - textWidth) / 2f;
         float ty = DISPLAY_SIZE + 2;
-        GuiDraw.drawText(coords, tx, ty, COORD_SCALE, 0xFFFFFFFF, true);
+        GuiDraw.drawText(coords, tx, ty, COORD_SCALE, GuiColors.WHITE, true);
         GlStateManager.popMatrix();
     }
 }

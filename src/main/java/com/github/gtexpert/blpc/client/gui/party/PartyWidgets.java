@@ -10,6 +10,9 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
+import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 
 /**
@@ -30,8 +33,7 @@ public final class PartyWidgets {
      */
     public static String getDisplayName(UUID uuid) {
         // Check party name cache first (covers offline players)
-        for (com.github.gtexpert.blpc.common.party.Party p : com.github.gtexpert.blpc.common.party.ClientPartyCache
-                .getAllParties()) {
+        for (Party p : ClientPartyCache.getAllParties()) {
             String cached = p.getPlayerName(uuid);
             if (cached != null) return cached;
         }
@@ -49,16 +51,16 @@ public final class PartyWidgets {
     /**
      * Returns the ARGB color for a party role.
      *
-     * @return gold (0xFFFFAA00) for OWNER, green (0xFF55FF55) for ADMIN, white for others
+     * @return gold for OWNER, green for ADMIN, white for others
      */
     public static int getRoleColor(PartyRole role) {
         switch (role) {
             case OWNER:
-                return 0xFFFFAA00;
+                return GuiColors.GOLD;
             case ADMIN:
-                return 0xFF55FF55;
+                return GuiColors.GREEN;
             default:
-                return 0xFFFFFFFF;
+                return GuiColors.WHITE;
         }
     }
 

@@ -3,11 +3,15 @@ package com.github.gtexpert.blpc.client.gui.party.widget;
 import java.util.function.Consumer;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
+
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 
 /**
  * Reusable text input dialog template.
@@ -43,6 +47,7 @@ public final class InputDialog {
         private String titleKey = "";
         private String messageKey;
         private String confirmKey = "blpc.party.send";
+        private String defaultValue = "";
         private Consumer<String> onSubmit = s -> {};
         private int width = 200;
         private int height = 60;
@@ -60,6 +65,12 @@ public final class InputDialog {
         /** Optional lang key for a subtitle/message below the title. */
         public Builder message(String langKey) {
             this.messageKey = langKey;
+            return this;
+        }
+
+        /** Pre-fills the text field with the given value. */
+        public Builder defaultValue(String value) {
+            this.defaultValue = value != null ? value : "";
             return this;
         }
 
@@ -94,21 +105,44 @@ public final class InputDialog {
                     .childPadding(4)
                     .crossAxisAlignment(Alignment.CrossAxis.START)
                     .left(8).right(8).top(6);
-            header.child(IKey.lang(titleKey).color(0xFFFFFFFF).shadow(true)
+            header.child(IKey.lang(titleKey).color(GuiColors.WHITE).shadow(true)
                     .asWidget());
             if (messageKey != null) {
-                header.child(IKey.lang(messageKey).color(0xFFAAAAAA).shadow(true)
+                header.child(IKey.lang(messageKey).color(GuiColors.GRAY).shadow(true)
                         .asWidget());
             }
             dialog.child(header);
 
             // Text field + submit button in a row with automatic spacing
             int fieldY = messageKey != null ? 30 : 24;
-            TextFieldWidget textField = new TextFieldWidget();
-            textField.size(width - 70, 14);
-
             Consumer<String> submitAction = this.onSubmit;
-            String id = this.panelId;
+            final TextFieldWidget[] fieldRef = new TextFieldWidget[1];
+
+            // Submit helper — shared by button click and Enter key
+            Runnable doSubmit = () -> {
+                String text = fieldRef[0].getText().trim();
+                if (!text.isEmpty()) {
+                    submitAction.accept(text);
+                }
+                dialog.closeWith(null);
+            };
+
+            TextFieldWidget textField = new TextFieldWidget() {
+
+                @Override
+                public Interactable.Result onKeyPressed(char c, int keyCode) {
+                    if (keyCode == 28) { // Enter key
+                        doSubmit.run();
+                        return Interactable.Result.SUCCESS;
+                    }
+                    return super.onKeyPressed(c, keyCode);
+                }
+            };
+            fieldRef[0] = textField;
+            if (!defaultValue.isEmpty()) {
+                textField.value(new StringValue(defaultValue));
+            }
+            textField.size(width - 70, 14);
 
             Flow inputRow = Flow.row()
                     .childPadding(4)
@@ -118,11 +152,7 @@ public final class InputDialog {
             inputRow.child(new ButtonWidget<>().size(50, 14)
                     .overlay(IKey.lang(confirmKey))
                     .onMousePressed(btn -> {
-                        String text = textField.getText().trim();
-                        if (!text.isEmpty()) {
-                            submitAction.accept(text);
-                        }
-                        dialog.closeWith(null);
+                        doSubmit.run();
                         return true;
                     }));
 

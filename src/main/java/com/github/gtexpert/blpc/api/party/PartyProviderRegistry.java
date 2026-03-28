@@ -64,7 +64,7 @@ public class PartyProviderRegistry {
         }
 
         @Override
-        public boolean acceptInvite(EntityPlayerMP player, int partyId) {
+        public boolean acceptInvite(EntityPlayerMP player, UUID partyId) {
             return false;
         }
 

@@ -13,6 +13,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.Party;
@@ -32,10 +33,6 @@ public class MembersPanel {
     private static final int W = 220;
     private static final int H = 180;
 
-    private static final int COLOR_MEMBER = 0xFF55FF55;
-    private static final int COLOR_NON_MEMBER = 0xFFCCCCCC;
-    private static final int COLOR_OWNER = 0xFFFFAA00;
-
     public static ModularPanel build(Party party) {
         UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
         PartyRole myRole = party.getRole(playerId);
@@ -44,7 +41,7 @@ public class MembersPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(W, H);
 
-        panel.child(IKey.lang("blpc.party.members_title").color(0xFFFFFFFF).shadow(true)
+        panel.child(IKey.lang("blpc.party.members_title").color(GuiColors.WHITE).shadow(true)
                 .asWidget().alignment(Alignment.Center).left(0).right(0).top(8).height(10));
         panel.child(ButtonWidget.panelCloseButton());
 
@@ -92,12 +89,10 @@ public class MembersPanel {
     private static Flow createRow(PlayerEntry entry, Party party, UUID playerId,
                                   PartyRole myRole, boolean canManage) {
         int color;
-        if (entry.isMember && entry.role == PartyRole.OWNER) {
-            color = COLOR_OWNER;
-        } else if (entry.isMember) {
-            color = COLOR_MEMBER;
+        if (entry.isMember) {
+            color = PartyWidgets.getRoleColor(entry.role);
         } else {
-            color = COLOR_NON_MEMBER;
+            color = GuiColors.GRAY_LIGHT;
         }
 
         String label = entry.name;

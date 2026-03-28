@@ -7,6 +7,7 @@ import java.util.UUID;
 import net.minecraft.client.Minecraft;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -14,6 +15,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -43,12 +45,32 @@ public class CreatePanel {
         panel.size(W, H);
 
         // Title
-        panel.child(IKey.lang("blpc.party.create_title").color(0xFFFFFFFF).shadow(true)
+        panel.child(IKey.lang("blpc.party.create_title").color(GuiColors.WHITE).shadow(true)
                 .asWidget().pos(8, 8));
         panel.child(ButtonWidget.panelCloseButton());
 
         // Name input + Create button
-        TextFieldWidget nameField = new TextFieldWidget();
+        final TextFieldWidget[] fieldRef = new TextFieldWidget[1];
+        Runnable doCreate = () -> {
+            String name = fieldRef[0].getText().trim();
+            if (!name.isEmpty()) {
+                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.create(name));
+            }
+            panel.closeIfOpen();
+        };
+
+        TextFieldWidget nameField = new TextFieldWidget() {
+
+            @Override
+            public Interactable.Result onKeyPressed(char c, int keyCode) {
+                if (keyCode == 28) { // Enter key
+                    doCreate.run();
+                    return Interactable.Result.SUCCESS;
+                }
+                return super.onKeyPressed(c, keyCode);
+            }
+        };
+        fieldRef[0] = nameField;
         nameField.size(W - 80, 14);
         nameField.setText(IKey.lang(Party.DEFAULT_NAME_KEY).get());
 
@@ -60,11 +82,7 @@ public class CreatePanel {
                 .child(new ButtonWidget<>().size(50, 14)
                         .overlay(IKey.lang("blpc.party.create"))
                         .onMousePressed(btn -> {
-                            String name = nameField.getText().trim();
-                            if (!name.isEmpty()) {
-                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.create(name));
-                            }
-                            panel.closeIfOpen();
+                            doCreate.run();
                             return true;
                         })));
 
@@ -94,7 +112,7 @@ public class CreatePanel {
             boolean freeToJoin = party.isFreeToJoin();
 
             if (invited || freeToJoin) {
-                String displayName = !party.getTitle().isEmpty() ? party.getTitle() : party.getName();
+                String displayName = party.getName();
                 result.add(new PartyEntry(party.getPartyId(), displayName,
                         party.getDescription(), invited, freeToJoin));
             }
@@ -109,7 +127,7 @@ public class CreatePanel {
     }
 
     private static Flow createPartyRow(PartyEntry entry, ModularPanel panel) {
-        int color = entry.invited ? 0xFF55FF55 : 0xFFCCCCCC;
+        int color = entry.invited ? GuiColors.GREEN : GuiColors.GRAY_LIGHT;
         String label = entry.invited ? entry.displayName + " [" + IKey.lang("blpc.party.invited_label").get() + "]" :
                 entry.displayName;
 
@@ -127,7 +145,7 @@ public class CreatePanel {
             btn.addTooltipLine(IKey.lang("blpc.party.tooltip.join_free"));
         }
 
-        int partyId = entry.partyId;
+        UUID partyId = entry.partyId;
         btn.onMousePressed(b -> {
             if (entry.invited) {
                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.acceptInvite(partyId));
@@ -146,13 +164,13 @@ public class CreatePanel {
 
     private static class PartyEntry {
 
-        final int partyId;
+        final UUID partyId;
         final String displayName;
         final String description;
         final boolean invited;
         final boolean freeToJoin;
 
-        PartyEntry(int partyId, String displayName, String description,
+        PartyEntry(UUID partyId, String displayName, String description,
                    boolean invited, boolean freeToJoin) {
             this.partyId = partyId;
             this.displayName = displayName;

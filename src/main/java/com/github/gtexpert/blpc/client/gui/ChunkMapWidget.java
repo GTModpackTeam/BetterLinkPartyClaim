@@ -24,7 +24,7 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
     public static final int GRID = 15;
     private static final int RADIUS = GRID / 2;
     private static final int GRID_LINE_COLOR = 0x30FFFFFF;
-    private static final int BORDER_COLOR = 0xFFFFFFFF;
+    private static final int BORDER_COLOR = GuiColors.WHITE;
 
     private int selectedRX = Integer.MIN_VALUE;
     private int selectedRZ = Integer.MIN_VALUE;
@@ -90,11 +90,11 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         String partyLabel;
         int textColor;
         if (ownerParty != null) {
-            partyLabel = !ownerParty.getTitle().isEmpty() ? ownerParty.getTitle() : ownerParty.getName();
+            partyLabel = ownerParty.getName();
             textColor = 0xFF000000 | (ownerParty.getColor() & 0xFFFFFF);
         } else {
             partyLabel = d.ownerName;
-            textColor = 0xFFFFFFFF;
+            textColor = GuiColors.WHITE;
         }
 
         FontRenderer fr = mc.fontRenderer;

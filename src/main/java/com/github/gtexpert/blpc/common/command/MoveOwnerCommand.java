@@ -35,11 +35,11 @@ public class MoveOwnerCommand extends CommandBase {
             throw new CommandException("move-owner <partyId> <newOwner>");
         }
 
-        int parsedPartyId;
+        UUID parsedPartyId;
         try {
-            parsedPartyId = Integer.parseInt(args[0]);
-        } catch (NumberFormatException e) {
-            throw new CommandException("Invalid party id");
+            parsedPartyId = UUID.fromString(args[0]);
+        } catch (IllegalArgumentException e) {
+            throw new CommandException("Invalid party UUID");
         }
 
         EntityPlayerMP newOwner = server.getPlayerList().getPlayerByUsername(args[1]);

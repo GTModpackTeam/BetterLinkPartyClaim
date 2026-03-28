@@ -23,6 +23,7 @@ import com.github.gtexpert.blpc.common.party.DefaultPartyProvider;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
 import com.github.gtexpert.blpc.common.party.PartyRole;
+import com.github.gtexpert.blpc.common.party.TrustAction;
 
 import betterquesting.api.api.ApiReference;
 import betterquesting.api.api.QuestingAPI;
@@ -130,7 +131,7 @@ public class BQPartyProvider implements IPartyProvider {
         for (UUID memberId : party.getMembers()) {
             pmData.setBQuLinked(memberId, false);
         }
-        BLPCSaveHandler.INSTANCE.saveConfig(pmData);
+        BLPCSaveHandler.INSTANCE.markDirty();
 
         PartyManager.INSTANCE.removeID(entry.getID());
         PartyInvitations.INSTANCE.purgeInvites(entry.getID());
@@ -180,19 +181,30 @@ public class BQPartyProvider implements IPartyProvider {
     }
 
     @Override
-    public boolean acceptInvite(EntityPlayerMP player, int partyId) {
-        IParty party = PartyManager.INSTANCE.getValue(partyId);
+    public boolean acceptInvite(EntityPlayerMP player, UUID partyId) {
+        int bquId = findBQuIntId(partyId);
+        if (bquId < 0) return fallback.acceptInvite(player, partyId);
+        IParty party = PartyManager.INSTANCE.getValue(bquId);
         if (party == null) return fallback.acceptInvite(player, partyId);
 
         UUID playerId = QuestingAPI.getQuestingUUID(player);
         if (PartyManager.INSTANCE.getParty(playerId) != null) return false;
 
-        boolean accepted = PartyInvitations.INSTANCE.acceptInvite(playerId, partyId);
+        boolean accepted = PartyInvitations.INSTANCE.acceptInvite(playerId, bquId);
         if (accepted) {
-            NetPartySync.quickSync(partyId);
+            NetPartySync.quickSync(bquId);
             fallback.acceptInvite(player, partyId);
         }
         return accepted;
+    }
+
+    private int findBQuIntId(UUID partyId) {
+        for (DBEntry<IParty> entry : PartyManager.INSTANCE.getEntries()) {
+            if (Party.uuidFromIntId(entry.getID()).equals(partyId)) {
+                return entry.getID();
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -275,7 +287,7 @@ public class BQPartyProvider implements IPartyProvider {
             IParty bqParty = entry.getValue();
             if (bqParty == null) continue;
             if (bqParty.getMembers().isEmpty()) continue;
-            Party party = new Party(entry.getID(),
+            Party party = new Party(Party.uuidFromIntId(entry.getID()),
                     bqParty.getProperties().getProperty(NativeProps.NAME),
                     0L);
             boolean hasLinkedMember = false;
@@ -305,14 +317,12 @@ public class BQPartyProvider implements IPartyProvider {
             }
             Party sourceSelfParty = ownerSelfParty != null ? ownerSelfParty : fallbackSelfParty;
             if (sourceSelfParty != null) {
-                party.setTitle(sourceSelfParty.getTitle());
                 party.setDescription(sourceSelfParty.getDescription());
                 party.setColor(sourceSelfParty.getColor());
                 party.setFreeToJoin(sourceSelfParty.isFreeToJoin());
                 party.setFakePlayerTrustLevel(sourceSelfParty.getFakePlayerTrustLevel());
                 party.setProtectExplosions(sourceSelfParty.protectsExplosions());
-                for (com.github.gtexpert.blpc.common.party.TrustAction ta : com.github.gtexpert.blpc.common.party.TrustAction
-                        .values()) {
+                for (TrustAction ta : TrustAction.values()) {
                     party.setTrustLevel(ta, sourceSelfParty.getTrustLevel(ta));
                 }
                 for (UUID allyId : sourceSelfParty.getAllies()) {
