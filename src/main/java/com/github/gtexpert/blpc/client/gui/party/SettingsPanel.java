@@ -152,7 +152,7 @@ public class SettingsPanel {
                         party::protectsExplosions,
                         val -> {
                             party.setProtectExplosions(val);
-                            ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleExplosionProtection());
+                            ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setExplosionProtection(val));
                         }))
                 .overlay(false, IKey.lang("blpc.party.explosion_off").alignment(Alignment.CenterLeft))
                 .overlay(true, IKey.lang("blpc.party.explosion_on").alignment(Alignment.CenterLeft))
@@ -232,8 +232,12 @@ public class SettingsPanel {
         // Re-build panel on server sync so ally/enemy lists stay current
         Runnable syncListener = () -> {
             if (!panel.isOpen()) return;
-            PartyWidgets.reopenPanel(panel,
-                    () -> SettingsPanel.build(ClientPartyCache.getPartyByPlayer(party.getOwner())));
+            Party refreshed = ClientPartyCache.getPartyByPlayer(party.getOwner());
+            if (refreshed == null) {
+                panel.closeIfOpen();
+                return;
+            }
+            PartyWidgets.reopenPanel(panel, () -> SettingsPanel.build(refreshed));
         };
         ClientPartyCache.addSyncListener(syncListener);
         panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));

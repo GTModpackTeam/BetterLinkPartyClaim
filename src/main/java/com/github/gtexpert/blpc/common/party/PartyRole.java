@@ -19,7 +19,7 @@ public enum PartyRole {
     }
 
     public boolean canEditName() {
-        return this == OWNER;
+        return ordinal() >= ADMIN.ordinal();
     }
 
     public boolean canDisband() {

@@ -56,11 +56,6 @@ public class MoveOwnerCommand extends CommandBase {
             throw new CommandException("Player is not a member of this party");
         }
 
-        UUID oldOwner = party.getOwner();
-        if (oldOwner != null) {
-            party.setRole(oldOwner, PartyRole.MEMBER);
-        }
-
         party.setRole(newOwner.getUniqueID(), PartyRole.OWNER);
         PartyProviderRegistry.get().syncToAll();
         sender.sendMessage(

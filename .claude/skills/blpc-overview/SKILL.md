@@ -6,7 +6,7 @@ user-invocable: false
 
 # BLPC Architecture Reference
 
-Base package: `com.github.gtexpert.blpc`
+Base package: `com.github.gtexpert.blpc`. Java 17 syntax is available via Jabel (`enableModernJavaSyntax = true`), targeting JVM 8.
 
 ## Module System
 

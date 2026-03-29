@@ -98,8 +98,8 @@ public class MessagePartyAction implements IMessage {
         return new MessagePartyAction(ACTION_TOGGLE_FAKE_PLAYERS, "");
     }
 
-    public static MessagePartyAction toggleExplosionProtection() {
-        return new MessagePartyAction(ACTION_TOGGLE_EXPLOSION_PROTECTION, "");
+    public static MessagePartyAction setExplosionProtection(boolean protect) {
+        return new MessagePartyAction(ACTION_TOGGLE_EXPLOSION_PROTECTION, protect ? "true" : "false");
     }
 
     public static MessagePartyAction addAlly(UUID partyId) {
@@ -215,7 +215,7 @@ public class MessagePartyAction implements IMessage {
                                                 .getPlayerByUUID(memberId) :
                                         null;
                                 if (disbandMember != null) {
-                                    notifyPlayer(disbandMember, "DISBANDED", "", "");
+                                    notifyPlayer(disbandMember, MessagePartyEventNotify.DISBANDED, "", "");
                                 }
                             }
                             success = true;
@@ -243,7 +243,8 @@ public class MessagePartyAction implements IMessage {
                                     String invPartyName = invParty != null ? invParty.getName() :
                                             provider.getPartyName(player.getUniqueID());
                                     if (invPartyName == null) invPartyName = "";
-                                    notifyPlayer(invTarget, "INVITE_RECEIVED", player.getName(), invPartyName);
+                                    notifyPlayer(invTarget, MessagePartyEventNotify.INVITE_RECEIVED, player.getName(),
+                                            invPartyName);
                                 }
                             }
                         }
@@ -257,7 +258,8 @@ public class MessagePartyAction implements IMessage {
                                 Party joinedParty = PartyManagerData.getInstance().getPartyByPlayer(
                                         player.getUniqueID());
                                 if (joinedParty != null) {
-                                    notifyPartyMembers(joinedParty, "MEMBER_JOINED", player.getName(), "",
+                                    notifyPartyMembers(joinedParty, MessagePartyEventNotify.MEMBER_JOINED,
+                                            player.getName(), "",
                                             player.getServer());
                                 }
                             }
@@ -272,8 +274,16 @@ public class MessagePartyAction implements IMessage {
                                 new HashMap<>(klParty.getMembers()) : Collections.emptyMap();
                         success = activeProvider.kickOrLeave(player, msg.stringArg);
                         if (success && klParty != null) {
-                            String klEvent = isSelf ? "MEMBER_LEFT" : "KICKED";
+                            String klEvent = isSelf ? MessagePartyEventNotify.MEMBER_LEFT :
+                                    MessagePartyEventNotify.KICKED;
+                            EntityPlayerMP klTarget = isSelf ? player :
+                                    (player.getServer() != null ?
+                                            player.getServer().getPlayerList()
+                                                    .getPlayerByUsername(msg.stringArg) :
+                                            null);
                             for (Map.Entry<UUID, PartyRole> entry : klMembersCopy.entrySet()) {
+                                if (klTarget != null && entry.getKey().equals(klTarget.getUniqueID()))
+                                    continue;
                                 EntityPlayerMP klMember = player.getServer() != null ?
                                         player.getServer().getPlayerList()
                                                 .getPlayerByUUID(entry.getKey()) :
@@ -293,7 +303,7 @@ public class MessagePartyAction implements IMessage {
                                 EntityPlayerMP roleTarget = player.getServer().getPlayerList()
                                         .getPlayerByUsername(parts[0]);
                                 if (roleTarget != null) {
-                                    notifyPlayer(roleTarget, "ROLE_CHANGED", parts[0], parts[1]);
+                                    notifyPlayer(roleTarget, MessagePartyEventNotify.ROLE_CHANGED, parts[0], parts[1]);
                                 }
                             }
                         }
@@ -325,7 +335,9 @@ public class MessagePartyAction implements IMessage {
                         Party bquParty = PartyManagerData.getInstance()
                                 .getPartyByPlayer(player.getUniqueID());
                         if (bquParty != null) {
-                            notifyPartyMembers(bquParty, linked ? "BQU_LINKED" : "BQU_UNLINKED", "", "",
+                            notifyPartyMembers(bquParty,
+                                    linked ? MessagePartyEventNotify.BQU_LINKED : MessagePartyEventNotify.BQU_UNLINKED,
+                                    "", "",
                                     player.getServer());
                         }
                         success = true;
@@ -351,7 +363,8 @@ public class MessagePartyAction implements IMessage {
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
                             if (toggleRole != null && toggleRole.canInvite()) {
-                                toggleParty.setProtectExplosions(!toggleParty.protectsExplosions());
+                                boolean protect = "true".equals(msg.stringArg);
+                                toggleParty.setProtectExplosions(protect);
                                 success = true;
                             }
                         }
@@ -402,8 +415,7 @@ public class MessagePartyAction implements IMessage {
                         if (target == null) break;
                         if (!tParty.isMember(target.getUniqueID())) break;
                         tParty.setRole(target.getUniqueID(), PartyRole.OWNER);
-                        tParty.setRole(player.getUniqueID(), PartyRole.ADMIN);
-                        notifyPlayer(target, "OWNER_TRANSFERRED", target.getName(), "");
+                        notifyPlayer(target, MessagePartyEventNotify.OWNER_TRANSFERRED, target.getName(), "");
                         success = true;
                         break;
                     }
@@ -475,7 +487,7 @@ public class MessagePartyAction implements IMessage {
                             Party joinParty = pmJoin.getParty(joinId);
                             if (joinParty == null || !joinParty.isFreeToJoin()) break;
                             joinParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
-                            notifyPartyMembers(joinParty, "MEMBER_JOINED", player.getName(), "",
+                            notifyPartyMembers(joinParty, MessagePartyEventNotify.MEMBER_JOINED, player.getName(), "",
                                     player.getServer());
                             success = true;
                         } catch (IllegalArgumentException ignored) {}

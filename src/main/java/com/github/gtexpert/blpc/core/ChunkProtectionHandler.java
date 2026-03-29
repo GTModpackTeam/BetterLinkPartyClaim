@@ -266,10 +266,13 @@ public class ChunkProtectionHandler {
         int sourceChunkX = liquidPos.getX() >> 4;
         int sourceChunkZ = liquidPos.getZ() >> 4;
 
-        boolean targetClaimed = isChunkClaimed(targetChunkX, targetChunkZ);
-        boolean sourceClaimed = isChunkClaimed(sourceChunkX, sourceChunkZ);
+        ClaimedChunkData targetClaim = ChunkManagerData.getInstance().getClaim(targetChunkX, targetChunkZ);
+        ClaimedChunkData sourceClaim = ChunkManagerData.getInstance().getClaim(sourceChunkX, sourceChunkZ);
 
-        if (targetClaimed && !sourceClaimed) {
+        boolean targetClaimed = targetClaim != null;
+        boolean sourceClaimed = sourceClaim != null;
+
+        if (targetClaimed && (!sourceClaimed || !targetClaim.ownerUUID.equals(sourceClaim.ownerUUID))) {
             event.setCanceled(true);
         }
     }

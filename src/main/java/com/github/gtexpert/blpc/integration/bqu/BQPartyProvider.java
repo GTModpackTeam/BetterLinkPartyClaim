@@ -148,7 +148,8 @@ public class BQPartyProvider implements IPartyProvider {
         if (entry == null) return fallback.renameParty(player, newName);
 
         EnumPartyStatus status = entry.getValue().getStatus(playerId);
-        if (status != EnumPartyStatus.OWNER && !player.canUseCommand(2, "")) return false;
+        PartyRole role = BQPartyProvider.mapRole(status);
+        if (!role.canEditName() && !player.canUseCommand(2, "")) return false;
 
         entry.getValue().getProperties().setProperty(NativeProps.NAME, newName);
         NetPartySync.quickSync(entry.getID());

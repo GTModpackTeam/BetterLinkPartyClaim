@@ -90,7 +90,7 @@ public class DefaultPartyProvider implements IPartyProvider {
         Party party = data.getPartyByPlayer(player.getUniqueID());
         if (party == null) return false;
         PartyRole role = party.getRole(player.getUniqueID());
-        if (role == null || !role.canInvite()) return false;
+        if (role == null || !role.canEditName()) return false;
         party.setName(newName);
         return true;
     }

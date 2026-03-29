@@ -12,7 +12,6 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.ModConfig;
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
@@ -115,7 +114,7 @@ public class ChunkTransitHandler {
 
     private static RelationType resolveRelation(Party claimParty, EntityPlayerMP player) {
         UUID playerId = player.getUniqueID();
-        if (PartyProviderRegistry.get().areInSameParty(claimParty.getOwner(), playerId)) {
+        if (claimParty.isMember(playerId)) {
             return RelationType.MEMBER;
         }
 
@@ -201,8 +200,8 @@ public class ChunkTransitHandler {
     }
 
     private static EntityPlayerMP getOnlinePlayer(UUID uuid) {
-        return FMLCommonHandler.instance().getMinecraftServerInstance()
-                .getPlayerList().getPlayerByUUID(uuid);
+        var server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        return server != null ? server.getPlayerList().getPlayerByUUID(uuid) : null;
     }
 
     private static long pack(int x, int z) {

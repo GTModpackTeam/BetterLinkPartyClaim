@@ -37,7 +37,7 @@ public class MapColorHelper {
     private static final Map<IBlockState, CachedColor> colorCache = new ConcurrentHashMap<>();
     private static volatile boolean initialized = false;
 
-    public static void init() {
+    public static synchronized void init() {
         if (initialized) return;
 
         Minecraft mc = Minecraft.getMinecraft();
