@@ -17,6 +17,16 @@ import io.netty.buffer.ByteBuf;
  */
 public class MessagePartyEventNotify implements IMessage {
 
+    public static final String MEMBER_JOINED = "MEMBER_JOINED";
+    public static final String MEMBER_LEFT = "MEMBER_LEFT";
+    public static final String KICKED = "KICKED";
+    public static final String DISBANDED = "DISBANDED";
+    public static final String INVITE_RECEIVED = "INVITE_RECEIVED";
+    public static final String OWNER_TRANSFERRED = "OWNER_TRANSFERRED";
+    public static final String ROLE_CHANGED = "ROLE_CHANGED";
+    public static final String BQU_LINKED = "BQU_LINKED";
+    public static final String BQU_UNLINKED = "BQU_UNLINKED";
+
     private String eventType;
     private String playerName;
     private String extraInfo;

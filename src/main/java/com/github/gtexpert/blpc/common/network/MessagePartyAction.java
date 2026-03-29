@@ -402,6 +402,7 @@ public class MessagePartyAction implements IMessage {
                         if (target == null) break;
                         if (!tParty.isMember(target.getUniqueID())) break;
                         tParty.setRole(target.getUniqueID(), PartyRole.OWNER);
+                        tParty.setRole(player.getUniqueID(), PartyRole.ADMIN);
                         notifyPlayer(target, "OWNER_TRANSFERRED", target.getName(), "");
                         success = true;
                         break;
