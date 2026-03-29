@@ -8,7 +8,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import com.github.gtexpert.blpc.client.gui.widget.ChunkTransitToast;
+import com.github.gtexpert.blpc.client.gui.widget.BLPCToast;
 import com.github.gtexpert.blpc.common.party.RelationType;
 
 import io.netty.buffer.ByteBuf;
@@ -59,7 +59,7 @@ public class MessageChunkTransitNotify implements IMessage {
         public IMessage onMessage(MessageChunkTransitNotify msg, MessageContext ctx) {
             final RelationType rel = parseRelation(msg.relationName);
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                ChunkTransitToast toast = ChunkTransitToast.builder()
+                BLPCToast toast = BLPCToast.builder()
                         .fromTransit(rel, msg.entered, msg.playerName)
                         .build();
                 Minecraft.getMinecraft().getToastGui().add(toast);

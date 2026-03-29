@@ -41,8 +41,8 @@ Party management is abstracted via `IPartyProvider`, allowing transparent switch
 
 - **`common/party/`** — Party data: `Party`, `PartyRole`, `RelationType`, `PartyManagerData`, `DefaultPartyProvider`, `ClientPartyCache`.
 - **`common/chunk/`** — Claim data: `ChunkManagerData`, `ClaimedChunkData`, `ClientCache`, `TicketManager`.
-- **`common/network/`** — Messages: `MessageClaimChunk` (C→S), `MessagePartyAction` (C→S party ops), `MessageSyncClaims`/`MessageSyncAllClaims`/`MessageSyncConfig`/`MessagePartySync`/`MessageChunkTransitNotify` (S→C), `PlayerLoginHandler`.
-- **`client/gui/`** — ModularUI: `ChunkMapScreen`/`ChunkMapWidget`, party panels in `party/` subpackage, standalone widgets in `widget/` subpackage (`ChunkTransitToast`), `MinimapHUD`, `ModKeyBindings`/`KeyInputHandler`.
+- **`common/network/`** — Messages: `MessageClaimChunk` (C→S), `MessagePartyAction` (C→S party ops), `MessageSyncClaims`/`MessageSyncAllClaims`/`MessageSyncConfig`/`MessagePartySync`/`MessageChunkTransitNotify`/`MessagePartyEventNotify`/`MessageClaimFailed` (S→C), `PlayerLoginHandler`.
+- **`client/gui/`** — ModularUI: `ChunkMapScreen`/`ChunkMapWidget`, party panels in `party/` subpackage, standalone widgets in `widget/` subpackage (`BLPCToast`), `MinimapHUD`, `ModKeyBindings`/`KeyInputHandler`.
 - **`client/map/`** — Async chunk rendering, texture caching, claim overlay.
 
 ## Data Persistence
@@ -254,7 +254,9 @@ Players receive **toast notifications** when entering/leaving claimed chunks, an
 - **`common/party/RelationType`** — Enum: `MEMBER`, `ALLY`, `ENEMY`, `NONE`.
 - **`core/ChunkTransitHandler`** — `PlayerTickEvent.END` listener. Detects chunk boundary crossings (overworld only), sends notifications via `MessageChunkTransitNotify`, and applies area effects.
 - **`common/network/MessageChunkTransitNotify`** — S→C packet. Serializes relation as `name()` string (not ordinal) for forward compatibility.
-- **`client/gui/widget/ChunkTransitToast`** — `IToast` implementation with Builder pattern. `fromTransit(RelationType, boolean, String)` auto-configures title/color.
+- **`client/gui/widget/BLPCToast`** — `IToast` implementation with Builder pattern. Factory methods: `fromTransit()` (chunk entry/exit), `fromPartyEvent()` (party events), `fromClaimFailed()` (claim limit errors).
+- **`common/network/MessagePartyEventNotify`** — S→C packet for party events (join, leave, kick, disband, invite, transfer, role change, BQu link/unlink).
+- **`common/network/MessageClaimFailed`** — S→C packet for claim/force-load limit errors.
 
 ### Notification Messages
 
@@ -281,7 +283,7 @@ Applied every 20 ticks while player is in a claimed chunk:
 
 ## Localization
 
-Lang files in `src/main/resources/assets/blpc/lang/`: `en_us.lang` and `ja_jp.lang`. Both cover keybindings, commands, map UI, party UI, roles, trust actions/levels, protection settings, allies/enemies, tooltips, search, and transit notifications (`blpc.transit.*`).
+Lang files in `src/main/resources/assets/blpc/lang/`: `en_us.lang` and `ja_jp.lang`. Both cover keybindings, commands, map UI, party UI, roles, trust actions/levels, protection settings, allies/enemies, tooltips, search, transit notifications (`blpc.transit.*`), and party event/claim failure notifications (`blpc.toast.*`).
 
 ## Adding a New Integration Module
 

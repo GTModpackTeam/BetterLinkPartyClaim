@@ -145,3 +145,18 @@ blpc.transit.ally.enter=%s came to visit
 blpc.transit.ally.leave=%s went home
 blpc.transit.enemy.enter=Invaded by %s
 blpc.transit.enemy.leave=%s fled
+
+# Party Event Notifications
+blpc.toast.member_joined=%s joined the party
+blpc.toast.member_left=%s left the party
+blpc.toast.kicked=%s was kicked
+blpc.toast.disbanded=Party disbanded
+blpc.toast.invite_received=Invite from %s to "%s"
+blpc.toast.owner_transferred=Ownership transferred to %s
+blpc.toast.role_changed=Your role changed to %s
+blpc.toast.bqu_linked=Linked to BQu Party Manager
+blpc.toast.bqu_unlinked=Unlinked from BQu
+
+# Claim Failed Notifications
+blpc.toast.claim_limit=Claim limit reached (%d/%d)
+blpc.toast.forceload_limit=Force load limit reached (%d/%d)

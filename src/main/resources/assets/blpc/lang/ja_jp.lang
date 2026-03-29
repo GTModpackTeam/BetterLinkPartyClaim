@@ -145,3 +145,18 @@ blpc.transit.ally.enter=%sが訪ねてきた
 blpc.transit.ally.leave=%sは帰った
 blpc.transit.enemy.enter=%sに侵入された
 blpc.transit.enemy.leave=%sは逃げた
+
+# パーティイベント通知
+blpc.toast.member_joined=%sがパーティに参加しました
+blpc.toast.member_left=%sがパーティを脱退しました
+blpc.toast.kicked=%sはキックされました
+blpc.toast.disbanded=パーティが解散されました
+blpc.toast.invite_received=%sからパーティ「%s」への招待
+blpc.toast.owner_transferred=オーナー権が%sに移譲されました
+blpc.toast.role_changed=あなたのロールが%sに変更されました
+blpc.toast.bqu_linked=BQuパーティ管理と連携しました
+blpc.toast.bqu_unlinked=BQu連携を解除しました
+
+# クレーム失敗通知
+blpc.toast.claim_limit=確保上限に達しました (%d/%d)
+blpc.toast.forceload_limit=常時読込上限に達しました (%d/%d)

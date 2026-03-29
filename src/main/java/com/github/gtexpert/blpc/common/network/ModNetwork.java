@@ -25,5 +25,8 @@ public class ModNetwork {
         INSTANCE.registerMessage(MessagePartySync.Handler.class, MessagePartySync.class, id++, Side.CLIENT);
         INSTANCE.registerMessage(MessageChunkTransitNotify.Handler.class, MessageChunkTransitNotify.class, id++,
                 Side.CLIENT);
+        INSTANCE.registerMessage(MessagePartyEventNotify.Handler.class, MessagePartyEventNotify.class, id++,
+                Side.CLIENT);
+        INSTANCE.registerMessage(MessageClaimFailed.Handler.class, MessageClaimFailed.class, id++, Side.CLIENT);
     }
 }

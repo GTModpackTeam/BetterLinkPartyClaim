@@ -2,7 +2,9 @@ package com.github.gtexpert.blpc.common.network;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -208,6 +210,13 @@ public class MessagePartyAction implements IMessage {
                         if (disbanded) {
                             for (UUID memberId : disbandMembers) {
                                 pmDisband.setBQuLinked(memberId, false);
+                                EntityPlayerMP disbandMember = player.getServer() != null ?
+                                        player.getServer().getPlayerList()
+                                                .getPlayerByUUID(memberId) :
+                                        null;
+                                if (disbandMember != null) {
+                                    notifyPlayer(disbandMember, "DISBANDED", "", "");
+                                }
                             }
                             success = true;
                         }
@@ -221,22 +230,72 @@ public class MessagePartyAction implements IMessage {
                         }
                         break;
                     }
-                    case ACTION_INVITE:
+                    case ACTION_INVITE: {
                         success = activeProvider.invitePlayer(player, msg.stringArg);
+                        if (success) {
+                            MinecraftServer invSrv = player.getServer();
+                            if (invSrv != null) {
+                                EntityPlayerMP invTarget = invSrv.getPlayerList()
+                                        .getPlayerByUsername(msg.stringArg);
+                                if (invTarget != null) {
+                                    Party invParty = PartyManagerData.getInstance()
+                                            .getPartyByPlayer(player.getUniqueID());
+                                    String invPartyName = invParty != null ? invParty.getName() :
+                                            provider.getPartyName(player.getUniqueID());
+                                    if (invPartyName == null) invPartyName = "";
+                                    notifyPlayer(invTarget, "INVITE_RECEIVED", player.getName(), invPartyName);
+                                }
+                            }
+                        }
                         break;
-                    case ACTION_ACCEPT_INVITE:
+                    }
+                    case ACTION_ACCEPT_INVITE: {
                         try {
                             UUID partyId = UUID.fromString(msg.stringArg);
                             success = activeProvider.acceptInvite(player, partyId);
+                            if (success) {
+                                Party joinedParty = PartyManagerData.getInstance().getPartyByPlayer(
+                                        player.getUniqueID());
+                                if (joinedParty != null) {
+                                    notifyPartyMembers(joinedParty, "MEMBER_JOINED", player.getName(), "",
+                                            player.getServer());
+                                }
+                            }
                         } catch (IllegalArgumentException ignored) {}
                         break;
-                    case ACTION_KICK_OR_LEAVE:
+                    }
+                    case ACTION_KICK_OR_LEAVE: {
+                        Party klParty = PartyManagerData.getInstance()
+                                .getPartyByPlayer(player.getUniqueID());
+                        boolean isSelf = msg.stringArg.equals(player.getName());
+                        Map<UUID, PartyRole> klMembersCopy = klParty != null ?
+                                new HashMap<>(klParty.getMembers()) : Collections.emptyMap();
                         success = activeProvider.kickOrLeave(player, msg.stringArg);
+                        if (success && klParty != null) {
+                            String klEvent = isSelf ? "MEMBER_LEFT" : "KICKED";
+                            for (Map.Entry<UUID, PartyRole> entry : klMembersCopy.entrySet()) {
+                                EntityPlayerMP klMember = player.getServer() != null ?
+                                        player.getServer().getPlayerList()
+                                                .getPlayerByUUID(entry.getKey()) :
+                                        null;
+                                if (klMember != null) {
+                                    notifyPlayer(klMember, klEvent, msg.stringArg, "");
+                                }
+                            }
+                        }
                         break;
+                    }
                     case ACTION_CHANGE_ROLE: {
                         String[] parts = msg.stringArg.split(":", 2);
                         if (parts.length == 2) {
                             success = activeProvider.changeRole(player, parts[0], parts[1]);
+                            if (success && player.getServer() != null) {
+                                EntityPlayerMP roleTarget = player.getServer().getPlayerList()
+                                        .getPlayerByUsername(parts[0]);
+                                if (roleTarget != null) {
+                                    notifyPlayer(roleTarget, "ROLE_CHANGED", parts[0], parts[1]);
+                                }
+                            }
                         }
                         break;
                     }
@@ -262,6 +321,12 @@ public class MessagePartyAction implements IMessage {
                             if (!pmLink.isBQuLinked(player.getUniqueID())) break;
                             pmLink.setBQuLinked(player.getUniqueID(), false);
                             getOrCreateSelfParty(player, provider);
+                        }
+                        Party bquParty = PartyManagerData.getInstance()
+                                .getPartyByPlayer(player.getUniqueID());
+                        if (bquParty != null) {
+                            notifyPartyMembers(bquParty, linked ? "BQU_LINKED" : "BQU_UNLINKED", "", "",
+                                    player.getServer());
                         }
                         success = true;
                         break;
@@ -337,6 +402,7 @@ public class MessagePartyAction implements IMessage {
                         if (target == null) break;
                         if (!tParty.isMember(target.getUniqueID())) break;
                         tParty.setRole(target.getUniqueID(), PartyRole.OWNER);
+                        notifyPlayer(target, "OWNER_TRANSFERRED", target.getName(), "");
                         success = true;
                         break;
                     }
@@ -408,6 +474,8 @@ public class MessagePartyAction implements IMessage {
                             Party joinParty = pmJoin.getParty(joinId);
                             if (joinParty == null || !joinParty.isFreeToJoin()) break;
                             joinParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
+                            notifyPartyMembers(joinParty, "MEMBER_JOINED", player.getName(), "",
+                                    player.getServer());
                             success = true;
                         } catch (IllegalArgumentException ignored) {}
                         break;
@@ -420,6 +488,20 @@ public class MessagePartyAction implements IMessage {
                 }
             });
             return null;
+        }
+
+        private static void notifyPartyMembers(Party party, String eventType, String playerName, String extra,
+                                               MinecraftServer server) {
+            if (server == null) return;
+            MessagePartyEventNotify packet = new MessagePartyEventNotify(eventType, playerName, extra);
+            for (UUID memberId : party.getMembers().keySet()) {
+                EntityPlayerMP member = server.getPlayerList().getPlayerByUUID(memberId);
+                if (member != null) ModNetwork.INSTANCE.sendTo(packet, member);
+            }
+        }
+
+        private static void notifyPlayer(EntityPlayerMP player, String eventType, String playerName, String extra) {
+            ModNetwork.INSTANCE.sendTo(new MessagePartyEventNotify(eventType, playerName, extra), player);
         }
     }
 }
