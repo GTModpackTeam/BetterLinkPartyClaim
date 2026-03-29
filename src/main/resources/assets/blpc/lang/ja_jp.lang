@@ -1,3 +1,8 @@
+# Config categories
+config.blpc.claims=チャンク確保
+config.blpc.party=パーティ
+config.blpc.data=データ
+
 # Key bindings
 key.blpc.open_map=チャンクマップを開く
 key.blpc.toggle=ミニマップ切替
@@ -116,6 +121,8 @@ blpc.party.tooltip.explosion=保護チャンク内の爆発を許可または禁
 blpc.party.tooltip.fakeplayer=自動化MOD(BuildCraft, EnderIO等)の権限レベル
 blpc.party.tooltip.trust_level=この操作に必要な最低権限レベル
 blpc.party.tooltip.member=クリックでキック / クリックで招待
+blpc.party.tooltip.kick=クリックでキック
+blpc.party.tooltip.invite=クリックで招待
 blpc.party.tooltip.member_self=クリックでパーティを脱退
 blpc.party.tooltip.ally=クリックで味方ステータスを切替
 blpc.party.tooltip.enemy=クリックで敵対ステータスを切替
@@ -132,9 +139,6 @@ blpc.party.tooltip.transfer=他のメンバーにオーナー権を譲渡
 blpc.party.dialog.add_ally=同盟パーティーを選択
 blpc.party.dialog.add_enemy=敵対パーティーを選択
 blpc.party.tooltip.open_native=BetterQuestingのパーティー管理を開く
-
-# 検索
-blpc.party.search=検索...
 
 # 領域出入り通知
 blpc.transit.member.enter=%sが帰宅した

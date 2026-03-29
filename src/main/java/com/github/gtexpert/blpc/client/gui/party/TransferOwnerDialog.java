@@ -44,7 +44,7 @@ public class TransferOwnerDialog {
                 .children(party.getMembers().entrySet(),
                         entry -> createTransferRow(entry, myId, panel, parentPanel));
 
-        PanelBuilder.addSearchableList(panel, list);
+        PanelBuilder.addList(panel, list);
         return panel;
     }
 

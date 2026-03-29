@@ -8,66 +8,64 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import com.github.gtexpert.blpc.Tags;
 
-@Config(modid = Tags.MODID,
-        name = Tags.MODID + "/" + Tags.MODID,
-        category = "BLPC Core")
+@Config(modid = Tags.MODID, name = Tags.MODID + "/" + Tags.MODID)
 public class ModConfig {
 
-    @Config.Name("Max Claims Per Player")
-    @Config.Comment("Maximum chunks a player can claim.")
-    @Config.RangeInt(min = 0, max = 1000)
-    public static int maxClaimsPerPlayer = 64;
+    @Config.LangKey("config.blpc.claims")
+    public static final Claims claims = new Claims();
 
-    @Config.Name("Max Force Loads Per Player")
-    @Config.Comment("Maximum chunks a player can force load.")
-    @Config.RangeInt(min = 0, max = 100)
-    public static int maxForceLoadsPerPlayer = 8;
+    @Config.LangKey("config.blpc.party")
+    public static final Party party = new Party();
 
-    @Config.Name("Show Minimap")
-    public static boolean showMinimap = true;
+    @Config.LangKey("config.blpc.data")
+    public static final Data data = new Data();
 
-    @Config.Name("Enable Chunk Protection")
-    @Config.Comment("Master toggle for all chunk protection features.")
-    public static boolean enableProtection = true;
+    public static class Claims {
 
-    @Config.Name("Protect Against Mob Griefing")
-    @Config.Comment("Deny mob griefing (endermen, zombies) in claimed chunks.")
-    public static boolean protectMobGriefing = true;
+        @Config.Name("Max Claims Per Player")
+        @Config.Comment("Maximum chunks a player can claim.")
+        @Config.RangeInt(min = 0, max = 10000)
+        public int maxClaimsPerPlayer = 1000;
 
-    @Config.Name("Protect Against Fire Spread")
-    @Config.Comment("Block fire spread into claimed chunks from unclaimed chunks.")
-    public static boolean protectFireSpread = true;
+        @Config.Name("Max Force Loads Per Player")
+        @Config.Comment("Maximum chunks a player can force load.")
+        @Config.RangeInt(min = 0, max = 1000)
+        public int maxForceLoadsPerPlayer = 64;
+    }
 
-    @Config.Name("Protect Against Fluid Flow")
-    @Config.Comment("Block fluid interaction effects (cobble/obsidian gen) into claimed chunks from unclaimed sources.")
-    public static boolean protectFluidFlow = true;
+    public static class Party {
 
-    @Config.Name("Enable Transit Notifications")
-    @Config.Comment("Show toast notifications when players enter/leave claimed chunks.")
-    public static boolean enableTransitNotify = true;
+        @Config.Name("Auto Create Party (Singleplayer)")
+        @Config.Comment("Automatically create a party named after the player in singleplayer.")
+        public boolean autoCreatePartySingleplayer = true;
 
-    @Config.Name("Transit Toast Duration (ms)")
-    @Config.Comment("How long transit toast notifications are displayed.")
-    @Config.RangeInt(min = 1000, max = 10000)
-    public static int transitToastDuration = 3000;
+        @Config.Name("Auto Create Party (Multiplayer)")
+        @Config.Comment("Automatically create a party named after the player in multiplayer.")
+        public boolean autoCreatePartyMultiplayer = false;
 
-    @Config.Name("Enable Area Effects")
-    @Config.Comment("Apply potion effects to enemies and defenders in claimed chunks.")
-    public static boolean enableAreaEffects = true;
+        @Config.Name("Auto Create Server Party")
+        @Config.Comment("Automatically create a shared party on server start.")
+        public boolean autoCreateServerParty = false;
 
-    @Config.Name("Enemy Weakness Amplifier")
-    @Config.Comment("Weakness potion amplifier for enemy invaders (0 = level I).")
-    @Config.RangeInt(min = 0, max = 3)
-    public static int enemyWeaknessAmplifier = 0;
+        @Config.Name("Server Party Name")
+        @Config.Comment("Name for the auto-created server party.")
+        public String serverPartyName = "server";
 
-    @Config.Name("Enemy Mining Fatigue")
-    @Config.Comment("Also apply mining fatigue to enemy invaders.")
-    public static boolean enemyMiningFatigue = true;
+        @Config.Name("Auto-Created Party: Free to Join")
+        @Config.Comment("Enable free-to-join (auto-join) on auto-created parties.")
+        public boolean autoCreatedPartyFreeToJoin = true;
 
-    @Config.Name("Defender Resistance Amplifier")
-    @Config.Comment("Resistance potion amplifier for defenders (0 = level I).")
-    @Config.RangeInt(min = 0, max = 3)
-    public static int defenderResistanceAmplifier = 0;
+        @Config.Name("Auto-Created Party: Owner UUID")
+        @Config.Comment("UUID of the player who owns auto-created parties. Leave empty for server-owned.")
+        public String autoCreatedPartyOwnerUUID = "";
+    }
+
+    public static class Data {
+
+        @Config.Name("Merge Offline/Online Data")
+        @Config.Comment("Merge chunk data when switching between offline and online mode.")
+        public boolean mergeOfflineOnlineData = true;
+    }
 
     // Sync config values immediately when changed via in-game settings GUI
     @Mod.EventBusSubscriber(modid = Tags.MODID)

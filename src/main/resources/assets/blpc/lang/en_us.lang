@@ -1,3 +1,8 @@
+# Config categories
+config.blpc.claims=Claims
+config.blpc.party=Party
+config.blpc.data=Data
+
 # Key bindings
 key.blpc.open_map=Open Chunk Map
 key.blpc.toggle=Toggle Minimap
@@ -116,6 +121,8 @@ blpc.party.tooltip.explosion=Enable or disable explosions in claimed chunks
 blpc.party.tooltip.fakeplayer=Trust level for automation mods (BuildCraft, EnderIO, etc.)
 blpc.party.tooltip.trust_level=Minimum trust level required to perform this action
 blpc.party.tooltip.member=Click to kick / Click to invite
+blpc.party.tooltip.kick=Click to kick
+blpc.party.tooltip.invite=Click to invite
 blpc.party.tooltip.member_self=Click to leave party
 blpc.party.tooltip.ally=Click to toggle ally status
 blpc.party.tooltip.enemy=Click to toggle enemy status
@@ -132,9 +139,6 @@ blpc.party.tooltip.transfer=Transfer party ownership to another member
 blpc.party.dialog.add_ally=Select Ally Party
 blpc.party.dialog.add_enemy=Select Enemy Party
 blpc.party.tooltip.open_native=Open BetterQuesting party manager
-
-# Search
-blpc.party.search=Search...
 
 # Transit Notifications
 blpc.transit.member.enter=%s returned home

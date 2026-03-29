@@ -23,6 +23,6 @@ public class BLPCCommand extends CommandTreeBase {
 
     @Override
     public int getRequiredPermissionLevel() {
-        return 0;
+        return 3;
     }
 }

@@ -89,10 +89,10 @@ public class MessageClaimChunk implements IMessage {
         private void handleClaim(MessageClaimChunk msg, EntityPlayerMP player,
                                  ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
             if (existing != null) return;
-            if (data.countClaims(playerId) >= ModConfig.maxClaimsPerPlayer) {
+            if (data.countClaims(playerId) >= ModConfig.claims.maxClaimsPerPlayer) {
                 ModNetwork.INSTANCE.sendTo(
                         new MessageClaimFailed("CLAIM_LIMIT", data.countClaims(playerId),
-                                ModConfig.maxClaimsPerPlayer),
+                                ModConfig.claims.maxClaimsPerPlayer),
                         player);
                 return;
             }
@@ -120,17 +120,17 @@ public class MessageClaimChunk implements IMessage {
                                        ChunkManagerData data, ClaimedChunkData existing, UUID playerId) {
             if (existing == null) {
                 // Claim + Force
-                if (data.countClaims(playerId) >= ModConfig.maxClaimsPerPlayer) {
+                if (data.countClaims(playerId) >= ModConfig.claims.maxClaimsPerPlayer) {
                     ModNetwork.INSTANCE.sendTo(
                             new MessageClaimFailed("CLAIM_LIMIT", data.countClaims(playerId),
-                                    ModConfig.maxClaimsPerPlayer),
+                                    ModConfig.claims.maxClaimsPerPlayer),
                             player);
                     return;
                 }
-                if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) {
+                if (data.countForceLoads(playerId) >= ModConfig.claims.maxForceLoadsPerPlayer) {
                     ModNetwork.INSTANCE.sendTo(
                             new MessageClaimFailed("FORCELOAD_LIMIT", data.countForceLoads(playerId),
-                                    ModConfig.maxForceLoadsPerPlayer),
+                                    ModConfig.claims.maxForceLoadsPerPlayer),
                             player);
                     return;
                 }
@@ -151,10 +151,10 @@ public class MessageClaimChunk implements IMessage {
                 existing.isForceLoaded = false;
                 TicketManager.unforceChunk(player.world, msg.x, msg.z);
             } else {
-                if (data.countForceLoads(playerId) >= ModConfig.maxForceLoadsPerPlayer) {
+                if (data.countForceLoads(playerId) >= ModConfig.claims.maxForceLoadsPerPlayer) {
                     ModNetwork.INSTANCE.sendTo(
                             new MessageClaimFailed("FORCELOAD_LIMIT", data.countForceLoads(playerId),
-                                    ModConfig.maxForceLoadsPerPlayer),
+                                    ModConfig.claims.maxForceLoadsPerPlayer),
                             player);
                     return;
                 }

@@ -9,7 +9,6 @@ import com.cleanroommc.modularui.drawable.GuiDraw;
 
 import com.github.gtexpert.blpc.client.map.AsyncMapRenderer;
 import com.github.gtexpert.blpc.client.map.ChunkMapRenderer;
-import com.github.gtexpert.blpc.common.ModConfig;
 
 /**
  * In-game minimap HUD overlay.
@@ -42,7 +41,7 @@ public class MinimapHUD {
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (event.getType() != RenderGameOverlayEvent.ElementType.ALL) return;
-        if (!ModConfig.showMinimap) return;
+        if (!KeyInputHandler.isMinimapVisible()) return;
         if (mc.currentScreen != null) return;
 
         int pX = mc.player.chunkCoordX;

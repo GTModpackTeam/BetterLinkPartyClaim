@@ -145,7 +145,7 @@ public final class PlayerListPanel {
                 list.child(createToggleRow(entry));
             }
 
-            PanelBuilder.addSearchableList(panel, list);
+            PanelBuilder.addList(panel, list);
             return panel;
         }
 

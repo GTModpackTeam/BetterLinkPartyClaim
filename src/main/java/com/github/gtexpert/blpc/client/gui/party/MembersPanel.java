@@ -48,7 +48,7 @@ public class MembersPanel {
             list.child(createRow(entry, party, playerId, myRole, canManage));
         }
 
-        PanelBuilder.addSearchableList(panel, list);
+        PanelBuilder.addList(panel, list);
         return panel;
     }
 
@@ -111,7 +111,7 @@ public class MembersPanel {
                     ModNetwork.INSTANCE.sendToServer(MessagePartyAction.kickOrLeave(playerName));
                     return true;
                 });
-                btn.addTooltipLine(IKey.lang("blpc.party.tooltip.member"));
+                btn.addTooltipLine(IKey.lang("blpc.party.tooltip.kick"));
             }
         } else if (canManage) {
             // Click to invite
@@ -120,7 +120,7 @@ public class MembersPanel {
                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.invite(playerName));
                 return true;
             });
-            btn.addTooltipLine(IKey.lang("blpc.party.tooltip.member"));
+            btn.addTooltipLine(IKey.lang("blpc.party.tooltip.invite"));
         }
 
         return Flow.row()

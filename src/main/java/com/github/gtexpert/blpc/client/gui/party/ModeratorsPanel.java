@@ -55,7 +55,7 @@ public class ModeratorsPanel {
             list.child(createRow(entry, isOwner, playerId));
         }
 
-        PanelBuilder.addSearchableList(panel, list);
+        PanelBuilder.addList(panel, list);
         return panel;
     }
 

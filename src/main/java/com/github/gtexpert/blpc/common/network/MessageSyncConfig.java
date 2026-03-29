@@ -40,8 +40,8 @@ public class MessageSyncConfig implements IMessage {
         public IMessage onMessage(MessageSyncConfig message, MessageContext ctx) {
             // Override client-side config values with server values
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                ModConfig.maxClaimsPerPlayer = message.maxClaims;
-                ModConfig.maxForceLoadsPerPlayer = message.maxForce;
+                ModConfig.claims.maxClaimsPerPlayer = message.maxClaims;
+                ModConfig.claims.maxForceLoadsPerPlayer = message.maxForce;
             });
             return null;
         }

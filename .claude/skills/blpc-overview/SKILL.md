@@ -196,7 +196,7 @@ All dialog templates use a consistent width of 220px. Custom sizing available vi
 - **`PanelBuilder`** — Common layout helpers:
   - `addHeader(panel, titleKey)` — centered title (WHITE, shadow) + close button
   - `addHeader(panel, IKey)` — IKey variant for dynamic titles
-  - `addSearchableList(panel, list)` — search field (top=22) + list (top=40)
+  - `addList(panel, list)` — positions list widget (top=22, padded)
 
 **Allies/Enemies Management**: Handled directly in SettingsPanel via inline ListWidget. Uses `PartySelectDialog` for adding allies/enemies.
 
@@ -229,21 +229,49 @@ Config: `src/main/resources/mixins.blpc.betterquesting.json`.
 
 Forge `@Config` at `common/ModConfig.java`. Auto-syncs when changed in-game.
 
+### Configurable (exposed in cfg file)
+
+Uses nested subcategories via `@Config.LangKey` (`config.blpc.<category>`). Access pattern: `ModConfig.claims.maxClaimsPerPlayer`.
+
+**Claims** (`ModConfig.claims`)
+
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `maxClaimsPerPlayer` | int (0–1000) | 64 | Max chunks claimable per player |
-| `maxForceLoadsPerPlayer` | int (0–100) | 8 | Max force-loaded chunks per player |
-| `showMinimap` | boolean | true | Toggle minimap HUD |
-| `enableProtection` | boolean | true | Master protection toggle |
-| `protectMobGriefing` | boolean | true | Prevent mob griefing in claims |
-| `protectFireSpread` | boolean | true | Prevent fire spread in claims |
-| `protectFluidFlow` | boolean | true | Prevent fluid flow into claims |
-| `enableTransitNotify` | boolean | true | Show toast notifications when players enter/leave claimed chunks |
-| `transitToastDuration` | int (1000–10000) | 3000 | Toast display duration in milliseconds |
-| `enableAreaEffects` | boolean | true | Apply potion effects to enemies and defenders |
-| `enemyWeaknessAmplifier` | int (0–3) | 0 | Weakness amplifier for enemy invaders (0 = level I) |
-| `enemyMiningFatigue` | boolean | true | Also apply mining fatigue to enemies |
-| `defenderResistanceAmplifier` | int (0–3) | 0 | Resistance amplifier for defenders (0 = level I) |
+| `maxClaimsPerPlayer` | int (0–10000) | 1000 | Max chunks claimable per player |
+| `maxForceLoadsPerPlayer` | int (0–1000) | 64 | Max force-loaded chunks per player |
+
+**Party** (`ModConfig.party`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `autoCreatePartySingleplayer` | boolean | true | Auto-create party in singleplayer  |
+| `autoCreatePartyMultiplayer` | boolean | false | Auto-create party in multiplayer  |
+| `autoCreateServerParty` | boolean | false | Automatically create a shared party on server start  |
+| `serverPartyName` | String | "server" | Name for the auto-created server party  |
+| `autoCreatedPartyFreeToJoin` | boolean | true | Enable free-to-join on auto-created parties  |
+| `autoCreatedPartyOwnerUUID` | String | "" | Owner UUID for auto-created parties; empty = server-owned  |
+
+**Data** (`ModConfig.data`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `mergeOfflineOnlineData` | boolean | true | Merge offline/online chunk data  |
+
+### Internal defaults (`ModDefaults.java` — not in cfg)
+
+| Constant | Value | Description |
+|---|---|---|
+| `showMinimap` | true | Minimap HUD default visibility (toggled at runtime via keybind) |
+| `enableProtection` | true | Master protection toggle |
+| `protectMobGriefing` | true | Prevent mob griefing in claims |
+| `protectFireSpread` | true | Prevent fire spread in claims |
+| `protectFluidFlow` | true | Prevent fluid flow into claims |
+| `enableTransitNotify` | true | Toast notifications for chunk entry/exit |
+| `transitToastDuration` | 3000 | Toast display duration (ms) |
+| `enableAreaEffects` | true | Potion effects for enemies/defenders |
+| `enemyWeaknessAmplifier` | 0 | Weakness amplifier (0 = level I) |
+| `enemyMiningFatigue` | true | Mining fatigue for enemies |
+| `defenderResistanceAmplifier` | 0 | Resistance amplifier (0 = level I) |
 
 ## Chunk Transit System
 

@@ -172,6 +172,8 @@ public class MessagePartyAction implements IMessage {
 
     public static class Handler implements IMessageHandler<MessagePartyAction, IMessage> {
 
+        private static final DefaultPartyProvider SELF_PROVIDER = new DefaultPartyProvider();
+
         @Override
         public IMessage onMessage(MessagePartyAction msg, MessageContext ctx) {
             FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
@@ -181,7 +183,7 @@ public class MessagePartyAction implements IMessage {
                 // accidentally creating/modifying BQu parties
                 boolean playerBQuLinked = PartyManagerData.getInstance()
                         .isBQuLinked(player.getUniqueID());
-                DefaultPartyProvider selfProvider = new DefaultPartyProvider();
+                DefaultPartyProvider selfProvider = SELF_PROVIDER;
                 IPartyProvider activeProvider = playerBQuLinked ? provider : selfProvider;
 
                 boolean success = false;
@@ -416,6 +418,7 @@ public class MessagePartyAction implements IMessage {
                         if (!tParty.isMember(target.getUniqueID())) break;
                         tParty.setRole(target.getUniqueID(), PartyRole.OWNER);
                         notifyPlayer(target, MessagePartyEventNotify.OWNER_TRANSFERRED, target.getName(), "");
+                        notifyPlayer(player, MessagePartyEventNotify.ROLE_CHANGED, player.getName(), "ADMIN");
                         success = true;
                         break;
                     }

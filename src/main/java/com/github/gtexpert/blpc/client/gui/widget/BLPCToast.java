@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
-import com.github.gtexpert.blpc.common.ModConfig;
+import com.github.gtexpert.blpc.common.ModDefaults;
 import com.github.gtexpert.blpc.common.party.RelationType;
 
 /**
@@ -49,7 +49,7 @@ public class BLPCToast implements IToast {
                 title, 7, 12, color);
 
         long elapsed = delta - firstDrawTime;
-        return elapsed >= ModConfig.transitToastDuration ? Visibility.HIDE : Visibility.SHOW;
+        return elapsed >= ModDefaults.transitToastDuration ? Visibility.HIDE : Visibility.SHOW;
     }
 
     public static Builder builder() {

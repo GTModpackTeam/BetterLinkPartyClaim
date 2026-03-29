@@ -5,7 +5,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
-import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 
@@ -37,18 +36,14 @@ public final class PanelBuilder {
     }
 
     /**
-     * Adds a search text field at {@code top=22} and places the provided list
-     * starting at {@code top=40}.
+     * Places the provided list starting at {@code top=22}.
      *
      * @param panel the panel to add to
      * @param list  the list widget to position and add
      */
     @SuppressWarnings("rawtypes")
-    public static void addSearchableList(ModularPanel panel, ListWidget list) {
-        panel.child(new TextFieldWidget()
-                .hintText(IKey.lang("blpc.party.search").get())
-                .left(8).right(8).top(22).height(14));
-        list.left(8).right(8).top(40).bottom(8);
+    public static void addList(ModularPanel panel, ListWidget list) {
+        list.left(8).right(8).top(22).bottom(8);
         list.crossAxisAlignment(Alignment.CrossAxis.START);
         panel.child(list);
     }

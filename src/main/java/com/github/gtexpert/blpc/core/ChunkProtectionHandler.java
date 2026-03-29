@@ -21,7 +21,7 @@ import net.minecraftforge.event.world.ExplosionEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import com.github.gtexpert.blpc.common.ModConfig;
+import com.github.gtexpert.blpc.common.ModDefaults;
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
 import com.github.gtexpert.blpc.common.party.Party;
@@ -39,7 +39,7 @@ import com.github.gtexpert.blpc.common.party.TrustLevel;
  * all protection checks.
  * <p>
  * Additional protections (mob griefing, fluid flow, fire spread, farmland
- * trampling) are gated by {@link com.github.gtexpert.blpc.common.ModConfig ModConfig}
+ * trampling) are gated by {@link com.github.gtexpert.blpc.common.ModDefaults ModDefaults}
  * flags.
  */
 public class ChunkProtectionHandler {
@@ -60,7 +60,7 @@ public class ChunkProtectionHandler {
      * <p>
      * Returns {@code true} (allowed) when any of the following hold:
      * <ol>
-     * <li>Protection is globally disabled ({@code ModConfig.enableProtection == false})</li>
+     * <li>Protection is globally disabled ({@code ModDefaults.enableProtection == false})</li>
      * <li>The chunk is unclaimed</li>
      * <li>The player is an OP (permission level 2+)</li>
      * <li>The player is the claim owner</li>
@@ -74,7 +74,7 @@ public class ChunkProtectionHandler {
      * @return {@code true} if the action is allowed
      */
     private static boolean canPlayerActAt(@Nullable EntityPlayer player, BlockPos pos, TrustAction action) {
-        if (!ModConfig.enableProtection) return true;
+        if (!ModDefaults.enableProtection) return true;
 
         int chunkX = pos.getX() >> 4;
         int chunkZ = pos.getZ() >> 4;
@@ -155,7 +155,7 @@ public class ChunkProtectionHandler {
     @SubscribeEvent
     public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
         if (event.getWorld().isRemote) return;
-        if (!ModConfig.enableProtection) return;
+        if (!ModDefaults.enableProtection) return;
 
         List<BlockPos> affectedBlocks = event.getAffectedBlocks();
         affectedBlocks.removeIf(pos -> {
@@ -216,7 +216,7 @@ public class ChunkProtectionHandler {
 
     @SubscribeEvent
     public static void onMobGriefing(EntityMobGriefingEvent event) {
-        if (!ModConfig.enableProtection || !ModConfig.protectMobGriefing) return;
+        if (!ModDefaults.enableProtection || !ModDefaults.protectMobGriefing) return;
         Entity entity = event.getEntity();
         if (entity.world.isRemote) return;
 
@@ -232,7 +232,7 @@ public class ChunkProtectionHandler {
     @SubscribeEvent
     public static void onFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
         if (event.getWorld().isRemote) return;
-        if (!ModConfig.enableProtection) return;
+        if (!ModDefaults.enableProtection) return;
 
         Entity entity = event.getEntity();
         EntityPlayer player = (entity instanceof EntityPlayer ep) ? ep : null;
@@ -242,7 +242,7 @@ public class ChunkProtectionHandler {
                 event.setCanceled(true);
             }
         } else {
-            if (!ModConfig.protectMobGriefing) return;
+            if (!ModDefaults.protectMobGriefing) return;
             int chunkX = event.getPos().getX() >> 4;
             int chunkZ = event.getPos().getZ() >> 4;
             if (isChunkClaimed(chunkX, chunkZ)) {
@@ -256,7 +256,7 @@ public class ChunkProtectionHandler {
     @SubscribeEvent
     public static void onFluidPlaceBlock(BlockEvent.FluidPlaceBlockEvent event) {
         if (event.getWorld().isRemote) return;
-        if (!ModConfig.enableProtection || !ModConfig.protectFluidFlow) return;
+        if (!ModDefaults.enableProtection || !ModDefaults.protectFluidFlow) return;
 
         BlockPos targetPos = event.getPos();
         BlockPos liquidPos = event.getLiquidPos();
@@ -282,7 +282,7 @@ public class ChunkProtectionHandler {
     @SubscribeEvent
     public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
         if (event.getWorld().isRemote) return;
-        if (!ModConfig.enableProtection || !ModConfig.protectFireSpread) return;
+        if (!ModDefaults.enableProtection || !ModDefaults.protectFireSpread) return;
 
         IBlockState state = event.getState();
         if (state.getBlock() != Blocks.FIRE) return;

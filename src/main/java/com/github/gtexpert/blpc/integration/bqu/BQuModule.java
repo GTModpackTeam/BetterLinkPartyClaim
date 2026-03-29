@@ -49,6 +49,9 @@ public class BQuModule extends IntegrationSubmodule {
     @NotNull
     @Override
     public List<Class<?>> getEventBusSubscribers() {
-        return Collections.singletonList(BQPartyEventHandler.class);
+        if (FMLCommonHandler.instance().getSide().isClient()) {
+            return Collections.singletonList(BQPartyEventHandler.class);
+        }
+        return Collections.emptyList();
     }
 }

@@ -135,6 +135,9 @@ public class BQPartyProvider implements IPartyProvider {
 
         PartyManager.INSTANCE.removeID(entry.getID());
         PartyInvitations.INSTANCE.purgeInvites(entry.getID());
+        // fallback.disbandParty also calls releaseAllClaims, but the second pass is a no-op
+        // since claims were already released above. This is intentional to ensure the
+        // self-managed party is properly removed from PartyManagerData.
         fallback.disbandParty(player);
         NetPartySync.sendSync(null, null);
         return true;

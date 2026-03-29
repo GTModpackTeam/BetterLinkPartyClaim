@@ -87,6 +87,19 @@ public class ChunkManagerData {
         }
     }
 
+    /**
+     * Transfers all chunk claims from {@code oldOwner} to {@code newOwner}.
+     * Used when merging offline/online UUIDs on player login.
+     */
+    public void transferOwnership(UUID oldOwner, UUID newOwner) {
+        for (ClaimedChunkData claim : getClaimsByOwner(oldOwner)) {
+            claims.put(
+                    chunkKey(claim.x, claim.z),
+                    new ClaimedChunkData(claim.x, claim.z, newOwner, claim.ownerName, claim.partyName,
+                            claim.isForceLoaded));
+        }
+    }
+
     public NBTTagCompound serializeAll() {
         NBTTagCompound all = new NBTTagCompound();
         for (Map.Entry<String, ClaimedChunkData> entry : claims.entrySet()) {

@@ -64,15 +64,15 @@ public class ChunkMapScreen extends CustomModularScreen {
                         .leftRel(0.5f, leftOff + MAP_PX, 0f)
                         .verticalCenter())
                 .child(createCounterText("blpc.map.claimed_chunks",
-                        this::countMyClaims, ModConfig.maxClaimsPerPlayer, 16))
+                        this::countMyClaims, () -> ModConfig.claims.maxClaimsPerPlayer, 16))
                 .child(createCounterText("blpc.map.loaded_chunks",
-                        this::countMyForceLoads, ModConfig.maxForceLoadsPerPlayer, 4));
+                        this::countMyForceLoads, () -> ModConfig.claims.maxForceLoadsPerPlayer, 4));
     }
 
     private TextWidget<?> createCounterText(String langKey,
-                                            IntSupplier counter, int max, int bottom) {
-        return new TextWidget<>(IKey.lang(langKey, () -> new Object[] { counter.getAsInt(), max }))
-                .color(() -> counter.getAsInt() >= max ? GuiColors.RED : GuiColors.WHITE)
+                                            IntSupplier counter, IntSupplier max, int bottom) {
+        return new TextWidget<>(IKey.lang(langKey, () -> new Object[] { counter.getAsInt(), max.getAsInt() }))
+                .color(() -> counter.getAsInt() >= max.getAsInt() ? GuiColors.RED : GuiColors.WHITE)
                 .shadow(true).right(4).bottom(bottom);
     }
 
