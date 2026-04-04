@@ -267,10 +267,14 @@ Shared color constants in `client/gui/GuiColors`:
 Shared utilities in `client/gui/party/PartyWidgets`:
 - `getDisplayName(UUID)` — resolve player UUID to display name
 - `getRoleColor(PartyRole)` — ARGB color for party role (OWNER=gold, ADMIN=green, default=white)
-- `openSubPanel(parent, child)` — open a sub-panel exclusively
-- `reopenPanel(current, factory)` — close and reopen a panel (for list refresh)
-- `createActionButton(label, name, action)` — button with click handler
-- `createEnterSubmitTextField(onSubmit)` — text field that submits on Enter key press
+- `openSubPanel(ModularPanel parent, ModularPanel child)` — open a sub-panel exclusively
+- `reopenPanel(ModularPanel current, Supplier<ModularPanel> factory)` — close and reopen a panel
+- `addAutoRefreshListener(ModularPanel panel, Supplier<ModularPanel> rebuilder)` — register sync listener with auto-cleanup on close
+- `addPartyRefreshListener(ModularPanel panel, UUID partyId, Function<Party, ModularPanel> rebuilder)` — partyId lookup + null-safe rebuild
+- `setLocalBQuLinked(boolean linked)` — optimistic BQu link flag update for current player
+- `clearLocalPartyData()` — optimistic cache clear after disband
+- `createActionButton(IKey label, String actionName, Runnable action)` — button with click handler
+- `createEnterSubmitTextField(Runnable onSubmit)` — text field that submits on Enter key press
 - `resetSubPanelHandler()` — clear cached handler state when parent screen closes
 
 ## Commands

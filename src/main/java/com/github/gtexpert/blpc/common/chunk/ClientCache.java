@@ -13,7 +13,7 @@ import java.util.UUID;
  */
 public class ClientCache {
 
-    private static final Map<String, ClaimedChunkData> cache = new HashMap<>();
+    private static final Map<Long, ClaimedChunkData> cache = new HashMap<>();
     private static final List<Runnable> changeListeners = new ArrayList<>();
 
     public static void addChangeListener(Runnable listener) {
@@ -31,7 +31,7 @@ public class ClientCache {
     }
 
     public static void update(int x, int z, UUID owner, String name, String partyName, boolean isForceLoaded) {
-        String key = ChunkManagerData.chunkKey(x, z);
+        long key = ChunkManagerData.chunkKey(x, z);
         if (owner == null) {
             cache.remove(key);
         } else {

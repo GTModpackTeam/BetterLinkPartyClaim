@@ -56,12 +56,9 @@ public class PartyManagerData {
 
     @Nullable
     public Party getPartyByPlayer(UUID playerUUID) {
-        for (Party party : parties.values()) {
-            if (party.isMember(playerUUID)) {
-                return party;
-            }
-        }
-        return null;
+        return parties.values().stream()
+                .filter(p -> p.isMember(playerUUID))
+                .findFirst().orElse(null);
     }
 
     public boolean isMigrated() {
@@ -101,13 +98,7 @@ public class PartyManagerData {
 
     public void writeConfigNBT(NBTTagCompound nbt) {
         nbt.setBoolean("migrated", migrated);
-        NBTTagList linkedList = new NBTTagList();
-        for (UUID uuid : bquLinkedPlayers) {
-            NBTTagCompound tag = new NBTTagCompound();
-            tag.setUniqueId("uuid", uuid);
-            linkedList.appendTag(tag);
-        }
-        nbt.setTag("bquLinked", linkedList);
+        nbt.setTag("bquLinked", serializeBQuLinked());
     }
 
     // --- Client sync ---

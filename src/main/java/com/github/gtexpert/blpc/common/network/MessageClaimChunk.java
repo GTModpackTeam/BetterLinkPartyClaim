@@ -25,6 +25,8 @@ public class MessageClaimChunk implements IMessage {
     public static final int MODE_UNCLAIM = 1;
     public static final int MODE_TOGGLE_FORCE = 2;
 
+    private static final int MAX_CHUNK_DISTANCE = 64;
+
     private int x;
     private int z;
     private int mode;
@@ -61,9 +63,8 @@ public class MessageClaimChunk implements IMessage {
                 // Validate chunk coordinates - must be within reasonable distance
                 int playerChunkX = MathHelper.floor(player.posX) >> 4;
                 int playerChunkZ = MathHelper.floor(player.posZ) >> 4;
-                int maxChunkDistance = 64; // ~1024 blocks
-                if (Math.abs(message.x - playerChunkX) > maxChunkDistance ||
-                        Math.abs(message.z - playerChunkZ) > maxChunkDistance) {
+                if (Math.abs(message.x - playerChunkX) > MAX_CHUNK_DISTANCE ||
+                        Math.abs(message.z - playerChunkZ) > MAX_CHUNK_DISTANCE) {
                     return;
                 }
 

@@ -170,6 +170,14 @@ public class MessagePartyAction implements IMessage {
         return party;
     }
 
+    private static Party getAdminParty(EntityPlayerMP player, IPartyProvider provider) {
+        Party party = getOrCreateSelfParty(player, provider);
+        if (party == null) return null;
+        PartyRole role = party.getRole(player.getUniqueID());
+        if (role == null || !role.canInvite()) return null;
+        return party;
+    }
+
     public static class Handler implements IMessageHandler<MessagePartyAction, IMessage> {
 
         private static final DefaultPartyProvider SELF_PROVIDER = new DefaultPartyProvider();
@@ -374,21 +382,14 @@ public class MessagePartyAction implements IMessage {
                         }
                     }
                     case ACTION_TOGGLE_EXPLOSION_PROTECTION -> {
-                        Party toggleParty = getOrCreateSelfParty(player, activeProvider);
-                        if (toggleParty != null) {
-                            PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
-                            if (toggleRole != null && toggleRole.canInvite()) {
-                                boolean protect = "true".equals(msg.stringArg);
-                                toggleParty.setProtectExplosions(protect);
-                                success = true;
-                            }
-                        }
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
+                        party.setProtectExplosions("true".equals(msg.stringArg));
+                        success = true;
                     }
                     case ACTION_ADD_ALLY, ACTION_REMOVE_ALLY, ACTION_ADD_ENEMY, ACTION_REMOVE_ENEMY -> {
-                        Party allyParty = getOrCreateSelfParty(player, activeProvider);
-                        if (allyParty == null) break;
-                        PartyRole allyRole = allyParty.getRole(player.getUniqueID());
-                        if (allyRole == null || !allyRole.canInvite()) break;
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
                         UUID targetPartyId;
                         try {
                             targetPartyId = UUID.fromString(msg.stringArg);
@@ -396,12 +397,12 @@ public class MessagePartyAction implements IMessage {
                             break;
                         }
                         // Don't allow self-reference
-                        if (targetPartyId.equals(allyParty.getPartyId())) break;
+                        if (targetPartyId.equals(party.getPartyId())) break;
                         switch (msg.action) {
-                            case ACTION_ADD_ALLY -> allyParty.addAlly(targetPartyId);
-                            case ACTION_REMOVE_ALLY -> allyParty.removeAlly(targetPartyId);
-                            case ACTION_ADD_ENEMY -> allyParty.addEnemy(targetPartyId);
-                            case ACTION_REMOVE_ENEMY -> allyParty.removeEnemy(targetPartyId);
+                            case ACTION_ADD_ALLY -> party.addAlly(targetPartyId);
+                            case ACTION_REMOVE_ALLY -> party.removeAlly(targetPartyId);
+                            case ACTION_ADD_ENEMY -> party.addEnemy(targetPartyId);
+                            case ACTION_REMOVE_ENEMY -> party.removeEnemy(targetPartyId);
                         }
                         success = true;
                     }
@@ -426,57 +427,47 @@ public class MessagePartyAction implements IMessage {
                         success = true;
                     }
                     case ACTION_SET_TRUST_LEVEL -> {
-                        Party trustParty = getOrCreateSelfParty(player, activeProvider);
-                        if (trustParty == null) break;
-                        PartyRole trustRole = trustParty.getRole(player.getUniqueID());
-                        if (trustRole == null || !trustRole.canInvite()) break;
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
                         String[] tp = msg.stringArg.split(":", 2);
                         if (tp.length == 2) {
                             TrustAction ta = TrustAction.fromNbtKey(tp[0]);
                             TrustLevel tl = TrustLevel.fromName(tp[1]);
                             if (ta != null && tl.ordinal() <= TrustLevel.MEMBER.ordinal()) {
-                                trustParty.setTrustLevel(ta, tl);
+                                party.setTrustLevel(ta, tl);
                                 success = true;
                             }
                         }
                     }
                     case ACTION_SET_FAKEPLAYER_TRUST -> {
-                        Party fpParty = getOrCreateSelfParty(player, activeProvider);
-                        if (fpParty == null) break;
-                        PartyRole fpRole = fpParty.getRole(player.getUniqueID());
-                        if (fpRole == null || !fpRole.canInvite()) break;
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
                         TrustLevel fpLevel = TrustLevel.fromName(msg.stringArg);
                         if (fpLevel.ordinal() <= TrustLevel.MEMBER.ordinal()) {
-                            fpParty.setFakePlayerTrustLevel(fpLevel);
+                            party.setFakePlayerTrustLevel(fpLevel);
                             success = true;
                         }
                     }
                     case ACTION_SET_FREE_TO_JOIN -> {
-                        Party fjParty = getOrCreateSelfParty(player, activeProvider);
-                        if (fjParty == null) break;
-                        PartyRole fjRole = fjParty.getRole(player.getUniqueID());
-                        if (fjRole == null || !fjRole.canInvite()) break;
-                        fjParty.setFreeToJoin("true".equals(msg.stringArg));
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
+                        party.setFreeToJoin("true".equals(msg.stringArg));
                         success = true;
                     }
                     case ACTION_SET_COLOR -> {
-                        Party cParty = getOrCreateSelfParty(player, activeProvider);
-                        if (cParty == null) break;
-                        PartyRole cRole = cParty.getRole(player.getUniqueID());
-                        if (cRole == null || !cRole.canInvite()) break;
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
                         try {
-                            cParty.setColor(Integer.parseInt(msg.stringArg));
+                            party.setColor(Integer.parseInt(msg.stringArg));
                             success = true;
                         } catch (NumberFormatException ignored) {}
                     }
                     case ACTION_SET_DESCRIPTION -> {
-                        Party descParty = getOrCreateSelfParty(player, activeProvider);
-                        if (descParty == null) break;
-                        PartyRole descRole = descParty.getRole(player.getUniqueID());
-                        if (descRole == null || !descRole.canInvite()) break;
+                        Party party = getAdminParty(player, activeProvider);
+                        if (party == null) break;
                         String desc = msg.stringArg.trim();
                         if (desc.length() > 256) desc = desc.substring(0, 256);
-                        descParty.setDescription(desc);
+                        party.setDescription(desc);
                         success = true;
                     }
                     case ACTION_JOIN_FREE_PARTY -> {

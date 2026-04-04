@@ -23,7 +23,10 @@ public class LinkBQuDialog {
                 .title("blpc.party.link_bqu_title")
                 .message("blpc.party.link_bqu_msg")
                 .closeParent(false)
-                .onConfirm(() -> ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleBQuLink(true)))
+                .onConfirm(() -> {
+                    PartyWidgets.setLocalBQuLinked(true);
+                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleBQuLink(true));
+                })
                 .build(parentPanel);
     }
 }

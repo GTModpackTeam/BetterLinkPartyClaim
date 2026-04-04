@@ -1,6 +1,8 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -130,6 +132,57 @@ public final class PartyWidgets {
         ModularPanel parent = current.getScreen().getMainPanel();
         current.closeIfOpen();
         openSubPanel(parent, panelFactory.get());
+    }
+
+    /**
+     * Registers a sync listener that auto-rebuilds the panel when server data changes.
+     * The listener is automatically removed when the panel closes.
+     *
+     * @param panel     the currently open panel
+     * @param rebuilder factory that produces the replacement panel; may return {@code null} to just close
+     */
+    public static void addAutoRefreshListener(ModularPanel panel, Supplier<ModularPanel> rebuilder) {
+        Runnable syncListener = () -> {
+            if (!panel.isOpen()) return;
+            ModularPanel newPanel = rebuilder.get();
+            if (newPanel != null) {
+                reopenPanel(panel, () -> newPanel);
+            } else {
+                panel.closeIfOpen();
+            }
+        };
+        ClientPartyCache.addSyncListener(syncListener);
+        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+    }
+
+    /** Optimistically sets the local BQu link flag for the current player. */
+    public static void setLocalBQuLinked(boolean linked) {
+        UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
+        ClientPartyCache.setLocalBQuLinked(playerId, linked);
+    }
+
+    /** Optimistically clears local party data (used after disband). */
+    public static void clearLocalPartyData() {
+        UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
+        ClientPartyCache.setLocalBQuLinked(playerId, false);
+        ClientPartyCache.clear();
+    }
+
+    /**
+     * Registers a sync listener that rebuilds the panel when a specific party is updated.
+     * Convenience wrapper around {@link #addAutoRefreshListener} for the common pattern of
+     * looking up a party by ID and delegating to a panel builder function.
+     *
+     * @param panel     the currently open panel
+     * @param partyId   the party UUID to look up on each sync
+     * @param rebuilder factory that produces the replacement panel from the refreshed party
+     */
+    public static void addPartyRefreshListener(ModularPanel panel, UUID partyId,
+                                               Function<Party, ModularPanel> rebuilder) {
+        addAutoRefreshListener(panel, () -> {
+            Party refreshed = ClientPartyCache.getParty(partyId);
+            return refreshed != null ? rebuilder.apply(refreshed) : null;
+        });
     }
 
     /**

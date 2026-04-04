@@ -23,7 +23,10 @@ public class UnlinkBQuDialog {
                 .title("blpc.party.unlink_bqu_title")
                 .message("blpc.party.unlink_bqu_msg")
                 .closeParent(false)
-                .onConfirm(() -> ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleBQuLink(false)))
+                .onConfirm(() -> {
+                    PartyWidgets.setLocalBQuLinked(false);
+                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleBQuLink(false));
+                })
                 .build(parentPanel);
     }
 }

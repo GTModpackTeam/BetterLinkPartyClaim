@@ -39,7 +39,7 @@ public class MainPanel {
 
         // Auto-fix: bquLinked but no party -> clear stale flag
         if (bquLinked && party == null) {
-            ClientPartyCache.setLocalBQuLinked(playerId, false);
+            PartyWidgets.setLocalBQuLinked(false);
             bquLinked = false;
         }
 
@@ -122,12 +122,7 @@ public class MainPanel {
         }
 
         // Rebuild on server sync (BQu link/unlink, disband, member changes)
-        Runnable syncListener = () -> {
-            if (!panel.isOpen()) return;
-            PartyWidgets.reopenPanel(panel, () -> MainPanel.build(playerId));
-        };
-        ClientPartyCache.addSyncListener(syncListener);
-        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+        PartyWidgets.addAutoRefreshListener(panel, () -> MainPanel.build(playerId));
 
         return panel;
     }

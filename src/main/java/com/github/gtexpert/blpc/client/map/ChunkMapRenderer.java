@@ -10,9 +10,10 @@ import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.utils.Color;
 import com.cleanroommc.modularui.utils.Platform;
 
-import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
 import com.github.gtexpert.blpc.common.chunk.ClientCache;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
+import com.github.gtexpert.blpc.common.party.Party;
 
 public class ChunkMapRenderer {
 
@@ -98,10 +99,12 @@ public class ChunkMapRenderer {
         int color;
         if (d.ownerUUID.equals(playerUUID)) {
             color = COLOR_OWN;
-        } else if (PartyProviderRegistry.get().areInSameParty(playerUUID, d.ownerUUID)) {
-            color = COLOR_PARTY;
         } else {
-            color = COLOR_OTHER;
+            Party playerParty = ClientPartyCache.getPartyByPlayer(playerUUID);
+            Party ownerParty = ClientPartyCache.getPartyByPlayer(d.ownerUUID);
+            boolean sameParty = playerParty != null && ownerParty != null &&
+                    playerParty.getPartyId().equals(ownerParty.getPartyId());
+            color = sameParty ? COLOR_PARTY : COLOR_OTHER;
         }
 
         GuiDraw.drawRect(dx, dy, size, size, color);

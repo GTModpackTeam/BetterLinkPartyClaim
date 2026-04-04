@@ -187,10 +187,8 @@ public class ChunkMapScreen extends CustomModularScreen {
 
     private int countMyChunks(boolean forceLoadedOnly) {
         UUID myId = Minecraft.getMinecraft().player.getUniqueID();
-        int count = 0;
-        for (ClaimedChunkData d : ClientCache.getAll()) {
-            if (d.ownerUUID.equals(myId) && (!forceLoadedOnly || d.isForceLoaded)) count++;
-        }
-        return count;
+        return (int) ClientCache.getAll().stream()
+                .filter(d -> d.ownerUUID.equals(myId) && (!forceLoadedOnly || d.isForceLoaded))
+                .count();
     }
 }

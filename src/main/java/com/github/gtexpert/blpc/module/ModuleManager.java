@@ -2,6 +2,7 @@ package com.github.gtexpert.blpc.module;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import net.minecraft.util.ResourceLocation;
@@ -101,14 +102,20 @@ public class ModuleManager implements IModuleManager {
         }
     }
 
-    public void onConstruction(FMLConstructionEvent event) {
-        currentStage = ModuleStage.CONSTRUCTION;
+    private void dispatchLifecycle(ModuleStage stage, Consumer<IModule> action) {
+        currentStage = stage;
         for (IModule module : loadedModules) {
             currentContainer = containers.get(getContainerID(module));
-            module.getLogger().debug("Construction start");
-            module.construction(event);
-            module.getLogger().debug("Construction complete");
+            action.accept(module);
         }
+    }
+
+    public void onConstruction(FMLConstructionEvent event) {
+        dispatchLifecycle(ModuleStage.CONSTRUCTION, m -> {
+            m.getLogger().debug("Construction start");
+            m.construction(event);
+            m.getLogger().debug("Construction complete");
+        });
     }
 
     public void onPreInit(FMLPreInitializationEvent event) {
@@ -127,55 +134,35 @@ public class ModuleManager implements IModuleManager {
     }
 
     public void onInit(FMLInitializationEvent event) {
-        currentStage = ModuleStage.INIT;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.getLogger().debug("Init start");
-            module.init(event);
-            module.getLogger().debug("Init complete");
-        }
+        dispatchLifecycle(ModuleStage.INIT, m -> {
+            m.getLogger().debug("Init start");
+            m.init(event);
+            m.getLogger().debug("Init complete");
+        });
     }
 
     public void onPostInit(FMLPostInitializationEvent event) {
-        currentStage = ModuleStage.POST_INIT;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.getLogger().debug("Post-init start");
-            module.postInit(event);
-            module.getLogger().debug("Post-init complete");
-        }
+        dispatchLifecycle(ModuleStage.POST_INIT, m -> {
+            m.getLogger().debug("Post-init start");
+            m.postInit(event);
+            m.getLogger().debug("Post-init complete");
+        });
     }
 
     public void onLoadComplete(FMLLoadCompleteEvent event) {
-        currentStage = ModuleStage.FINISHED;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.loadComplete(event);
-        }
+        dispatchLifecycle(ModuleStage.FINISHED, m -> m.loadComplete(event));
     }
 
     public void onServerAboutToStart(FMLServerAboutToStartEvent event) {
-        currentStage = ModuleStage.SERVER_ABOUT_TO_START;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.serverAboutToStart(event);
-        }
+        dispatchLifecycle(ModuleStage.SERVER_ABOUT_TO_START, m -> m.serverAboutToStart(event));
     }
 
     public void onServerStarting(FMLServerStartingEvent event) {
-        currentStage = ModuleStage.SERVER_STARTING;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.serverStarting(event);
-        }
+        dispatchLifecycle(ModuleStage.SERVER_STARTING, m -> m.serverStarting(event));
     }
 
     public void onServerStarted(FMLServerStartedEvent event) {
-        currentStage = ModuleStage.SERVER_STARTED;
-        for (IModule module : loadedModules) {
-            currentContainer = containers.get(getContainerID(module));
-            module.serverStarted(event);
-        }
+        dispatchLifecycle(ModuleStage.SERVER_STARTED, m -> m.serverStarted(event));
     }
 
     public void onServerStopping(FMLServerStoppingEvent event) {

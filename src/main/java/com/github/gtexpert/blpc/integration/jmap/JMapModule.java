@@ -50,6 +50,7 @@ public class JMapModule extends IntegrationSubmodule {
     @SubscribeEvent
     public void onClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
         if (syncHandler != null) {
+            syncHandler.unregister();
             syncHandler.register();
         }
     }

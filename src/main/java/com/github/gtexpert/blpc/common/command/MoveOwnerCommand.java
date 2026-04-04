@@ -12,6 +12,7 @@ import net.minecraft.util.text.TextComponentTranslation;
 import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
 import com.github.gtexpert.blpc.common.party.PartyRole;
@@ -58,6 +59,7 @@ public class MoveOwnerCommand extends CommandBase {
 
         party.setRole(newOwner.getUniqueID(), PartyRole.OWNER);
         PartyProviderRegistry.get().syncToAll();
+        BLPCSaveHandler.INSTANCE.markDirty();
         sender.sendMessage(
                 new TextComponentTranslation("command.blpc.move_owner.success", parsedPartyId, newOwner.getName()));
     }

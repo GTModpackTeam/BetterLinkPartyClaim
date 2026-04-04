@@ -39,6 +39,7 @@ public class PlayerLoginHandler {
                 Party oldParty = pmData.getPartyByPlayer(offlineUUID);
                 if (oldParty != null && pmData.getPartyByPlayer(onlineUUID) == null) {
                     PartyRole role = oldParty.getRole(offlineUUID);
+                    if (role == null) role = PartyRole.MEMBER;
                     oldParty.removeMember(offlineUUID);
                     oldParty.addMember(onlineUUID, role);
 

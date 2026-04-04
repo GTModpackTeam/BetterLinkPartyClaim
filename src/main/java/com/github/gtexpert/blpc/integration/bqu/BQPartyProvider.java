@@ -23,7 +23,6 @@ import com.github.gtexpert.blpc.common.party.DefaultPartyProvider;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
 import com.github.gtexpert.blpc.common.party.PartyRole;
-import com.github.gtexpert.blpc.common.party.TrustAction;
 
 import betterquesting.api.api.ApiReference;
 import betterquesting.api.api.QuestingAPI;
@@ -320,20 +319,7 @@ public class BQPartyProvider implements IPartyProvider {
             }
             Party sourceSelfParty = ownerSelfParty != null ? ownerSelfParty : fallbackSelfParty;
             if (sourceSelfParty != null) {
-                party.setDescription(sourceSelfParty.getDescription());
-                party.setColor(sourceSelfParty.getColor());
-                party.setFreeToJoin(sourceSelfParty.isFreeToJoin());
-                party.setFakePlayerTrustLevel(sourceSelfParty.getFakePlayerTrustLevel());
-                party.setProtectExplosions(sourceSelfParty.protectsExplosions());
-                for (TrustAction ta : TrustAction.values()) {
-                    party.setTrustLevel(ta, sourceSelfParty.getTrustLevel(ta));
-                }
-                for (UUID allyId : sourceSelfParty.getAllies()) {
-                    party.addAlly(allyId);
-                }
-                for (UUID enemyId : sourceSelfParty.getEnemies()) {
-                    party.addEnemy(enemyId);
-                }
+                party.copySettingsFrom(sourceSelfParty);
             }
             party.resolvePlayerNames();
             list.appendTag(party.toSyncNBT());

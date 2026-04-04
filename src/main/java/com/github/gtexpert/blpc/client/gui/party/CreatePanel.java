@@ -73,23 +73,12 @@ public class CreatePanel {
         // Scrollable list of available parties (invites + free-to-join)
         List<PartyEntry> entries = collectAvailableParties(playerId);
 
-        @SuppressWarnings("rawtypes")
-        ListWidget list = new ListWidget();
-        list.left(8).right(8).top(44).bottom(8);
-        list.crossAxisAlignment(Alignment.CrossAxis.START);
+        panel.child(new ListWidget<>()
+                .left(8).right(8).top(44).bottom(8)
+                .crossAxisAlignment(Alignment.CrossAxis.START)
+                .children(entries, entry -> createPartyRow(entry, panel)));
 
-        for (PartyEntry entry : entries) {
-            list.child(createPartyRow(entry, panel));
-        }
-
-        panel.child(list);
-
-        Runnable syncListener = () -> {
-            if (!panel.isOpen()) return;
-            PartyWidgets.reopenPanel(panel, CreatePanel::build);
-        };
-        ClientPartyCache.addSyncListener(syncListener);
-        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+        PartyWidgets.addAutoRefreshListener(panel, CreatePanel::build);
 
         return panel;
     }

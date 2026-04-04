@@ -12,13 +12,13 @@ import com.github.gtexpert.blpc.common.network.ModNetwork;
 
 /**
  * Server-side chunk claim storage. Singleton, persisted by {@link com.github.gtexpert.blpc.common.BLPCSaveHandler}.
- * Claims are keyed by "{@code x,z}" string and grouped per-party in save files.
+ * Claims are keyed by a packed {@code long} (x &lt;&lt; 32 | z) and grouped per-party in save files.
  */
 public class ChunkManagerData {
 
     private static volatile ChunkManagerData instance;
 
-    private final Map<String, ClaimedChunkData> claims = new ConcurrentHashMap<>();
+    private final Map<Long, ClaimedChunkData> claims = new ConcurrentHashMap<>();
 
     public static synchronized ChunkManagerData getInstance() {
         if (instance == null) {
@@ -31,8 +31,8 @@ public class ChunkManagerData {
         instance = new ChunkManagerData();
     }
 
-    public static String chunkKey(int x, int z) {
-        return x + "," + z;
+    public static long chunkKey(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
     }
 
     public ClaimedChunkData getClaim(int x, int z) {
@@ -40,7 +40,7 @@ public class ChunkManagerData {
     }
 
     public void setClaim(int x, int z, UUID owner, String name, String partyName, boolean isForceLoaded) {
-        String key = chunkKey(x, z);
+        long key = chunkKey(x, z);
         if (owner == null) {
             claims.remove(key);
         } else {
@@ -59,19 +59,15 @@ public class ChunkManagerData {
     }
 
     public int countClaims(UUID owner) {
-        int count = 0;
-        for (ClaimedChunkData d : claims.values()) {
-            if (d.ownerUUID.equals(owner)) count++;
-        }
-        return count;
+        return (int) claims.values().stream()
+                .filter(d -> d.ownerUUID.equals(owner))
+                .count();
     }
 
     public int countForceLoads(UUID owner) {
-        int count = 0;
-        for (ClaimedChunkData d : claims.values()) {
-            if (d.ownerUUID.equals(owner) && d.isForceLoaded) count++;
-        }
-        return count;
+        return (int) claims.values().stream()
+                .filter(d -> d.ownerUUID.equals(owner) && d.isForceLoaded)
+                .count();
     }
 
     /**
@@ -102,8 +98,8 @@ public class ChunkManagerData {
 
     public NBTTagCompound serializeAll() {
         NBTTagCompound all = new NBTTagCompound();
-        for (Map.Entry<String, ClaimedChunkData> entry : claims.entrySet()) {
-            all.setTag(entry.getKey(), entry.getValue().toNBT());
+        for (Map.Entry<Long, ClaimedChunkData> entry : claims.entrySet()) {
+            all.setTag(Long.toString(entry.getKey()), entry.getValue().toNBT());
         }
         return all;
     }

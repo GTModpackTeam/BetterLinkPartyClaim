@@ -94,26 +94,24 @@ public class BLPCSaveHandler {
     }
 
     public void saveConfig(PartyManagerData data) {
-        File tmpFile = new File(dataDir, "config.dat.tmp");
         File finalFile = new File(dataDir, "config.dat");
-        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
-            NBTTagCompound nbt = new NBTTagCompound();
-            data.writeConfigNBT(nbt);
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeConfigNBT(nbt);
+        writeCompressedAtomic(finalFile, nbt);
+    }
+
+    private boolean writeCompressedAtomic(File file, NBTTagCompound nbt) {
+        var tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (var fos = new FileOutputStream(tmpFile)) {
             CompressedStreamTools.writeCompressed(nbt, fos);
             try {
                 fos.getFD().sync();
-            } catch (SyncFailedException ignored) {
-                ModLog.IO.debug("fsync not supported for config.dat.tmp");
-            }
+            } catch (SyncFailedException ignored) {}
+            return tmpFile.renameTo(file);
         } catch (IOException e) {
-            ModLog.IO.error("Failed to write config.dat.tmp", e);
+            ModLog.IO.error("Failed to write {}", file.getName(), e);
             tmpFile.delete();
-            return;
-        }
-        finalFile.delete();
-        if (!tmpFile.renameTo(finalFile)) {
-            ModLog.IO.error("Failed to rename config.dat.tmp to config.dat");
-            tmpFile.delete();
+            return false;
         }
     }
 
@@ -135,45 +133,18 @@ public class BLPCSaveHandler {
 
     public void saveParties(PartyManagerData data) {
         List<File> tmpFiles = new ArrayList<>();
-        boolean allOk = true;
 
         for (Party party : data.getAllParties()) {
-            File tmpFile = new File(partiesDir, party.getPartyId() + ".dat.tmp");
-            try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
-                CompressedStreamTools.writeCompressed(party.toNBT(), fos);
-                try {
-                    fos.getFD().sync();
-                } catch (SyncFailedException ignored) {
-                    ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
-                }
-                tmpFiles.add(tmpFile);
-            } catch (IOException e) {
-                ModLog.IO.error("Failed to write party temp file: {}", tmpFile.getName(), e);
-                allOk = false;
-                break;
+            var tmpFile = new File(partiesDir, party.getPartyId() + ".dat.tmp");
+            if (!writeCompressedTemp(tmpFile, party.toNBT())) {
+                for (File tmp : tmpFiles) tmp.delete();
+                ModLog.IO.error("Party save aborted; old files preserved");
+                return;
             }
+            tmpFiles.add(tmpFile);
         }
 
-        if (!allOk) {
-            for (File tmp : tmpFiles) tmp.delete();
-            ModLog.IO.error("Party save aborted; old files preserved");
-            return;
-        }
-
-        backupDir(partiesDir, "parties");
-
-        File[] oldFiles = partiesDir.listFiles((dir, name) -> name.endsWith(".dat"));
-        if (oldFiles != null) {
-            for (File f : oldFiles) f.delete();
-        }
-
-        for (File tmp : tmpFiles) {
-            String finalName = tmp.getName().replace(".dat.tmp", ".dat");
-            File finalFile = new File(partiesDir, finalName);
-            if (!tmp.renameTo(finalFile)) {
-                ModLog.IO.error("Failed to rename party temp file: {}", tmp.getName());
-            }
-        }
+        backupAndSwap(partiesDir, "parties", tmpFiles, "party");
     }
 
     // --- Claims (per-party files) ---
@@ -223,54 +194,49 @@ public class BLPCSaveHandler {
 
         // Write all temp files first
         List<File> tmpFiles = new ArrayList<>();
-        boolean allOk = true;
         for (var entry : toWrite.entrySet()) {
-            File tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
-            if (!saveClaimListTemp(tmpFile, entry.getValue())) {
-                allOk = false;
-                break;
+            var tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
+            NBTTagCompound nbt = new NBTTagCompound();
+            nbt.setTag("claims", entry.getValue());
+            if (!writeCompressedTemp(tmpFile, nbt)) {
+                for (File tmp : tmpFiles) tmp.delete();
+                ModLog.IO.error("Claims save aborted; old files preserved");
+                return;
             }
             tmpFiles.add(tmpFile);
         }
 
-        if (!allOk) {
-            for (File tmp : tmpFiles) tmp.delete();
-            ModLog.IO.error("Claims save aborted; old files preserved");
-            return;
+        backupAndSwap(claimsDir, "claims", tmpFiles, "claim");
+    }
+
+    private boolean writeCompressedTemp(File tmpFile, NBTTagCompound nbt) {
+        try (var fos = new FileOutputStream(tmpFile)) {
+            CompressedStreamTools.writeCompressed(nbt, fos);
+            try {
+                fos.getFD().sync();
+            } catch (SyncFailedException ignored) {}
+            return true;
+        } catch (IOException e) {
+            ModLog.IO.error("Failed to write temp file: {}", tmpFile.getName(), e);
+            tmpFile.delete();
+            return false;
         }
+    }
 
-        backupDir(claimsDir, "claims");
+    private void backupAndSwap(File dir, String subDirName, List<File> tmpFiles, String label) {
+        backupDir(dir, subDirName);
 
-        // Swap: delete old .dat files then rename .tmp to .dat
-        File[] oldFiles = claimsDir.listFiles((dir, name) -> name.endsWith(".dat"));
+        File[] oldFiles = dir.listFiles((d, name) -> name.endsWith(".dat"));
         if (oldFiles != null) {
             for (File f : oldFiles) f.delete();
         }
 
         for (File tmp : tmpFiles) {
             String finalName = tmp.getName().replace(".dat.tmp", ".dat");
-            File finalFile = new File(claimsDir, finalName);
+            File finalFile = new File(dir, finalName);
             if (!tmp.renameTo(finalFile)) {
-                ModLog.IO.error("Failed to rename claim temp file: {}", tmp.getName());
+                ModLog.IO.error("Failed to rename {} temp file: {}", label, tmp.getName());
             }
-        }
-    }
-
-    private boolean saveClaimListTemp(File tmpFile, NBTTagList list) {
-        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
-            NBTTagCompound nbt = new NBTTagCompound();
-            nbt.setTag("claims", list);
-            CompressedStreamTools.writeCompressed(nbt, fos);
-            try {
-                fos.getFD().sync();
-            } catch (SyncFailedException ignored) {
-                ModLog.IO.debug("fsync not supported for {}", tmpFile.getName());
-            }
-            return true;
-        } catch (IOException e) {
-            ModLog.IO.error("Failed to write claim temp file: {}", tmpFile.getName(), e);
-            tmpFile.delete();
-            return false;
         }
     }
 

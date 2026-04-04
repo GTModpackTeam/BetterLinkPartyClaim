@@ -1,10 +1,14 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.EnumDyeColor;
@@ -28,7 +32,6 @@ import com.github.gtexpert.blpc.client.gui.party.widget.InputDialog;
 import com.github.gtexpert.blpc.client.gui.party.widget.PartySelectDialog;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
-import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.TrustAction;
 import com.github.gtexpert.blpc.common.party.TrustLevel;
@@ -58,6 +61,8 @@ public class SettingsPanel {
     public static ModularPanel build(Party party) {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(PanelSizes.LARGE_W, PanelSizes.LARGE_H);
+
+        Runnable refreshPanel = () -> PartyWidgets.reopenPanel(panel, () -> SettingsPanel.build(party));
 
         PanelBuilder.addHeader(panel, "blpc.party.settings_title");
 
@@ -164,17 +169,18 @@ public class SettingsPanel {
         list.child(sectionHeader("blpc.party.settings_allies").marginTop(8));
 
         // Show current allies as removable entries
-        for (UUID allyId : party.getAllies()) {
+        list.children(party.getAllies(), allyId -> {
             String allyName = party.getAllyPartyName(allyId);
-            list.child(new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
+            return new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
                     .overlay(IKey.str(TextFormatting.YELLOW.toString() + allyName).alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_ally"))
                     .onMousePressed(btn -> {
                         party.removeAlly(allyId);
                         ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeAlly(allyId));
+                        refreshPanel.run();
                         return true;
-                    }));
-        }
+                    });
+        });
 
         final UUID myPartyId = party.getPartyId();
         list.child(PartyWidgets.createActionButton(
@@ -190,6 +196,7 @@ public class SettingsPanel {
                             .onSelect(selectedId -> {
                                 party.addAlly(selectedId);
                                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addAlly(selectedId));
+                                refreshPanel.run();
                             })
                             .build(), true).openPanel();
                 })
@@ -198,17 +205,18 @@ public class SettingsPanel {
         list.child(sectionHeader("blpc.party.settings_enemies").marginTop(8));
 
         // Show current enemies as removable entries
-        for (UUID enemyId : party.getEnemies()) {
+        list.children(party.getEnemies(), enemyId -> {
             String enemyName = party.getEnemyPartyName(enemyId);
-            list.child(new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
+            return new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
                     .overlay(IKey.str(TextFormatting.RED.toString() + enemyName).alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_enemy"))
                     .onMousePressed(btn -> {
                         party.removeEnemy(enemyId);
                         ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeEnemy(enemyId));
+                        refreshPanel.run();
                         return true;
-                    }));
-        }
+                    });
+        });
 
         list.child(PartyWidgets.createActionButton(
                 IKey.lang("blpc.party.add_enemy").alignment(Alignment.CenterLeft),
@@ -223,6 +231,7 @@ public class SettingsPanel {
                             .onSelect(selectedId -> {
                                 party.addEnemy(selectedId);
                                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addEnemy(selectedId));
+                                refreshPanel.run();
                             })
                             .build(), true).openPanel();
                 })
@@ -231,17 +240,7 @@ public class SettingsPanel {
         panel.child(list);
 
         // Re-build panel on server sync so ally/enemy lists stay current
-        Runnable syncListener = () -> {
-            if (!panel.isOpen()) return;
-            Party refreshed = ClientPartyCache.getParty(party.getPartyId());
-            if (refreshed == null) {
-                panel.closeIfOpen();
-                return;
-            }
-            PartyWidgets.reopenPanel(panel, () -> SettingsPanel.build(refreshed));
-        };
-        ClientPartyCache.addSyncListener(syncListener);
-        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+        PartyWidgets.addPartyRefreshListener(panel, party.getPartyId(), SettingsPanel::build);
 
         return panel;
     }
@@ -256,54 +255,55 @@ public class SettingsPanel {
     }
 
     private static CycleButtonWidget createTrustCycleButton(Party party, TrustAction action) {
-        CycleButtonWidget btn = new CycleButtonWidget()
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0)
-                .stateCount(CYCLE_LEVELS.length)
-                .value(new IntValue.Dynamic(
-                        () -> trustLevelToIndex(party.getTrustLevel(action)),
-                        val -> {
-                            TrustLevel level = CYCLE_LEVELS[val];
-                            party.setTrustLevel(action, level);
-                            ModNetwork.INSTANCE.sendToServer(
-                                    MessagePartyAction.setTrustLevel(action.getNbtKey() + ":" + level.name()));
-                        }))
-                .overlay(IKey.dynamic(() -> buildTrustLabel(party, action)).alignment(Alignment.CenterLeft));
-        btn.addTooltipLine(
-                IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.trust_level").get()));
-        btn.addTooltipLine(IKey.dynamic(() -> defaultTooltip(IKey.lang(
-                "blpc.party.trust_level." + action.getDefaultLevel().name().toLowerCase(Locale.ROOT)).get())));
-        btn.addTooltipLine(IKey.str(""));
-        btn.addTooltipLine(IKey.dynamic(() -> buildSelectionList(party.getTrustLevel(action))));
-        return btn;
+        return createCycleButton(
+                () -> trustLevelToIndex(party.getTrustLevel(action)),
+                val -> {
+                    TrustLevel level = CYCLE_LEVELS[val];
+                    party.setTrustLevel(action, level);
+                    ModNetwork.INSTANCE.sendToServer(
+                            MessagePartyAction.setTrustLevel(action.getNbtKey() + ":" + level.name()));
+                },
+                () -> buildTrustLabel(party, action),
+                "blpc.party.tooltip.trust_level",
+                () -> IKey.lang("blpc.party.trust_level." + action.getDefaultLevel().name().toLowerCase(Locale.ROOT))
+                        .get(),
+                () -> party.getTrustLevel(action));
     }
 
     private static CycleButtonWidget createFakePlayerCycleButton(Party party) {
-        CycleButtonWidget btn = new CycleButtonWidget()
+        return createCycleButton(
+                () -> trustLevelToIndex(party.getFakePlayerTrustLevel()),
+                val -> {
+                    TrustLevel level = CYCLE_LEVELS[val];
+                    party.setFakePlayerTrustLevel(level);
+                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setFakePlayerTrust(level.name()));
+                },
+                () -> buildFakePlayerLabel(party),
+                "blpc.party.tooltip.fakeplayer",
+                () -> IKey.lang("blpc.party.trust_level." + TrustLevel.ALLY.name().toLowerCase(Locale.ROOT)).get(),
+                party::getFakePlayerTrustLevel);
+    }
+
+    private static CycleButtonWidget createCycleButton(
+                                                       IntSupplier getter, IntConsumer setter,
+                                                       Supplier<String> labelBuilder,
+                                                       String tooltipKey, Supplier<String> defaultValueBuilder,
+                                                       Supplier<TrustLevel> currentLevelForList) {
+        var btn = new CycleButtonWidget()
                 .size(W - 16, BTN_H).padding(4, 0, 0, 0)
                 .stateCount(CYCLE_LEVELS.length)
-                .value(new IntValue.Dynamic(
-                        () -> trustLevelToIndex(party.getFakePlayerTrustLevel()),
-                        val -> {
-                            TrustLevel level = CYCLE_LEVELS[val];
-                            party.setFakePlayerTrustLevel(level);
-                            ModNetwork.INSTANCE.sendToServer(
-                                    MessagePartyAction.setFakePlayerTrust(level.name()));
-                        }))
-                .overlay(IKey.dynamic(() -> buildFakePlayerLabel(party)).alignment(Alignment.CenterLeft));
+                .value(new IntValue.Dynamic(getter, setter))
+                .overlay(IKey.dynamic(labelBuilder::get).alignment(Alignment.CenterLeft));
         btn.addTooltipLine(
-                IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.fakeplayer").get()));
-        btn.addTooltipLine(IKey.dynamic(() -> defaultTooltip(IKey.lang(
-                "blpc.party.trust_level." + TrustLevel.ALLY.name().toLowerCase(Locale.ROOT)).get())));
+                IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang(tooltipKey).get()));
+        btn.addTooltipLine(IKey.dynamic(() -> defaultTooltip(defaultValueBuilder.get())));
         btn.addTooltipLine(IKey.str(""));
-        btn.addTooltipLine(IKey.dynamic(() -> buildSelectionList(party.getFakePlayerTrustLevel())));
+        btn.addTooltipLine(IKey.dynamic(() -> buildSelectionList(currentLevelForList.get())));
         return btn;
     }
 
     private static int trustLevelToIndex(TrustLevel level) {
-        for (int i = 0; i < CYCLE_LEVELS.length; i++) {
-            if (CYCLE_LEVELS[i] == level) return i;
-        }
-        return 0;
+        return Math.max(0, Arrays.asList(CYCLE_LEVELS).indexOf(level));
     }
 
     private static String buildTrustLabel(Party party, TrustAction action) {

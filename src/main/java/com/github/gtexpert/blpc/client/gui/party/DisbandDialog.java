@@ -1,16 +1,11 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
-import java.util.UUID;
-
-import net.minecraft.client.Minecraft;
-
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.widgets.Dialog;
 
 import com.github.gtexpert.blpc.client.gui.party.widget.ConfirmDialog;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
-import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 
 /**
  * Disband confirmation dialog (panel ID: {@value #PANEL_ID}).
@@ -33,9 +28,7 @@ public class DisbandDialog {
                 .closeParent(false)
                 .onConfirm(() -> {
                     ModNetwork.INSTANCE.sendToServer(MessagePartyAction.disband());
-                    UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
-                    ClientPartyCache.setLocalBQuLinked(playerId, false);
-                    ClientPartyCache.clear();
+                    PartyWidgets.clearLocalPartyData();
                 })
                 .build(parentPanel);
     }

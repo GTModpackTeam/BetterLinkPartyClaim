@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -14,7 +15,6 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.client.gui.party.PanelSizes;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
-import com.github.gtexpert.blpc.common.party.Party;
 
 /**
  * Reusable party selection dialog.
@@ -74,28 +74,27 @@ public final class PartySelectDialog {
                     .asWidget().pos(8, 6));
             dialog.child(ButtonWidget.panelCloseButton());
 
-            @SuppressWarnings("rawtypes")
-            ListWidget partyList = new ListWidget();
-            partyList.left(8).right(8).top(22).bottom(4);
-            partyList.crossAxisAlignment(Alignment.CrossAxis.START);
-
             Set<UUID> excludedFinal = this.excluded;
             Consumer<UUID> onSelectFinal = this.onSelect;
 
-            for (Party p : ClientPartyCache.getAllParties()) {
-                if (excludedFinal.contains(p.getPartyId())) continue;
-                UUID pId = p.getPartyId();
-                String pName = p.getName();
-                partyList.child(new ButtonWidget<>().size(180, 16).padding(4, 0, 0, 0)
-                        .overlay(IKey.str(pName).alignment(Alignment.CenterLeft))
-                        .onMousePressed(btn -> {
-                            onSelectFinal.accept(pId);
-                            dialog.closeWith(null);
-                            return true;
-                        }));
-            }
+            var visible = ClientPartyCache.getAllParties().stream()
+                    .filter(p -> !excludedFinal.contains(p.getPartyId()))
+                    .collect(Collectors.toList());
 
-            dialog.child(partyList);
+            dialog.child(new ListWidget<>()
+                    .left(8).right(8).top(22).bottom(4)
+                    .crossAxisAlignment(Alignment.CrossAxis.START)
+                    .children(visible, p -> {
+                        UUID pId = p.getPartyId();
+                        String pName = p.getName();
+                        return new ButtonWidget<>().size(180, 16).padding(4, 0, 0, 0)
+                                .overlay(IKey.str(pName).alignment(Alignment.CenterLeft))
+                                .onMousePressed(btn -> {
+                                    onSelectFinal.accept(pId);
+                                    dialog.closeWith(null);
+                                    return true;
+                                });
+                    }));
             return dialog;
         }
     }

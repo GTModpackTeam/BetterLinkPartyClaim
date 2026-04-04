@@ -12,7 +12,11 @@ import net.minecraft.world.chunk.Chunk;
 
 public class AsyncMapRenderer {
 
-    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, r -> {
+        var t = new Thread(r, "BLPC-MapRenderer");
+        t.setDaemon(true);
+        return t;
+    });
     private static final Map<Long, int[]> COLOR_CACHE = new ConcurrentHashMap<>();
     private static final Set<Long> PROCESSING = ConcurrentHashMap.newKeySet();
 

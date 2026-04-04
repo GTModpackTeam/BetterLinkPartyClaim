@@ -15,7 +15,6 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
-import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 
@@ -41,27 +40,13 @@ public class MembersPanel {
 
         PanelBuilder.addHeader(panel, "blpc.party.members_title");
 
-        @SuppressWarnings("rawtypes")
-        ListWidget list = new ListWidget();
-
-        List<PlayerEntry> entries = collectAllPlayers(party);
-        for (PlayerEntry entry : entries) {
-            list.child(createRow(entry, party, playerId, myRole, canManage));
-        }
+        var entries = collectAllPlayers(party);
+        ListWidget<?, ?> list = new ListWidget<>()
+                .children(entries, entry -> createRow(entry, party, playerId, myRole, canManage, panel));
 
         PanelBuilder.addList(panel, list);
 
-        Runnable syncListener = () -> {
-            if (!panel.isOpen()) return;
-            Party refreshed = ClientPartyCache.getParty(party.getPartyId());
-            if (refreshed == null) {
-                panel.closeIfOpen();
-                return;
-            }
-            PartyWidgets.reopenPanel(panel, () -> MembersPanel.build(refreshed));
-        };
-        ClientPartyCache.addSyncListener(syncListener);
-        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+        PartyWidgets.addPartyRefreshListener(panel, party.getPartyId(), MembersPanel::build);
 
         return panel;
     }
@@ -90,7 +75,7 @@ public class MembersPanel {
     }
 
     private static Flow createRow(PlayerEntry entry, Party party, UUID playerId,
-                                  PartyRole myRole, boolean canManage) {
+                                  PartyRole myRole, boolean canManage, ModularPanel panel) {
         int color;
         if (entry.isMember) {
             color = PartyWidgets.getRoleColor(entry.role);
@@ -115,6 +100,7 @@ public class MembersPanel {
                 String playerName = entry.name;
                 btn.onMousePressed(b -> {
                     ModNetwork.INSTANCE.sendToServer(MessagePartyAction.kickOrLeave(playerName));
+                    panel.closeIfOpen();
                     return true;
                 });
                 btn.addTooltipLine(IKey.lang("blpc.party.tooltip.member_self"));
@@ -123,6 +109,7 @@ public class MembersPanel {
                 String playerName = entry.name;
                 btn.onMousePressed(b -> {
                     ModNetwork.INSTANCE.sendToServer(MessagePartyAction.kickOrLeave(playerName));
+                    panel.closeIfOpen();
                     return true;
                 });
                 btn.addTooltipLine(IKey.lang("blpc.party.tooltip.kick"));
@@ -132,6 +119,7 @@ public class MembersPanel {
             String playerName = entry.name;
             btn.onMousePressed(b -> {
                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.invite(playerName));
+                panel.closeIfOpen();
                 return true;
             });
             btn.addTooltipLine(IKey.lang("blpc.party.tooltip.invite"));
