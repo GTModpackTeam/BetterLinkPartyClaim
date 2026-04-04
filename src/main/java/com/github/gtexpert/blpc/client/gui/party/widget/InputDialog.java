@@ -2,10 +2,7 @@ package com.github.gtexpert.blpc.client.gui.party.widget;
 
 import java.util.function.Consumer;
 
-import org.lwjgl.input.Keyboard;
-
 import com.cleanroommc.modularui.api.drawable.IKey;
-import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -15,6 +12,7 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.client.gui.party.PanelSizes;
+import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
 
 /**
  * Reusable text input dialog template.
@@ -130,17 +128,7 @@ public final class InputDialog {
                 dialog.closeWith(null);
             };
 
-            TextFieldWidget textField = new TextFieldWidget() {
-
-                @Override
-                public Interactable.Result onKeyPressed(char c, int keyCode) {
-                    if (keyCode == Keyboard.KEY_RETURN) {
-                        doSubmit.run();
-                        return Interactable.Result.SUCCESS;
-                    }
-                    return super.onKeyPressed(c, keyCode);
-                }
-            };
+            TextFieldWidget textField = PartyWidgets.createEnterSubmitTextField(doSubmit);
             fieldRef[0] = textField;
             if (!defaultValue.isEmpty()) {
                 textField.value(new StringValue(defaultValue));

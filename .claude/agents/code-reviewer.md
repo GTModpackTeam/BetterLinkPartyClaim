@@ -31,6 +31,9 @@ Project architecture is provided via the blpc-overview skill.
 - Proper use of `ModLog` categories for logging
 - Trust level / trust action consistency
 
+### Java 17 Syntax (Mandatory)
+- All Java 17 features enforced per blpc-overview skill (switch expressions, pattern matching instanceof, `var`, multi-label case)
+
 ### Comments & Javadoc
 - Public API classes/interfaces (`api/` package) have Javadoc with `@param`, `@return`, `@throws` as appropriate
 - Non-obvious logic has inline comments explaining "why", not "what"

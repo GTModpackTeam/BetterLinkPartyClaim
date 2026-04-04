@@ -215,7 +215,7 @@ public class BLPCSaveHandler {
         if (globalList.tagCount() > 0) {
             toWrite.put("global", globalList);
         }
-        for (Map.Entry<UUID, NBTTagList> entry : partyLists.entrySet()) {
+        for (var entry : partyLists.entrySet()) {
             if (entry.getValue().tagCount() > 0) {
                 toWrite.put(entry.getKey().toString(), entry.getValue());
             }
@@ -224,7 +224,7 @@ public class BLPCSaveHandler {
         // Write all temp files first
         List<File> tmpFiles = new ArrayList<>();
         boolean allOk = true;
-        for (Map.Entry<String, NBTTagList> entry : toWrite.entrySet()) {
+        for (var entry : toWrite.entrySet()) {
             File tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
             if (!saveClaimListTemp(tmpFile, entry.getValue())) {
                 allOk = false;

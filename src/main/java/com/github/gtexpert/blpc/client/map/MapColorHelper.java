@@ -86,7 +86,7 @@ public class MapColorHelper {
      */
     public static int[] computeChunkColors(World world, Chunk chunk, Chunk northChunk, int cx, int cz) {
         int[] colors = new int[256];
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        var pos = new BlockPos.MutableBlockPos();
         int bx = cx << 4;
         int bz = cz << 4;
 

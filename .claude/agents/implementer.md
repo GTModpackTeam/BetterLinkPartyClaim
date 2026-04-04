@@ -23,6 +23,7 @@ You receive tasks from the QA lead or the user. Your job is to:
 ## Key Rules
 
 - **Do not edit `build.gradle`** (auto-generated)
+- **Java 17 syntax is mandatory** per blpc-overview skill (switch expressions, pattern matching instanceof, `var`)
 - New network messages: append to `ModNetwork.init()` (never insert)
 - Party mutations: use player UUID, no partyId parameter
 - BQu integration: only through `integration/bqu/` package

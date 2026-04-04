@@ -15,6 +15,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 
@@ -49,6 +50,19 @@ public class MembersPanel {
         }
 
         PanelBuilder.addList(panel, list);
+
+        Runnable syncListener = () -> {
+            if (!panel.isOpen()) return;
+            Party refreshed = ClientPartyCache.getParty(party.getPartyId());
+            if (refreshed == null) {
+                panel.closeIfOpen();
+                return;
+            }
+            PartyWidgets.reopenPanel(panel, () -> MembersPanel.build(refreshed));
+        };
+        ClientPartyCache.addSyncListener(syncListener);
+        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+
         return panel;
     }
 

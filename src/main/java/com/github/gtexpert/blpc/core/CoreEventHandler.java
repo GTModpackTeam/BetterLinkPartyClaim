@@ -3,6 +3,7 @@ package com.github.gtexpert.blpc.core;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -32,6 +33,13 @@ public class CoreEventHandler {
 
     @SideOnly(Side.CLIENT)
     public static class ClientHandler {
+
+        @SubscribeEvent
+        public void onClientTick(TickEvent.ClientTickEvent event) {
+            if (event.phase == TickEvent.Phase.END) {
+                ClientPartyCache.onClientTick();
+            }
+        }
 
         @SubscribeEvent
         public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {

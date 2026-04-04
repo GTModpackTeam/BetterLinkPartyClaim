@@ -6,7 +6,30 @@ user-invocable: false
 
 # BLPC Architecture Reference
 
-Base package: `com.github.gtexpert.blpc`. Java 17 syntax is available via Jabel (`enableModernJavaSyntax = true`), targeting JVM 8.
+Base package: `com.github.gtexpert.blpc`.
+
+## Build System
+
+RetroFuturaGradle (RFG) with GTNH Buildscripts. **Do not edit `build.gradle`** (auto-generated). Mod-specific config: `buildscript.properties`. Dependencies: `dependencies.gradle`. Debug flags: `debug_bqu`, `debug_jmap`, `debug_all` in `buildscript.properties`. Spotless enforced (formatting: `spotless.importorder` local + `spotless.eclipseformat.xml` via Blowdryer).
+
+| Dependency | Role | Required? |
+|---|---|---|
+| ModularUI | GUI framework | Yes |
+| BetterQuesting Unofficial | Party system backend (when present) | Optional (module) |
+| JourneyMap API | Overlay integration | Optional |
+
+## Java 17 Syntax (Mandatory)
+
+Jabel (`enableModernJavaSyntax = true`) compiles Java 17 features to JVM 8 bytecode. **目的:** NPE削減（pattern matching で安全なキャスト）とコード量削減（switch expressions で冗長な break/cast を排除）。
+
+| Feature | Requirement | Example |
+|---|---|---|
+| **Switch expressions** | Always use arrow form (`->`) instead of colon+break | `case X -> { ... }` or `var x = switch(v) { case A -> 1; };` |
+| **Pattern matching instanceof** | Always use instead of separate cast | `if (obj instanceof MyClass mc)` not `if (obj instanceof MyClass) { MyClass mc = (MyClass) obj; }` |
+| **`var`** | Use for local variables where type is obvious from context | `var entry : map.entrySet()`, `var list = new ArrayList<>(...)` |
+| **Multi-label case** | Combine related cases | `case A, B, C -> { ... }` |
+
+Do NOT use `var` for: primitives, ambiguous types (e.g. `Collections.emptyMap()`), or fields.
 
 ## Module System
 
@@ -179,6 +202,42 @@ For Minecraft formatting codes in tooltip strings, use `TextFormatting` enum con
 
 For ModularUI API details, consult the ModularUI source code or documentation.
 
+## Client-Side Sync Pattern
+
+Party panels receive real-time updates via `ClientPartyCache.loadFromNBT()` (triggered by `MessagePartySync` from server). To prevent excessive rebuilds when multiple syncs arrive in rapid succession, `ClientPartyCache` uses a **tick-based coalesce** mechanism:
+
+1. `loadFromNBT()` sets `pendingSync = true` instead of firing listeners immediately.
+2. `onClientTick()` (called once per client tick from `CoreEventHandler.ClientHandler`) checks the flag and fires all listeners at most once per tick.
+
+**Registration pattern** (add at end of `build()`, before return):
+```java
+Runnable syncListener = () -> {
+    if (!panel.isOpen()) return;
+    Party refreshed = ClientPartyCache.getParty(party.getPartyId());
+    if (refreshed == null) {
+        panel.closeIfOpen();
+        return;
+    }
+    PartyWidgets.reopenPanel(panel, () -> PanelName.build(refreshed));
+};
+ClientPartyCache.addSyncListener(syncListener);
+panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+```
+
+**Panels with sync listeners:**
+
+| Panel | Behavior on sync |
+|---|---|
+| `MainPanel` | Rebuild with playerId |
+| `SettingsPanel` | Rebuild with refreshed party; close if disbanded |
+| `MembersPanel` | Rebuild with refreshed party; close if disbanded |
+| `ModeratorsPanel` | Rebuild with refreshed party; close if disbanded |
+| `CreatePanel` | Rebuild (refresh available parties list) |
+| `TransferOwnerDialog` | Close dialog (safest for modal) |
+
+**Panels without sync listeners** (no party state displayed):
+- `InviteDialog`, `DisbandDialog`, `LinkBQuDialog`, `UnlinkBQuDialog` — simple input/confirm dialogs
+
 ## UI Reusable Templates
 
 ### Dialog/Panel Templates (`client/gui/party/widget/`)
@@ -211,6 +270,8 @@ Shared utilities in `client/gui/party/PartyWidgets`:
 - `openSubPanel(parent, child)` — open a sub-panel exclusively
 - `reopenPanel(current, factory)` — close and reopen a panel (for list refresh)
 - `createActionButton(label, name, action)` — button with click handler
+- `createEnterSubmitTextField(onSubmit)` — text field that submits on Enter key press
+- `resetSubPanelHandler()` — clear cached handler state when parent screen closes
 
 ## Commands
 
@@ -238,18 +299,23 @@ Uses nested subcategories via `@Config.LangKey` (`config.blpc.<category>`). Acce
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `maxClaimsPerPlayer` | int (0–10000) | 1000 | Max chunks claimable per player |
-| `maxForceLoadsPerPlayer` | int (0–1000) | 64 | Max force-loaded chunks per player |
+| `maxForceLoadsPerPlayer` | int (0–10000) | 64 | Max force-loaded chunks per player |
 
 **Party** (`ModConfig.party`)
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `autoCreatePartySingleplayer` | boolean | true | Auto-create party in singleplayer |
-| `autoCreateServerParty` | boolean | false | Automatically create a shared party on server start |
-| `serverPartyName` | String | "server" | Name for the auto-created server party |
-| `autoCreatedPartyFreeToJoin` | boolean | true | Enable free-to-join on auto-created parties |
-| `autoCreatedPartyOwner` | String | "" | Player name who owns auto-created parties; empty = server-owned |
-| `autoCreatedPartyModerators` | String[] | [] | Player names to assign as moderators (ADMIN role) |
+| `autoCreatePartySingleplayer` | boolean | false | Auto-create party in singleplayer |
+
+**Server Party** (`ModConfig.serverParty`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | false | Automatically create a shared party on server start |
+| `name` | String | "Server" | Name for the auto-created server party |
+| `freeToJoin` | boolean | true | Enable free-to-join on the server party |
+| `owner` | String | "" | Player name who owns the server party; empty = server-owned |
+| `moderators` | String[] | [] | Player names to assign as moderators (ADMIN role) |
 
 **Data** (`ModConfig.data`)
 

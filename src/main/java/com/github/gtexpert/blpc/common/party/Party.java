@@ -107,7 +107,7 @@ public class Party {
     public void setRole(UUID uuid, PartyRole role) {
         if (!members.containsKey(uuid)) return;
         if (role == PartyRole.OWNER) {
-            for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
+            for (var entry : members.entrySet()) {
                 if (entry.getValue() == PartyRole.OWNER) {
                     entry.setValue(PartyRole.ADMIN);
                     break;
@@ -119,7 +119,7 @@ public class Party {
 
     @Nullable
     public UUID getOwner() {
-        for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
+        for (var entry : members.entrySet()) {
             if (entry.getValue() == PartyRole.OWNER) {
                 return entry.getKey();
             }
@@ -342,7 +342,7 @@ public class Party {
         tag.setLong("created", createdAt);
 
         NBTTagList memberList = new NBTTagList();
-        for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
+        for (var entry : members.entrySet()) {
             NBTTagCompound memberTag = new NBTTagCompound();
             memberTag.setUniqueId("uuid", entry.getKey());
             memberTag.setString("role", entry.getValue().name());
@@ -351,7 +351,7 @@ public class Party {
         tag.setTag("members", memberList);
 
         NBTTagCompound trustTag = new NBTTagCompound();
-        for (Map.Entry<TrustAction, TrustLevel> entry : requiredTrustLevels.entrySet()) {
+        for (var entry : requiredTrustLevels.entrySet()) {
             trustTag.setString(entry.getKey().getNbtKey(), entry.getValue().name());
         }
         tag.setTag("trustLevels", trustTag);
@@ -377,7 +377,7 @@ public class Party {
         // Player name cache
         if (!playerNames.isEmpty()) {
             NBTTagList nameList = new NBTTagList();
-            for (Map.Entry<UUID, String> entry : playerNames.entrySet()) {
+            for (var entry : playerNames.entrySet()) {
                 NBTTagCompound nameTag = new NBTTagCompound();
                 nameTag.setUniqueId("uuid", entry.getKey());
                 nameTag.setString("name", entry.getValue());
@@ -388,7 +388,7 @@ public class Party {
         // Ally party names
         if (!allyPartyNames.isEmpty()) {
             NBTTagList allyNameList = new NBTTagList();
-            for (Map.Entry<UUID, String> entry : allyPartyNames.entrySet()) {
+            for (var entry : allyPartyNames.entrySet()) {
                 NBTTagCompound nameTag = new NBTTagCompound();
                 nameTag.setUniqueId("uuid", entry.getKey());
                 nameTag.setString("name", entry.getValue());
@@ -399,7 +399,7 @@ public class Party {
         // Enemy party names
         if (!enemyPartyNames.isEmpty()) {
             NBTTagList enemyNameList = new NBTTagList();
-            for (Map.Entry<UUID, String> entry : enemyPartyNames.entrySet()) {
+            for (var entry : enemyPartyNames.entrySet()) {
                 NBTTagCompound nameTag = new NBTTagCompound();
                 nameTag.setUniqueId("uuid", entry.getKey());
                 nameTag.setString("name", entry.getValue());

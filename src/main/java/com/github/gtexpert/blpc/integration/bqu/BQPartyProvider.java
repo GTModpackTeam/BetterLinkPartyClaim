@@ -30,7 +30,6 @@ import betterquesting.api.api.QuestingAPI;
 import betterquesting.api.enums.EnumPartyStatus;
 import betterquesting.api.properties.NativeProps;
 import betterquesting.api.questing.party.IParty;
-import betterquesting.api2.storage.DBEntry;
 import betterquesting.network.handlers.NetPartySync;
 import betterquesting.questing.party.PartyInvitations;
 import betterquesting.questing.party.PartyManager;
@@ -51,7 +50,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean areInSameParty(UUID playerA, UUID playerB) {
         try {
-            for (DBEntry<IParty> entry : QuestingAPI.getAPI(ApiReference.PARTY_DB).getEntries()) {
+            for (var entry : QuestingAPI.getAPI(ApiReference.PARTY_DB).getEntries()) {
                 IParty party = entry.getValue();
                 if (party == null) continue;
                 if (party.getStatus(playerA) != null && party.getStatus(playerB) != null) {
@@ -65,14 +64,14 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     @Nullable
     public String getPartyName(UUID playerUUID) {
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(playerUUID);
+        var entry = PartyManager.INSTANCE.getParty(playerUUID);
         if (entry != null) return entry.getValue().getProperties().getProperty(NativeProps.NAME);
         return fallback.getPartyName(playerUUID);
     }
 
     @Override
     public List<UUID> getPartyMembers(UUID playerUUID) {
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(playerUUID);
+        var entry = PartyManager.INSTANCE.getParty(playerUUID);
         if (entry != null) return new ArrayList<>(entry.getValue().getMembers());
         return fallback.getPartyMembers(playerUUID);
     }
@@ -80,7 +79,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     @Nullable
     public String getRole(UUID playerUUID) {
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(playerUUID);
+        var entry = PartyManager.INSTANCE.getParty(playerUUID);
         if (entry != null) {
             EnumPartyStatus status = entry.getValue().getStatus(playerUUID);
             return status != null ? status.name() : null;
@@ -112,7 +111,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean disbandParty(EntityPlayerMP player) {
         UUID playerId = QuestingAPI.getQuestingUUID(player);
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(playerId);
+        var entry = PartyManager.INSTANCE.getParty(playerId);
 
         if (entry == null) {
             return fallback.disbandParty(player);
@@ -146,7 +145,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean renameParty(EntityPlayerMP player, String newName) {
         UUID playerId = QuestingAPI.getQuestingUUID(player);
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(playerId);
+        var entry = PartyManager.INSTANCE.getParty(playerId);
 
         if (entry == null) return fallback.renameParty(player, newName);
 
@@ -162,7 +161,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean invitePlayer(EntityPlayerMP inviter, String targetUsername) {
         UUID inviterId = QuestingAPI.getQuestingUUID(inviter);
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(inviterId);
+        var entry = PartyManager.INSTANCE.getParty(inviterId);
 
         if (entry == null) return fallback.invitePlayer(inviter, targetUsername);
 
@@ -203,7 +202,7 @@ public class BQPartyProvider implements IPartyProvider {
     }
 
     private int findBQuIntId(UUID partyId) {
-        for (DBEntry<IParty> entry : PartyManager.INSTANCE.getEntries()) {
+        for (var entry : PartyManager.INSTANCE.getEntries()) {
             if (Party.uuidFromIntId(entry.getID()).equals(partyId)) {
                 return entry.getID();
             }
@@ -214,7 +213,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean kickOrLeave(EntityPlayerMP actor, String targetUsername) {
         UUID actorId = QuestingAPI.getQuestingUUID(actor);
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(actorId);
+        var entry = PartyManager.INSTANCE.getParty(actorId);
 
         if (entry == null) return fallback.kickOrLeave(actor, targetUsername);
 
@@ -245,7 +244,7 @@ public class BQPartyProvider implements IPartyProvider {
     @Override
     public boolean changeRole(EntityPlayerMP actor, String targetUsername, String newRole) {
         UUID actorId = QuestingAPI.getQuestingUUID(actor);
-        DBEntry<IParty> entry = PartyManager.INSTANCE.getParty(actorId);
+        var entry = PartyManager.INSTANCE.getParty(actorId);
 
         if (entry == null) return fallback.changeRole(actor, targetUsername, newRole);
 
@@ -287,7 +286,7 @@ public class BQPartyProvider implements IPartyProvider {
         Set<UUID> bquMembers = new HashSet<>();
 
         PartyManagerData pmData = PartyManagerData.getInstance();
-        for (DBEntry<IParty> entry : PartyManager.INSTANCE.getEntries()) {
+        for (var entry : PartyManager.INSTANCE.getEntries()) {
             IParty bqParty = entry.getValue();
             if (bqParty == null) continue;
             if (bqParty.getMembers().isEmpty()) continue;

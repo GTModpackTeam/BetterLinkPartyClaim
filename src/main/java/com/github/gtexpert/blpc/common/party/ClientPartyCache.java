@@ -17,6 +17,7 @@ public class ClientPartyCache {
     private static final Map<UUID, Party> parties = new LinkedHashMap<>();
     private static final Set<UUID> bquLinkedPlayers = new HashSet<>();
     private static final List<Runnable> syncListeners = new ArrayList<>();
+    private static boolean pendingSync = false;
 
     public static void addSyncListener(Runnable listener) {
         syncListeners.add(listener);
@@ -41,8 +42,16 @@ public class ClientPartyCache {
                 bquLinkedPlayers.add(linkedList.getCompoundTagAt(i).getUniqueId("uuid"));
             }
         }
-        for (Runnable listener : new ArrayList<>(syncListeners)) {
-            listener.run();
+        pendingSync = true;
+    }
+
+    /** Called once per client tick to coalesce sync events. */
+    public static void onClientTick() {
+        if (pendingSync) {
+            pendingSync = false;
+            for (Runnable listener : new ArrayList<>(syncListeners)) {
+                listener.run();
+            }
         }
     }
 

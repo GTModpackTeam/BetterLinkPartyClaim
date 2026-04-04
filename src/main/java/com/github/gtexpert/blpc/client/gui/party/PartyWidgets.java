@@ -5,10 +5,14 @@ import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
+import org.lwjgl.input.Keyboard;
+
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -126,5 +130,29 @@ public final class PartyWidgets {
         ModularPanel parent = current.getScreen().getMainPanel();
         current.closeIfOpen();
         openSubPanel(parent, panelFactory.get());
+    }
+
+    /**
+     * Creates a {@link TextFieldWidget} that calls {@code onSubmit} when the Enter key is pressed.
+     * <p>
+     * Shared between {@link com.github.gtexpert.blpc.client.gui.party.widget.InputDialog} and
+     * {@link com.github.gtexpert.blpc.client.gui.party.CreatePanel} to avoid duplicating the
+     * {@code onKeyPressed} override.
+     *
+     * @param onSubmit action to execute on Enter key press
+     * @return a configured text field widget
+     */
+    public static TextFieldWidget createEnterSubmitTextField(Runnable onSubmit) {
+        return new TextFieldWidget() {
+
+            @Override
+            public Interactable.Result onKeyPressed(char c, int keyCode) {
+                if (keyCode == Keyboard.KEY_RETURN) {
+                    onSubmit.run();
+                    return Interactable.Result.SUCCESS;
+                }
+                return super.onKeyPressed(c, keyCode);
+            }
+        };
     }
 }

@@ -38,8 +38,7 @@ public class ChunkTransitHandler {
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof EntityPlayerMP)) return;
-        EntityPlayerMP player = (EntityPlayerMP) event.player;
+        if (!(event.player instanceof EntityPlayerMP player)) return;
         if (player.world.isRemote) return;
         if (player.dimension != 0) return; // Claims are overworld only
 

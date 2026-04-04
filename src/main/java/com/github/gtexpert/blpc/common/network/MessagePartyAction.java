@@ -187,22 +187,25 @@ public class MessagePartyAction implements IMessage {
                 IPartyProvider activeProvider = playerBQuLinked ? provider : selfProvider;
 
                 boolean success = false;
+                // Pending notifications to dispatch after syncToAll()
+                List<Runnable> pendingNotifications = new ArrayList<>();
+
                 switch (msg.action) {
-                    case ACTION_CREATE: {
+                    case ACTION_CREATE -> {
                         String name = msg.stringArg.trim();
                         if (name.isEmpty()) name = "New Party";
                         if (name.length() > 64) name = name.substring(0, 64);
                         success = selfProvider.createParty(player, name);
-                        break;
                     }
-                    case ACTION_DISBAND: {
+                    case ACTION_DISBAND -> {
                         // Ensure self-managed party exists (may need to create from BQu data)
                         getOrCreateSelfParty(player, provider);
                         PartyManagerData pmDisband = PartyManagerData.getInstance();
                         Party disbandParty = pmDisband.getPartyByPlayer(player.getUniqueID());
                         if (disbandParty != null) {
                             PartyRole disbandRole = disbandParty.getRole(player.getUniqueID());
-                            if (disbandRole != PartyRole.OWNER && !player.canUseCommand(2, "")) {
+                            if (disbandRole == null ||
+                                    (disbandRole != PartyRole.OWNER && !player.canUseCommand(2, ""))) {
                                 break;
                             }
                         }
@@ -212,27 +215,28 @@ public class MessagePartyAction implements IMessage {
                         if (disbanded) {
                             for (UUID memberId : disbandMembers) {
                                 pmDisband.setBQuLinked(memberId, false);
-                                EntityPlayerMP disbandMember = player.getServer() != null ?
-                                        player.getServer().getPlayerList()
-                                                .getPlayerByUUID(memberId) :
-                                        null;
-                                if (disbandMember != null) {
-                                    notifyPlayer(disbandMember, MessagePartyEventNotify.DISBANDED, "", "");
-                                }
                             }
+                            MinecraftServer disbandSrv = player.getServer();
+                            pendingNotifications.add(() -> {
+                                for (UUID memberId : disbandMembers) {
+                                    EntityPlayerMP disbandMember = disbandSrv != null ?
+                                            disbandSrv.getPlayerList().getPlayerByUUID(memberId) : null;
+                                    if (disbandMember != null) {
+                                        notifyPlayer(disbandMember, MessagePartyEventNotify.DISBANDED, "", "");
+                                    }
+                                }
+                            });
                             success = true;
                         }
-                        break;
                     }
-                    case ACTION_RENAME: {
+                    case ACTION_RENAME -> {
                         String newName = msg.stringArg.trim();
                         if (newName.length() > 64) newName = newName.substring(0, 64);
                         if (!newName.isEmpty()) {
                             success = activeProvider.renameParty(player, newName);
                         }
-                        break;
                     }
-                    case ACTION_INVITE: {
+                    case ACTION_INVITE -> {
                         success = activeProvider.invitePlayer(player, msg.stringArg);
                         if (success) {
                             MinecraftServer invSrv = player.getServer();
@@ -244,15 +248,16 @@ public class MessagePartyAction implements IMessage {
                                             .getPartyByPlayer(player.getUniqueID());
                                     String invPartyName = invParty != null ? invParty.getName() :
                                             provider.getPartyName(player.getUniqueID());
-                                    if (invPartyName == null) invPartyName = "";
-                                    notifyPlayer(invTarget, MessagePartyEventNotify.INVITE_RECEIVED, player.getName(),
-                                            invPartyName);
+                                    String resolvedPartyName = invPartyName != null ? invPartyName : "";
+                                    String inviterName = player.getName();
+                                    pendingNotifications.add(() -> notifyPlayer(
+                                            invTarget, MessagePartyEventNotify.INVITE_RECEIVED,
+                                            inviterName, resolvedPartyName));
                                 }
                             }
                         }
-                        break;
                     }
-                    case ACTION_ACCEPT_INVITE: {
+                    case ACTION_ACCEPT_INVITE -> {
                         try {
                             UUID partyId = UUID.fromString(msg.stringArg);
                             success = activeProvider.acceptInvite(player, partyId);
@@ -260,15 +265,16 @@ public class MessagePartyAction implements IMessage {
                                 Party joinedParty = PartyManagerData.getInstance().getPartyByPlayer(
                                         player.getUniqueID());
                                 if (joinedParty != null) {
-                                    notifyPartyMembers(joinedParty, MessagePartyEventNotify.MEMBER_JOINED,
-                                            player.getName(), "",
-                                            player.getServer());
+                                    String joinerName = player.getName();
+                                    MinecraftServer acceptSrv = player.getServer();
+                                    pendingNotifications.add(() -> notifyPartyMembers(
+                                            joinedParty, MessagePartyEventNotify.MEMBER_JOINED,
+                                            joinerName, "", acceptSrv));
                                 }
                             }
                         } catch (IllegalArgumentException ignored) {}
-                        break;
                     }
-                    case ACTION_KICK_OR_LEAVE: {
+                    case ACTION_KICK_OR_LEAVE -> {
                         Party klParty = PartyManagerData.getInstance()
                                 .getPartyByPlayer(player.getUniqueID());
                         boolean isSelf = msg.stringArg.equals(player.getName());
@@ -283,21 +289,23 @@ public class MessagePartyAction implements IMessage {
                                             player.getServer().getPlayerList()
                                                     .getPlayerByUsername(msg.stringArg) :
                                             null);
-                            for (Map.Entry<UUID, PartyRole> entry : klMembersCopy.entrySet()) {
-                                if (klTarget != null && entry.getKey().equals(klTarget.getUniqueID()))
-                                    continue;
-                                EntityPlayerMP klMember = player.getServer() != null ?
-                                        player.getServer().getPlayerList()
-                                                .getPlayerByUUID(entry.getKey()) :
-                                        null;
-                                if (klMember != null) {
-                                    notifyPlayer(klMember, klEvent, msg.stringArg, "");
+                            UUID klTargetId = klTarget != null ? klTarget.getUniqueID() : null;
+                            String klTargetName = msg.stringArg;
+                            MinecraftServer klSrv = player.getServer();
+                            pendingNotifications.add(() -> {
+                                for (var entry : klMembersCopy.entrySet()) {
+                                    if (klTargetId != null && entry.getKey().equals(klTargetId))
+                                        continue;
+                                    EntityPlayerMP klMember = klSrv != null ?
+                                            klSrv.getPlayerList().getPlayerByUUID(entry.getKey()) : null;
+                                    if (klMember != null) {
+                                        notifyPlayer(klMember, klEvent, klTargetName, "");
+                                    }
                                 }
-                            }
+                            });
                         }
-                        break;
                     }
-                    case ACTION_CHANGE_ROLE: {
+                    case ACTION_CHANGE_ROLE -> {
                         String[] parts = msg.stringArg.split(":", 2);
                         if (parts.length == 2) {
                             success = activeProvider.changeRole(player, parts[0], parts[1]);
@@ -305,13 +313,16 @@ public class MessagePartyAction implements IMessage {
                                 EntityPlayerMP roleTarget = player.getServer().getPlayerList()
                                         .getPlayerByUsername(parts[0]);
                                 if (roleTarget != null) {
-                                    notifyPlayer(roleTarget, MessagePartyEventNotify.ROLE_CHANGED, parts[0], parts[1]);
+                                    String targetName = parts[0];
+                                    String newRole = parts[1];
+                                    pendingNotifications.add(() -> notifyPlayer(
+                                            roleTarget, MessagePartyEventNotify.ROLE_CHANGED,
+                                            targetName, newRole));
                                 }
                             }
                         }
-                        break;
                     }
-                    case ACTION_TOGGLE_BQU_LINK: {
+                    case ACTION_TOGGLE_BQU_LINK -> {
                         boolean linked = "true".equals(msg.stringArg);
                         PartyManagerData pmLink = PartyManagerData.getInstance();
                         Party linkParty = pmLink.getPartyByPlayer(player.getUniqueID());
@@ -337,30 +348,32 @@ public class MessagePartyAction implements IMessage {
                         Party bquParty = PartyManagerData.getInstance()
                                 .getPartyByPlayer(player.getUniqueID());
                         if (bquParty != null) {
-                            notifyPartyMembers(bquParty,
-                                    linked ? MessagePartyEventNotify.BQU_LINKED : MessagePartyEventNotify.BQU_UNLINKED,
-                                    "", "",
-                                    player.getServer());
+                            String bquEvent = linked ? MessagePartyEventNotify.BQU_LINKED :
+                                    MessagePartyEventNotify.BQU_UNLINKED;
+                            MinecraftServer bquSrv = player.getServer();
+                            pendingNotifications.add(() -> notifyPartyMembers(
+                                    bquParty, bquEvent, "", "", bquSrv));
                         }
                         success = true;
-                        break;
                     }
-                    case ACTION_TOGGLE_FAKE_PLAYERS: {
+                    case ACTION_TOGGLE_FAKE_PLAYERS -> {
                         // Legacy: cycle NONE -> ALLY -> MEMBER -> NONE
                         Party toggleParty = getOrCreateSelfParty(player, activeProvider);
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
                             if (toggleRole != null && toggleRole.canInvite()) {
                                 TrustLevel cur = toggleParty.getFakePlayerTrustLevel();
-                                TrustLevel next = cur == TrustLevel.NONE ? TrustLevel.ALLY :
-                                        cur == TrustLevel.ALLY ? TrustLevel.MEMBER : TrustLevel.NONE;
+                                TrustLevel next = switch (cur) {
+                                    case NONE -> TrustLevel.ALLY;
+                                    case ALLY -> TrustLevel.MEMBER;
+                                    default -> TrustLevel.NONE;
+                                };
                                 toggleParty.setFakePlayerTrustLevel(next);
                                 success = true;
                             }
                         }
-                        break;
                     }
-                    case ACTION_TOGGLE_EXPLOSION_PROTECTION: {
+                    case ACTION_TOGGLE_EXPLOSION_PROTECTION -> {
                         Party toggleParty = getOrCreateSelfParty(player, activeProvider);
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());
@@ -370,12 +383,8 @@ public class MessagePartyAction implements IMessage {
                                 success = true;
                             }
                         }
-                        break;
                     }
-                    case ACTION_ADD_ALLY:
-                    case ACTION_REMOVE_ALLY:
-                    case ACTION_ADD_ENEMY:
-                    case ACTION_REMOVE_ENEMY: {
+                    case ACTION_ADD_ALLY, ACTION_REMOVE_ALLY, ACTION_ADD_ENEMY, ACTION_REMOVE_ENEMY -> {
                         Party allyParty = getOrCreateSelfParty(player, activeProvider);
                         if (allyParty == null) break;
                         PartyRole allyRole = allyParty.getRole(player.getUniqueID());
@@ -389,23 +398,14 @@ public class MessagePartyAction implements IMessage {
                         // Don't allow self-reference
                         if (targetPartyId.equals(allyParty.getPartyId())) break;
                         switch (msg.action) {
-                            case ACTION_ADD_ALLY:
-                                allyParty.addAlly(targetPartyId);
-                                break;
-                            case ACTION_REMOVE_ALLY:
-                                allyParty.removeAlly(targetPartyId);
-                                break;
-                            case ACTION_ADD_ENEMY:
-                                allyParty.addEnemy(targetPartyId);
-                                break;
-                            case ACTION_REMOVE_ENEMY:
-                                allyParty.removeEnemy(targetPartyId);
-                                break;
+                            case ACTION_ADD_ALLY -> allyParty.addAlly(targetPartyId);
+                            case ACTION_REMOVE_ALLY -> allyParty.removeAlly(targetPartyId);
+                            case ACTION_ADD_ENEMY -> allyParty.addEnemy(targetPartyId);
+                            case ACTION_REMOVE_ENEMY -> allyParty.removeEnemy(targetPartyId);
                         }
                         success = true;
-                        break;
                     }
-                    case ACTION_TRANSFER_OWNERSHIP: {
+                    case ACTION_TRANSFER_OWNERSHIP -> {
                         Party tParty = getOrCreateSelfParty(player, activeProvider);
                         if (tParty == null) break;
                         PartyRole tRole = tParty.getRole(player.getUniqueID());
@@ -417,12 +417,15 @@ public class MessagePartyAction implements IMessage {
                         if (target == null) break;
                         if (!tParty.isMember(target.getUniqueID())) break;
                         tParty.setRole(target.getUniqueID(), PartyRole.OWNER);
-                        notifyPlayer(target, MessagePartyEventNotify.OWNER_TRANSFERRED, target.getName(), "");
-                        notifyPlayer(player, MessagePartyEventNotify.ROLE_CHANGED, player.getName(), "ADMIN");
+                        String newOwnerName = target.getName();
+                        String senderName = player.getName();
+                        pendingNotifications.add(() -> {
+                            notifyPlayer(target, MessagePartyEventNotify.OWNER_TRANSFERRED, newOwnerName, "");
+                            notifyPlayer(player, MessagePartyEventNotify.ROLE_CHANGED, senderName, "ADMIN");
+                        });
                         success = true;
-                        break;
                     }
-                    case ACTION_SET_TRUST_LEVEL: {
+                    case ACTION_SET_TRUST_LEVEL -> {
                         Party trustParty = getOrCreateSelfParty(player, activeProvider);
                         if (trustParty == null) break;
                         PartyRole trustRole = trustParty.getRole(player.getUniqueID());
@@ -436,9 +439,8 @@ public class MessagePartyAction implements IMessage {
                                 success = true;
                             }
                         }
-                        break;
                     }
-                    case ACTION_SET_FAKEPLAYER_TRUST: {
+                    case ACTION_SET_FAKEPLAYER_TRUST -> {
                         Party fpParty = getOrCreateSelfParty(player, activeProvider);
                         if (fpParty == null) break;
                         PartyRole fpRole = fpParty.getRole(player.getUniqueID());
@@ -448,18 +450,16 @@ public class MessagePartyAction implements IMessage {
                             fpParty.setFakePlayerTrustLevel(fpLevel);
                             success = true;
                         }
-                        break;
                     }
-                    case ACTION_SET_FREE_TO_JOIN: {
+                    case ACTION_SET_FREE_TO_JOIN -> {
                         Party fjParty = getOrCreateSelfParty(player, activeProvider);
                         if (fjParty == null) break;
                         PartyRole fjRole = fjParty.getRole(player.getUniqueID());
                         if (fjRole == null || !fjRole.canInvite()) break;
                         fjParty.setFreeToJoin("true".equals(msg.stringArg));
                         success = true;
-                        break;
                     }
-                    case ACTION_SET_COLOR: {
+                    case ACTION_SET_COLOR -> {
                         Party cParty = getOrCreateSelfParty(player, activeProvider);
                         if (cParty == null) break;
                         PartyRole cRole = cParty.getRole(player.getUniqueID());
@@ -468,9 +468,8 @@ public class MessagePartyAction implements IMessage {
                             cParty.setColor(Integer.parseInt(msg.stringArg));
                             success = true;
                         } catch (NumberFormatException ignored) {}
-                        break;
                     }
-                    case ACTION_SET_DESCRIPTION: {
+                    case ACTION_SET_DESCRIPTION -> {
                         Party descParty = getOrCreateSelfParty(player, activeProvider);
                         if (descParty == null) break;
                         PartyRole descRole = descParty.getRole(player.getUniqueID());
@@ -479,9 +478,8 @@ public class MessagePartyAction implements IMessage {
                         if (desc.length() > 256) desc = desc.substring(0, 256);
                         descParty.setDescription(desc);
                         success = true;
-                        break;
                     }
-                    case ACTION_JOIN_FREE_PARTY: {
+                    case ACTION_JOIN_FREE_PARTY -> {
                         try {
                             UUID joinId = UUID.fromString(msg.stringArg);
                             PartyManagerData pmJoin = PartyManagerData.getInstance();
@@ -490,17 +488,22 @@ public class MessagePartyAction implements IMessage {
                             Party joinParty = pmJoin.getParty(joinId);
                             if (joinParty == null || !joinParty.isFreeToJoin()) break;
                             joinParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
-                            notifyPartyMembers(joinParty, MessagePartyEventNotify.MEMBER_JOINED, player.getName(), "",
-                                    player.getServer());
+                            String joinerName = player.getName();
+                            MinecraftServer joinSrv = player.getServer();
+                            pendingNotifications.add(() -> notifyPartyMembers(
+                                    joinParty, MessagePartyEventNotify.MEMBER_JOINED,
+                                    joinerName, "", joinSrv));
                             success = true;
                         } catch (IllegalArgumentException ignored) {}
-                        break;
                     }
                 }
 
                 if (success) {
                     provider.syncToAll();
                     BLPCSaveHandler.INSTANCE.markDirty();
+                    for (Runnable notification : pendingNotifications) {
+                        notification.run();
+                    }
                 }
             });
             return null;

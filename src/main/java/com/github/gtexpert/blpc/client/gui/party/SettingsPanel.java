@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.EnumDyeColor;
@@ -232,7 +233,7 @@ public class SettingsPanel {
         // Re-build panel on server sync so ally/enemy lists stay current
         Runnable syncListener = () -> {
             if (!panel.isOpen()) return;
-            Party refreshed = ClientPartyCache.getPartyByPlayer(party.getOwner());
+            Party refreshed = ClientPartyCache.getParty(party.getPartyId());
             if (refreshed == null) {
                 panel.closeIfOpen();
                 return;
@@ -317,19 +318,22 @@ public class SettingsPanel {
                 IKey.lang("blpc.party.trust_level." + level.name().toLowerCase(Locale.ROOT)).get();
     }
 
-    private static String buildSelectionList(TrustLevel current) {
+    private static <T> String buildOptionList(T[] options, T current, Function<T, String> nameResolver) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < CYCLE_LEVELS.length; i++) {
-            TrustLevel level = CYCLE_LEVELS[i];
-            String name = IKey.lang("blpc.party.trust_level." + level.name().toLowerCase(Locale.ROOT)).get();
-            if (level == current) {
-                sb.append(TextFormatting.GREEN + "+ ").append(name);
+        for (T option : options) {
+            if (option == current) {
+                sb.append(TextFormatting.GREEN).append("+ ").append(nameResolver.apply(option));
             } else {
-                sb.append(TextFormatting.GRAY + "- ").append(name);
+                sb.append(TextFormatting.GRAY).append("- ").append(nameResolver.apply(option));
             }
-            if (i < CYCLE_LEVELS.length - 1) sb.append("\n");
+            sb.append("\n");
         }
-        return sb.toString();
+        return sb.toString().trim();
+    }
+
+    private static String buildSelectionList(TrustLevel current) {
+        return buildOptionList(CYCLE_LEVELS, current,
+                level -> IKey.lang("blpc.party.trust_level." + level.name().toLowerCase(Locale.ROOT)).get());
     }
 
     private static int dyeColorValue(EnumDyeColor dye) {
@@ -359,17 +363,13 @@ public class SettingsPanel {
     }
 
     private static String buildColorSelectionList(int currentColor) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < DYE_COLORS.length; i++) {
-            int color = dyeColorValue(DYE_COLORS[i]);
-            String name = getDyeColorName(DYE_COLORS[i]);
-            if (color == currentColor) {
-                sb.append(TextFormatting.GREEN + "+ ").append(name);
-            } else {
-                sb.append(TextFormatting.GRAY + "- ").append(name);
+        EnumDyeColor currentDye = null;
+        for (EnumDyeColor dye : DYE_COLORS) {
+            if (dyeColorValue(dye) == currentColor) {
+                currentDye = dye;
+                break;
             }
-            if (i < DYE_COLORS.length - 1) sb.append("\n");
         }
-        return sb.toString();
+        return buildOptionList(DYE_COLORS, currentDye, SettingsPanel::getDyeColorName);
     }
 }

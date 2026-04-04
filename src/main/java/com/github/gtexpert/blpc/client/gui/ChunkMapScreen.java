@@ -78,22 +78,22 @@ public class ChunkMapScreen extends CustomModularScreen {
 
     private ParentWidget<?> createToolButtons() {
         int y = 0;
-        ButtonWidget<?> btnClose = createToolButton("X", y, mb -> close(),
+        var btnClose = createToolButton("X", y, mb -> close(),
                 "blpc.map.close");
         y += BTN_SIZE + BTN_GAP;
-        ButtonWidget<?> btnParty = createToolButton("P", y, mb -> openPartyScreen(),
+        var btnParty = createToolButton("P", y, mb -> openPartyScreen(),
                 "blpc.map.party");
         y += BTN_SIZE + BTN_GAP;
-        ButtonWidget<?> btnRedraw = createToolButton("R", y, mb -> {
+        var btnRedraw = createToolButton("R", y, mb -> {
             AsyncMapRenderer.clearCache();
             TextureCache.clear();
         }, "blpc.map.redraw");
         y += BTN_SIZE + BTN_GAP;
-        ButtonWidget<?> btnUnclaimAll = createToolButton("C", y,
+        var btnUnclaimAll = createToolButton("C", y,
                 mb -> openConfirmDialog(1),
                 "blpc.map.unclaim_all", "blpc.map.help_claim", "blpc.map.help_unclaim");
         y += BTN_SIZE + BTN_GAP;
-        ButtonWidget<?> btnUnloadAll = createToolButton("L", y,
+        var btnUnloadAll = createToolButton("L", y,
                 mb -> openConfirmDialog(2),
                 "blpc.map.unload_all", "blpc.map.help_force", "blpc.map.help_drag");
 

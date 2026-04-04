@@ -301,7 +301,7 @@ public class ModuleManager implements IModuleManager {
     }
 
     private Map<String, List<IModule>> getModules(ASMDataTable table) {
-        List<IModule> instances = getInstances(table);
+        var instances = getInstances(table);
         Map<String, List<IModule>> modules = new LinkedHashMap<>();
         for (IModule module : instances) {
             TModule info = module.getClass().getAnnotation(TModule.class);

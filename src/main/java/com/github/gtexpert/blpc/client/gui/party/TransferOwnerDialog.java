@@ -2,6 +2,7 @@ package com.github.gtexpert.blpc.client.gui.party;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import net.minecraft.client.Minecraft;
 
@@ -41,21 +42,26 @@ public class TransferOwnerDialog {
 
         ListWidget<?, ?> list = new ListWidget<>()
                 .crossAxisAlignment(Alignment.CrossAxis.START)
-                .children(party.getMembers().entrySet(),
-                        entry -> createTransferRow(entry, myId, panel, parentPanel));
+                .children(party.getMembers().entrySet().stream()
+                        .filter(e -> !e.getKey().equals(myId))
+                        .collect(Collectors.toList()),
+                        entry -> createTransferRow(entry, panel, parentPanel));
 
         PanelBuilder.addList(panel, list);
+
+        Runnable syncListener = () -> {
+            if (!panel.isOpen()) return;
+            panel.closeIfOpen();
+        };
+        ClientPartyCache.addSyncListener(syncListener);
+        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+
         return panel;
     }
 
-    private static Flow createTransferRow(Map.Entry<UUID, PartyRole> entry, UUID myId,
+    private static Flow createTransferRow(Map.Entry<UUID, PartyRole> entry,
                                           ModularPanel panel, ModularPanel parentPanel) {
         UUID memberId = entry.getKey();
-        // Don't show self
-        if (memberId.equals(myId)) {
-            return Flow.row().height(0);
-        }
-
         String memberName = PartyWidgets.getDisplayName(memberId);
         PartyRole role = entry.getValue();
         String roleStr = IKey.lang("blpc.party.role." + role.name().toLowerCase()).get();

@@ -14,6 +14,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 
@@ -42,7 +43,7 @@ public class ModeratorsPanel {
         @SuppressWarnings("rawtypes")
         ListWidget list = new ListWidget();
 
-        List<Map.Entry<UUID, PartyRole>> sorted = new ArrayList<>(party.getMembers().entrySet());
+        var sorted = new ArrayList<>(party.getMembers().entrySet());
         sorted.sort((a, b) -> {
             // OWNER first, then ADMIN, then MEMBER
             int cmp = b.getValue().ordinal() - a.getValue().ordinal();
@@ -51,11 +52,24 @@ public class ModeratorsPanel {
                     .compareToIgnoreCase(PartyWidgets.getDisplayName(b.getKey()));
         });
 
-        for (Map.Entry<UUID, PartyRole> entry : sorted) {
+        for (var entry : sorted) {
             list.child(createRow(entry, isOwner, playerId));
         }
 
         PanelBuilder.addList(panel, list);
+
+        Runnable syncListener = () -> {
+            if (!panel.isOpen()) return;
+            Party refreshed = ClientPartyCache.getParty(party.getPartyId());
+            if (refreshed == null) {
+                panel.closeIfOpen();
+                return;
+            }
+            PartyWidgets.reopenPanel(panel, () -> ModeratorsPanel.build(refreshed));
+        };
+        ClientPartyCache.addSyncListener(syncListener);
+        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+
         return panel;
     }
 
@@ -75,16 +89,15 @@ public class ModeratorsPanel {
 
         // Owner can promote/demote other non-owner members (not self)
         if (isOwner && !memberId.equals(myId) && role != PartyRole.OWNER) {
-            if (role == PartyRole.MEMBER) {
+            String newRole = switch (role) {
+                case MEMBER -> "ADMIN";
+                case ADMIN -> "MEMBER";
+                default -> null;
+            };
+            if (newRole != null) {
                 btn.onMousePressed(b -> {
                     ModNetwork.INSTANCE.sendToServer(
-                            MessagePartyAction.changeRole(memberName + ":ADMIN"));
-                    return true;
-                });
-            } else if (role == PartyRole.ADMIN) {
-                btn.onMousePressed(b -> {
-                    ModNetwork.INSTANCE.sendToServer(
-                            MessagePartyAction.changeRole(memberName + ":MEMBER"));
+                            MessagePartyAction.changeRole(memberName + ":" + newRole));
                     return true;
                 });
             }

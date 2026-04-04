@@ -6,10 +6,7 @@ import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
 
-import org.lwjgl.input.Keyboard;
-
 import com.cleanroommc.modularui.api.drawable.IKey;
-import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -44,10 +41,7 @@ public class CreatePanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(PanelSizes.STANDARD_W, PanelSizes.STANDARD_H);
 
-        // Title
-        panel.child(IKey.lang("blpc.party.create_title").color(GuiColors.WHITE).shadow(true)
-                .asWidget().pos(8, 8));
-        panel.child(ButtonWidget.panelCloseButton());
+        PanelBuilder.addHeader(panel, "blpc.party.create_title");
 
         // Name input + Create button
         final TextFieldWidget[] fieldRef = new TextFieldWidget[1];
@@ -59,17 +53,7 @@ public class CreatePanel {
             panel.closeIfOpen();
         };
 
-        TextFieldWidget nameField = new TextFieldWidget() {
-
-            @Override
-            public Interactable.Result onKeyPressed(char c, int keyCode) {
-                if (keyCode == Keyboard.KEY_RETURN) {
-                    doCreate.run();
-                    return Interactable.Result.SUCCESS;
-                }
-                return super.onKeyPressed(c, keyCode);
-            }
-        };
+        TextFieldWidget nameField = PartyWidgets.createEnterSubmitTextField(doCreate);
         fieldRef[0] = nameField;
         nameField.size(PanelSizes.STANDARD_W - 80, 14);
         nameField.setText(IKey.lang(Party.DEFAULT_NAME_KEY).get());
@@ -99,6 +83,14 @@ public class CreatePanel {
         }
 
         panel.child(list);
+
+        Runnable syncListener = () -> {
+            if (!panel.isOpen()) return;
+            PartyWidgets.reopenPanel(panel, CreatePanel::build);
+        };
+        ClientPartyCache.addSyncListener(syncListener);
+        panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+
         return panel;
     }
 

@@ -72,15 +72,9 @@ public class MessageClaimChunk implements IMessage {
                 UUID playerId = player.getUniqueID();
 
                 switch (message.mode) {
-                    case MODE_CLAIM:
-                        handleClaim(message, player, data, existing, playerId);
-                        break;
-                    case MODE_UNCLAIM:
-                        handleUnclaim(message, player, data, existing, playerId);
-                        break;
-                    case MODE_TOGGLE_FORCE:
-                        handleToggleForce(message, player, data, existing, playerId);
-                        break;
+                    case MODE_CLAIM -> handleClaim(message, player, data, existing, playerId);
+                    case MODE_UNCLAIM -> handleUnclaim(message, player, data, existing, playerId);
+                    case MODE_TOGGLE_FORCE -> handleToggleForce(message, player, data, existing, playerId);
                 }
             });
             return null;

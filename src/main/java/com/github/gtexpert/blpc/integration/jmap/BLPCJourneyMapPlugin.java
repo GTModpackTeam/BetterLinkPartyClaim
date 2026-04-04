@@ -57,15 +57,9 @@ public class BLPCJourneyMapPlugin implements IClientPlugin {
     @Override
     public void onEvent(ClientEvent event) {
         switch (event.type) {
-            case DISPLAY_UPDATE:
-            case MAPPING_STARTED:
-                refreshOverlays(event.dimension);
-                break;
-            case MAPPING_STOPPED:
-                clearOverlays();
-                break;
-            default:
-                break;
+            case DISPLAY_UPDATE, MAPPING_STARTED -> refreshOverlays(event.dimension);
+            case MAPPING_STOPPED -> clearOverlays();
+            default -> {}
         }
     }
 
