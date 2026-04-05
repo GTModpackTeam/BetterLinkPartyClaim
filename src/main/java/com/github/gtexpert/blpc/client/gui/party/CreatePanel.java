@@ -55,6 +55,7 @@ public class CreatePanel {
 
         TextFieldWidget nameField = PartyWidgets.createEnterSubmitTextField(doCreate);
         fieldRef[0] = nameField;
+        nameField.setMaxLength(32);
         nameField.size(PanelSizes.STANDARD_W - 80, 14);
         nameField.setText(IKey.lang(Party.DEFAULT_NAME_KEY).get());
 
@@ -138,7 +139,7 @@ public class CreatePanel {
         });
 
         return Flow.row()
-                .widthRel(1f).height(PanelSizes.BTN_H)
+                .height(PanelSizes.BTN_H)
                 .crossAxisAlignment(Alignment.CrossAxis.CENTER)
                 .child(btn);
     }

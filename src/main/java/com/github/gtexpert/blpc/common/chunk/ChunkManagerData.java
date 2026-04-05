@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import com.github.gtexpert.blpc.common.network.MessageSyncClaims;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
@@ -72,11 +74,17 @@ public class ChunkManagerData {
 
     /**
      * Removes all claims and force-loads for the given player, broadcasting unclaim messages.
+     * <p>
+     * Iterates all loaded worlds to release force-load tickets, since claims are stored
+     * globally but tickets are keyed per-dimension.
      */
     public void releaseAllClaims(UUID owner, World world) {
         for (ClaimedChunkData claim : getClaimsByOwner(owner)) {
             if (claim.isForceLoaded) {
-                TicketManager.unforceChunk(world, claim.x, claim.z);
+                // Unforce across all loaded dimensions to avoid ticket leaks
+                for (WorldServer ws : FMLCommonHandler.instance().getMinecraftServerInstance().worlds) {
+                    TicketManager.unforceChunk(ws, claim.x, claim.z);
+                }
             }
             setClaim(claim.x, claim.z, null, "", "", false);
             ModNetwork.INSTANCE.sendToAll(new MessageSyncClaims(claim.x, claim.z, null, "", "", false));

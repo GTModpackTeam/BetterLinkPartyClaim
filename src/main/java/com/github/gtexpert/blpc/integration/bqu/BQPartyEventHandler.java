@@ -88,6 +88,14 @@ public class BQPartyEventHandler {
 
         NBTTagCompound root = new NBTTagCompound();
         root.setTag("parties", list);
+        // Preserve current bquLinked state so loadFromNBT does not clear optimistic flags
+        NBTTagList bquLinkedList = new NBTTagList();
+        for (UUID uuid : ClientPartyCache.getBQuLinkedPlayers()) {
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setUniqueId("uuid", uuid);
+            bquLinkedList.appendTag(tag);
+        }
+        root.setTag("bquLinked", bquLinkedList);
         ClientPartyCache.loadFromNBT(root);
     }
 }

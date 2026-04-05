@@ -50,11 +50,7 @@ blpc.party.settings_title=パーティ設定
 blpc.party.members=メンバー
 blpc.party.members_title=メンバー一覧
 blpc.party.link_bqu=BQu連携
-blpc.party.link_bqu_title=BQuと連携しますか？
-blpc.party.link_bqu_msg=パーティの管理をBetterQuestingに委譲します。
 blpc.party.unlink_bqu=BQu連携解除
-blpc.party.unlink_bqu_title=BQu連携を解除しますか？
-blpc.party.unlink_bqu_msg=パーティの管理をBLPC独自管理に戻します。
 blpc.party.invite_sent=%s に招待を送りました。
 blpc.party.invite_received=%s からパーティ「%s」への招待が届きました。
 blpc.party.fakeplayer_on=FakePlayer: 許可する
@@ -140,6 +136,9 @@ blpc.party.tooltip.transfer=他のメンバーにオーナー権を譲渡
 blpc.party.dialog.add_ally=同盟パーティーを選択
 blpc.party.dialog.add_enemy=敵対パーティーを選択
 blpc.party.tooltip.open_native=BetterQuestingのパーティー管理を開く
+blpc.party.tooltip.link_bqu=BQuパーティ連携を切替\nBQuパーティが必要です
+blpc.party.tooltip.bqu_no_party=BQuパーティが見つかりません
+blpc.party.tooltip.bqu_party_info=BQuパーティ
 
 # 領域出入り通知
 blpc.transit.member.enter=%sが帰宅した

@@ -74,7 +74,7 @@ BLPC uses **file-based persistence** (FTB Lib style) instead of `WorldSavedData`
 
 ```
 world/betterlink/pc/
-├── config.dat          # migrated flag + bquLinkedPlayers set
+├── config.dat          # bquLinkedPlayers set (+ legacy migrated flag)
 ├── backup/
 │   ├── parties/        # most recent backup of parties/
 │   └── claims/         # most recent backup of claims/
@@ -87,7 +87,7 @@ world/betterlink/pc/
     └── ...
 ```
 
-`BLPCSaveHandler.loadAll(server)` is called by `CoreModule.serverStarting()` (FMLServerStartingEvent). `saveAll()` is called by both `CoreEventHandler.onWorldSave()` (WorldEvent.Save) and `CoreModule.serverStopping()` (FMLServerStoppingEvent). Neither `ChunkManagerData` nor `PartyManagerData` is a `WorldSavedData` subclass — they are plain singletons reset via their `reset()` static methods.
+`BLPCSaveHandler.loadAll(server)` is called by `CoreModule.serverStarting()` (FMLServerStartingEvent). `saveAll()` is called by both `CoreEventHandler.onWorldSave()` (WorldEvent.Save) and `CoreModule.serverStopping()` (FMLServerStoppingEvent). Neither `ChunkManagerData` nor `PartyManagerData` is a `WorldSavedData` subclass — they are plain singletons reset via their `reset()` static methods. `BLPCSaveHandler` uses atomic write (`writeCompressedAtomic`) and backup-swap (`backupAndSwap`) for crash-safe persistence.
 
 Claims: `ClaimedChunkData` includes `partyName` resolved server-side via `PartyProviderRegistry`. NBT key `"party"` for party name.
 
@@ -129,8 +129,6 @@ The Settings panel cycles each action through `NONE -> ALLY -> MEMBER`. Addition
 | `blpc.party.moderators` | `ModeratorsPanel.java` | Moderator promote/demote |
 | `blpc.party.dialog.invite` | `InviteDialog.java` | Invite player |
 | `blpc.party.dialog.disband` | `DisbandDialog.java` | Disband confirmation |
-| `blpc.party.dialog.link_bqu` | `LinkBQuDialog.java` | Link BQu confirmation |
-| `blpc.party.dialog.unlink_bqu` | `UnlinkBQuDialog.java` | Unlink BQu confirmation |
 | `blpc.party.dialog.transfer` | `TransferOwnerDialog.java` | Transfer ownership |
 | `blpc.party.dialog.rename` | SettingsPanel (InputDialog) | Rename party |
 | `blpc.party.dialog.description` | SettingsPanel (InputDialog) | Edit party description |
@@ -170,25 +168,18 @@ For Minecraft formatting codes in tooltip strings, use `TextFormatting` enum con
 
 ## BQu Link/Unlink/Disband Flow
 
-**Link** (`MessagePartyAction.toggleBQuLink(true)`):
-1. Server receives action, verifies player is ADMIN+ in their BLPC party.
-2. Adds player UUID to `PartyManagerData.bquLinkedPlayers` set.
-3. `BLPCSaveHandler` persists the updated set to `config.dat`.
-4. `syncToAll()` broadcasts updated party state (including link flags) to all clients.
-5. Client-side `MainPanel` switches to BQu-linked UI (member list + "Open BQu Party Screen" button).
-
-**Unlink** (`MessagePartyAction.toggleBQuLink(false)`):
-1. Server receives action, verifies player is ADMIN+.
-2. Removes player UUID from `bquLinkedPlayers` set.
-3. Persists and syncs as above.
-4. Client-side UI reverts to full self-managed mode (Invite / Leave / Disband).
+**Link/Unlink** — toggled via `ToggleButton` in `MainPanel` with `BoolValue.Dynamic`:
+1. Client calls `PartyWidgets.setLocalBQuLinked()` for optimistic UI update + `fireSyncListeners()` for instant MainPanel rebuild.
+2. Client sends `MessagePartyAction.toggleBQuLink()` to server.
+3. Server verifies player is ADMIN+ and has a BQu party (for link). If rejected, `syncToAll()` is still called to roll back the optimistic update.
+4. On success, updates `PartyManagerData.bquLinkedPlayers` and persists via `BLPCSaveHandler`.
+5. `syncToAll()` broadcasts to all clients. `MainPanel` rebuilds via `addAutoRefreshListener`.
 
 **Disband** (`MessagePartyAction.disband()`):
-1. Server receives action, verifies player is OWNER.
-2. Removes the party from `PartyManagerData`, clears BQu link flag for all members.
-3. Releases all chunk claims associated with the party.
-4. Persists and syncs.
-5. Client immediately clears `ClientPartyCache` and resets BQu link flag for instant feedback.
+1. Server verifies player is OWNER (checks both BLPC and BQu roles when BQu-linked).
+2. Releases all chunk claims, removes party from `PartyManagerData`, clears BQu link flags.
+3. Persists and syncs.
+4. Client calls `PartyWidgets.clearLocalPartyData()` + `displayGuiScreen(null)` to close entire GUI immediately.
 
 ## MUI Widget Patterns
 
@@ -196,53 +187,46 @@ For Minecraft formatting codes in tooltip strings, use `TextFormatting` enum con
 |---|---|---|
 | `CycleButtonWidget` + `IntValue.Dynamic` + `IKey.dynamic()` | Multi-state settings (trust levels) | `stateCount()` sets number of states; overlay label updates dynamically |
 | `ToggleButton` + `BoolValue.Dynamic` | Boolean settings (explosions, free-to-join) | `overlay(false, ...)` / `overlay(true, ...)` for state-dependent labels |
-| `ListWidget` | Scrollable lists (members, allies, enemies) | `children(iterable, mapper)` for data-driven population |
-| `Dialog<T>` | Modal confirmations (disband, link/unlink BQu) | `closeWith(result)` triggers the result consumer and closes; extends `ModularPanel` |
+| `ListWidget` | Scrollable lists (members, allies, enemies) | `children(iterable, mapper)` for data-driven population. Children should use `.widthRel(1f).height(h)` or `.height(h)` only — avoid fixed-pixel `.size(w, h)` as the ListWidget's `.left(n).right(n)` auto-stretches children. |
+| `Dialog<T>` | Modal confirmations (disband, map bulk actions) | `closeWith(result)` triggers the result consumer and closes; extends `ModularPanel` |
 | `Flow.col()` / `Flow.row()` | Automatic vertical/horizontal layout | `childPadding(n)` for spacing; eliminates manual `y += ROW_H` positioning |
 
-For ModularUI API details, consult the ModularUI source code or documentation.
+For ModularUI API details, consult the ModularUI source code at `/mnt/data/git/ModularUI`. Text input fields use `setMaxLength(32)` for user-facing name inputs (party name, player name).
 
 ## Client-Side Sync Pattern
 
-Party panels receive real-time updates via `ClientPartyCache.loadFromNBT()` (triggered by `MessagePartySync` from server). To prevent excessive rebuilds when multiple syncs arrive in rapid succession, `ClientPartyCache` uses a **tick-based coalesce** mechanism:
+Party panels receive real-time updates via `ClientPartyCache.loadFromNBT()` (triggered by `MessagePartySync` from server). Listeners are fired **immediately** when new data arrives — no tick-based coalescing.
 
-1. `loadFromNBT()` sets `pendingSync = true` instead of firing listeners immediately.
-2. `onClientTick()` (called once per client tick from `CoreEventHandler.ClientHandler`) checks the flag and fires all listeners at most once per tick.
+`ClientPartyCache.fireSyncListeners()` can also be called directly for optimistic UI updates (e.g., after `PartyWidgets.setLocalBQuLinked()` or `clearLocalPartyData()`).
 
-**Registration pattern** (add at end of `build()`, before return):
+**Registration pattern** — use convenience helpers in `PartyWidgets`:
+
 ```java
-Runnable syncListener = () -> {
-    if (!panel.isOpen()) return;
-    Party refreshed = ClientPartyCache.getParty(party.getPartyId());
-    if (refreshed == null) {
-        panel.closeIfOpen();
-        return;
-    }
-    PartyWidgets.reopenPanel(panel, () -> PanelName.build(refreshed));
-};
-ClientPartyCache.addSyncListener(syncListener);
-panel.onCloseAction(() -> ClientPartyCache.removeSyncListener(syncListener));
+// For panels that display a specific party:
+PartyWidgets.addPartyRefreshListener(panel, party.getPartyId(), PanelName::build);
+
+// For panels that don't track a specific party:
+PartyWidgets.addAutoRefreshListener(panel, () -> PanelName.build(args));
 ```
 
 **Panels with sync listeners:**
 
-| Panel | Behavior on sync |
-|---|---|
-| `MainPanel` | Rebuild with playerId |
-| `SettingsPanel` | Rebuild with refreshed party; close if disbanded |
-| `MembersPanel` | Rebuild with refreshed party; close if disbanded |
-| `ModeratorsPanel` | Rebuild with refreshed party; close if disbanded |
-| `CreatePanel` | Rebuild (refresh available parties list) |
-| `TransferOwnerDialog` | Close dialog (safest for modal) |
+| Panel | Helper | Behavior on sync |
+|---|---|---|
+| `MainPanel` | `addAutoRefreshListener` | Rebuild with playerId |
+| `SettingsPanel` | `addPartyRefreshListener` | Rebuild with refreshed party; close if disbanded |
+| `MembersPanel` | `addPartyRefreshListener` | Rebuild with refreshed party; close if disbanded |
+| `ModeratorsPanel` | `addPartyRefreshListener` | Rebuild with refreshed party; close if disbanded |
+| `CreatePanel` | `addAutoRefreshListener` | Rebuild (refresh available parties list) |
+| `TransferOwnerDialog` | manual `addSyncListener` | Close dialog |
 
-**Panels without sync listeners** (no party state displayed):
-- `InviteDialog`, `DisbandDialog`, `LinkBQuDialog`, `UnlinkBQuDialog` — simple input/confirm dialogs
+**Panels without sync listeners**: `InviteDialog`, `DisbandDialog` — simple input/confirm dialogs
 
 ## UI Reusable Templates
 
 ### Dialog/Panel Templates (`client/gui/party/widget/`)
 
-- **`ConfirmDialog`** — Yes/No confirmation dialog (`Dialog<Boolean>`). Default size: 220x70. Used by: DisbandDialog, LinkBQuDialog, UnlinkBQuDialog, ChunkMapScreen.
+- **`ConfirmDialog`** — Yes/No confirmation dialog (`Dialog<Boolean>`). Default size: 220x70. Used by: DisbandDialog, ChunkMapScreen.
 - **`InputDialog`** — Text field + submit dialog (`Dialog<Void>`). Default size: 220x70. Used by: InviteDialog, SettingsPanel (rename/description).
 - **`PlayerListPanel`** — Reusable scrollable player list with Add/Remove (`ModularPanel`). Available for future use.
 - **`PartySelectDialog`** — Party selection dialog (`Dialog<Void>`). Used by: SettingsPanel (add ally/enemy).
@@ -374,10 +358,6 @@ Applied every 20 ticks while player is in a claimed chunk:
 - **Defender buff**: Resistance + Strength. Only active while enemies are invading the party's territory. Expires naturally when all enemies leave.
 
 `activeInvasions` map tracks which parties have enemy invaders. Cleaned up on player logout and enemy departure.
-
-## BQu Migration
-
-`BQMigrationHelper` runs once on first server start with BQu present. Iterates all BQu parties, creates corresponding BLPC `Party` objects with role mapping (`BQPartyProvider.mapRole()`), and sets a migration flag in `config.dat` to prevent re-running.
 
 ## Localization
 

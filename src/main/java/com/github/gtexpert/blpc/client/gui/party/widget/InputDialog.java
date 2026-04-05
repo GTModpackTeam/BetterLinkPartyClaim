@@ -133,6 +133,7 @@ public final class InputDialog {
             if (!defaultValue.isEmpty()) {
                 textField.value(new StringValue(defaultValue));
             }
+            textField.setMaxLength(32);
             textField.size(width - 70, 14);
 
             Flow inputRow = Flow.row()

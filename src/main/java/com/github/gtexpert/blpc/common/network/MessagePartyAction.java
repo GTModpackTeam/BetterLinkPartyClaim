@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import com.github.gtexpert.blpc.api.party.IPartyProvider;
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.BLPCSaveHandler;
+import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.party.DefaultPartyProvider;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
@@ -202,7 +203,7 @@ public class MessagePartyAction implements IMessage {
                     case ACTION_CREATE -> {
                         String name = msg.stringArg.trim();
                         if (name.isEmpty()) name = "New Party";
-                        if (name.length() > 64) name = name.substring(0, 64);
+                        if (name.length() > 32) name = name.substring(0, 32);
                         success = selfProvider.createParty(player, name);
                     }
                     case ACTION_DISBAND -> {
@@ -210,36 +211,42 @@ public class MessagePartyAction implements IMessage {
                         getOrCreateSelfParty(player, provider);
                         PartyManagerData pmDisband = PartyManagerData.getInstance();
                         Party disbandParty = pmDisband.getPartyByPlayer(player.getUniqueID());
-                        if (disbandParty != null) {
-                            PartyRole disbandRole = disbandParty.getRole(player.getUniqueID());
-                            if (disbandRole == null ||
-                                    (disbandRole != PartyRole.OWNER && !player.canUseCommand(2, ""))) {
-                                break;
-                            }
+                        if (disbandParty == null) break;
+                        PartyRole disbandRole = disbandParty.getRole(player.getUniqueID());
+                        boolean isOwnerOrOp = (disbandRole == PartyRole.OWNER) || player.canUseCommand(2, "");
+                        // BQu Link 状態では BQu 側のロールも確認する
+                        if (!isOwnerOrOp && playerBQuLinked) {
+                            String providerRole = provider.getRole(player.getUniqueID());
+                            isOwnerOrOp = PartyRole.fromName(providerRole) == PartyRole.OWNER;
                         }
-                        List<UUID> disbandMembers = disbandParty != null ?
-                                new ArrayList<>(disbandParty.getMemberUUIDs()) : Collections.emptyList();
-                        boolean disbanded = selfProvider.disbandParty(player);
-                        if (disbanded) {
+                        if (!isOwnerOrOp) break;
+                        // Authorization verified — disband directly to bypass the internal
+                        // role check in DefaultPartyProvider.disbandParty(), which would
+                        // reject non-OWNER self-managed roles even when BQu-linked as OWNER.
+                        List<UUID> disbandMembers = new ArrayList<>(disbandParty.getMemberUUIDs());
+                        ChunkManagerData disbandChunks = ChunkManagerData.getInstance();
+                        for (UUID memberId : disbandMembers) {
+                            disbandChunks.releaseAllClaims(memberId, player.world);
+                        }
+                        pmDisband.removeParty(disbandParty.getPartyId());
+                        for (UUID memberId : disbandMembers) {
+                            pmDisband.setBQuLinked(memberId, false);
+                        }
+                        MinecraftServer disbandSrv = player.getServer();
+                        pendingNotifications.add(() -> {
                             for (UUID memberId : disbandMembers) {
-                                pmDisband.setBQuLinked(memberId, false);
-                            }
-                            MinecraftServer disbandSrv = player.getServer();
-                            pendingNotifications.add(() -> {
-                                for (UUID memberId : disbandMembers) {
-                                    EntityPlayerMP disbandMember = disbandSrv != null ?
-                                            disbandSrv.getPlayerList().getPlayerByUUID(memberId) : null;
-                                    if (disbandMember != null) {
-                                        notifyPlayer(disbandMember, MessagePartyEventNotify.DISBANDED, "", "");
-                                    }
+                                EntityPlayerMP disbandMember = disbandSrv != null ?
+                                        disbandSrv.getPlayerList().getPlayerByUUID(memberId) : null;
+                                if (disbandMember != null) {
+                                    notifyPlayer(disbandMember, MessagePartyEventNotify.DISBANDED, "", "");
                                 }
-                            });
-                            success = true;
-                        }
+                            }
+                        });
+                        success = true;
                     }
                     case ACTION_RENAME -> {
                         String newName = msg.stringArg.trim();
-                        if (newName.length() > 64) newName = newName.substring(0, 64);
+                        if (newName.length() > 32) newName = newName.substring(0, 32);
                         if (!newName.isEmpty()) {
                             success = activeProvider.renameParty(player, newName);
                         }
@@ -289,28 +296,35 @@ public class MessagePartyAction implements IMessage {
                         Map<UUID, PartyRole> klMembersCopy = klParty != null ?
                                 new HashMap<>(klParty.getMembers()) : Collections.emptyMap();
                         success = activeProvider.kickOrLeave(player, msg.stringArg);
-                        if (success && klParty != null) {
-                            String klEvent = isSelf ? MessagePartyEventNotify.MEMBER_LEFT :
-                                    MessagePartyEventNotify.KICKED;
+                        if (success) {
+                            // Clear bquLinked for the kicked/left player
                             EntityPlayerMP klTarget = isSelf ? player :
                                     (player.getServer() != null ?
                                             player.getServer().getPlayerList()
                                                     .getPlayerByUsername(msg.stringArg) :
                                             null);
-                            UUID klTargetId = klTarget != null ? klTarget.getUniqueID() : null;
-                            String klTargetName = msg.stringArg;
-                            MinecraftServer klSrv = player.getServer();
-                            pendingNotifications.add(() -> {
-                                for (var entry : klMembersCopy.entrySet()) {
-                                    if (klTargetId != null && entry.getKey().equals(klTargetId))
-                                        continue;
-                                    EntityPlayerMP klMember = klSrv != null ?
-                                            klSrv.getPlayerList().getPlayerByUUID(entry.getKey()) : null;
-                                    if (klMember != null) {
-                                        notifyPlayer(klMember, klEvent, klTargetName, "");
+                            if (klTarget != null) {
+                                PartyManagerData.getInstance()
+                                        .setBQuLinked(klTarget.getUniqueID(), false);
+                            }
+                            if (klParty != null) {
+                                String klEvent = isSelf ? MessagePartyEventNotify.MEMBER_LEFT :
+                                        MessagePartyEventNotify.KICKED;
+                                UUID klTargetId = klTarget != null ? klTarget.getUniqueID() : null;
+                                String klTargetName = msg.stringArg;
+                                MinecraftServer klSrv = player.getServer();
+                                pendingNotifications.add(() -> {
+                                    for (var entry : klMembersCopy.entrySet()) {
+                                        if (klTargetId != null && entry.getKey().equals(klTargetId))
+                                            continue;
+                                        EntityPlayerMP klMember = klSrv != null ?
+                                                klSrv.getPlayerList().getPlayerByUUID(entry.getKey()) : null;
+                                        if (klMember != null) {
+                                            notifyPlayer(klMember, klEvent, klTargetName, "");
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     }
                     case ACTION_CHANGE_ROLE -> {
@@ -489,8 +503,10 @@ public class MessagePartyAction implements IMessage {
                     }
                 }
 
-                if (success) {
+                if (success || msg.action == ACTION_TOGGLE_BQU_LINK) {
                     provider.syncToAll();
+                }
+                if (success) {
                     BLPCSaveHandler.INSTANCE.markDirty();
                     for (Runnable notification : pendingNotifications) {
                         notification.run();

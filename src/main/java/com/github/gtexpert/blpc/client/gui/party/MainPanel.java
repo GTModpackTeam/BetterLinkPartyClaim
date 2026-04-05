@@ -3,14 +3,19 @@ package com.github.gtexpert.blpc.client.gui.party;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.TextFormatting;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
+import com.cleanroommc.modularui.widgets.ToggleButton;
 
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.common.network.MessagePartyAction;
+import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.PartyRole;
@@ -21,10 +26,12 @@ import com.github.gtexpert.blpc.common.party.PartyRole;
  * Entry point for all party management. Conditionally shows buttons
  * based on the player's role and BQu link status:
  * <ul>
- * <li>Settings (includes allies/enemies management), Transfer - ADMIN+ only</li>
- * <li>Members, Invite - hidden when BQu-linked (managed via BQu screen)</li>
+ * <li>Settings (includes allies/enemies management) - ADMIN+ only</li>
+ * <li>Members, Moderators - always shown</li>
+ * <li>Transfer Ownership - OWNER only</li>
  * <li>Open BQu Party Screen - shown when BQu-linked</li>
- * <li>Link/Unlink BQu, Disband - bottom-pinned buttons</li>
+ * <li>Link/Unlink BQu toggle - ADMIN+ only, shown when BQu available</li>
+ * <li>Disband - OWNER only, bottom-pinned</li>
  * </ul>
  * If the player has no party, delegates to {@link CreatePanel}.
  */
@@ -37,9 +44,9 @@ public class MainPanel {
         boolean bquAvailable = PartyProviderRegistry.hasNativeScreen();
         boolean bquLinked = ClientPartyCache.isBQuLinked(playerId);
 
-        // Auto-fix: bquLinked but no party -> clear stale flag
+        // Auto-fix: bquLinked but no party -> clear stale flag (without firing sync listeners)
         if (bquLinked && party == null) {
-            PartyWidgets.setLocalBQuLinked(false);
+            ClientPartyCache.setLocalBQuLinked(playerId, false);
             bquLinked = false;
         }
 
@@ -86,7 +93,7 @@ public class MainPanel {
 
         // BQu Manage Party
         if (bquAvailable && bquLinked) {
-            menuList.child((ButtonWidget<?>) new ButtonWidget<>().size(PanelSizes.STANDARD_W - 16, PanelSizes.BTN_H)
+            menuList.child((ButtonWidget<?>) new ButtonWidget<>().height(PanelSizes.BTN_H)
                     .padding(4, 0, 0, 0)
                     .overlay(IKey.lang("blpc.party.open_native").alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.open_native"))
@@ -102,16 +109,28 @@ public class MainPanel {
         // Bottom buttons (pinned to bottom)
         int btnY = PanelSizes.STANDARD_H - 24;
 
-        if (bquAvailable && bquLinked && canManage) {
-            panel.child(PartyWidgets.createActionButton(
-                    IKey.lang("blpc.party.unlink_bqu"), "Open Unlink dialog",
-                    () -> PartyWidgets.openSubPanel(panel, UnlinkBQuDialog.build(panel)))
-                    .size(80, 16).pos(8, btnY));
-        } else if (bquAvailable && !bquLinked && canManage) {
-            panel.child(PartyWidgets.createActionButton(
-                    IKey.lang("blpc.party.link_bqu"), "Open Link dialog",
-                    () -> PartyWidgets.openSubPanel(panel, LinkBQuDialog.build(panel)))
-                    .size(80, 16).pos(8, btnY));
+        if (bquAvailable && canManage) {
+            panel.child(new ToggleButton()
+                    .size(60, 16).pos(8, btnY).padding(4, 0, 0, 0)
+                    .value(new BoolValue.Dynamic(
+                            () -> ClientPartyCache.isBQuLinked(playerId),
+                            val -> {
+                                PartyWidgets.setLocalBQuLinked(val);
+                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.toggleBQuLink(val));
+                            }))
+                    .overlay(false, IKey.lang("blpc.party.link_bqu").alignment(Alignment.CenterLeft))
+                    .overlay(true, IKey.lang("blpc.party.unlink_bqu").alignment(Alignment.CenterLeft))
+                    .addTooltipLine(IKey.lang("blpc.party.tooltip.link_bqu"))
+                    .addTooltipLine(IKey.dynamic(() -> {
+                        Party myParty = ClientPartyCache.getPartyByPlayer(playerId);
+                        if (myParty == null) {
+                            return TextFormatting.RED + IKey.lang("blpc.party.tooltip.bqu_no_party").get();
+                        }
+                        String ownerName = myParty.getOwner() != null ?
+                                PartyWidgets.getDisplayName(myParty.getOwner()) : "?";
+                        return TextFormatting.GRAY + IKey.lang("blpc.party.tooltip.bqu_party_info").get() + ": " +
+                                myParty.getName() + " (" + ownerName + ")";
+                    })));
         }
 
         if (isOwner) {
@@ -129,7 +148,7 @@ public class MainPanel {
 
     private static ButtonWidget<?> createMenuButton(IKey label, ModularPanel parent,
                                                     PanelFactory factory, String tooltipKey) {
-        ButtonWidget<?> btn = (ButtonWidget<?>) new ButtonWidget<>().size(PanelSizes.STANDARD_W - 16, PanelSizes.BTN_H)
+        ButtonWidget<?> btn = (ButtonWidget<?>) new ButtonWidget<>().height(PanelSizes.BTN_H)
                 .padding(4, 0, 0, 0)
                 .overlay(label.alignment(Alignment.CenterLeft))
                 .onMousePressed(b -> {

@@ -67,7 +67,7 @@ public class TransferOwnerDialog {
         String roleStr = IKey.lang("blpc.party.role." + role.name().toLowerCase()).get();
 
         return Flow.row()
-                .widthRel(1f).height(PanelSizes.BTN_H)
+                .height(PanelSizes.BTN_H)
                 .crossAxisAlignment(Alignment.CrossAxis.CENTER)
                 .child(new ButtonWidget<>().widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0)
                         .overlay(IKey.str(memberName + " [" + roleStr + "]").alignment(Alignment.CenterLeft))

@@ -17,6 +17,7 @@ import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.TextWidget;
+import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.Tags;
 import com.github.gtexpert.blpc.client.gui.party.MainPanel;
@@ -77,38 +78,26 @@ public class ChunkMapScreen extends CustomModularScreen {
     }
 
     private ParentWidget<?> createToolButtons() {
-        int y = 0;
-        var btnClose = createToolButton("X", y, mb -> close(),
-                "blpc.map.close");
-        y += BTN_SIZE + BTN_GAP;
-        var btnParty = createToolButton("P", y, mb -> openPartyScreen(),
-                "blpc.map.party");
-        y += BTN_SIZE + BTN_GAP;
-        var btnRedraw = createToolButton("R", y, mb -> {
-            AsyncMapRenderer.clearCache();
-            TextureCache.clear();
-        }, "blpc.map.redraw");
-        y += BTN_SIZE + BTN_GAP;
-        var btnUnclaimAll = createToolButton("C", y,
-                mb -> openConfirmDialog(1),
-                "blpc.map.unclaim_all", "blpc.map.help_claim", "blpc.map.help_unclaim");
-        y += BTN_SIZE + BTN_GAP;
-        var btnUnloadAll = createToolButton("L", y,
-                mb -> openConfirmDialog(2),
-                "blpc.map.unload_all", "blpc.map.help_force", "blpc.map.help_drag");
-
         int totalH = BTN_SIZE * 5 + BTN_GAP * 4;
-        return new ParentWidget<>()
+        return Flow.col()
                 .size(BTN_SIZE, totalH)
-                .child(btnClose).child(btnRedraw)
-                .child(btnUnclaimAll).child(btnUnloadAll)
-                .child(btnParty);
+                .childPadding(BTN_GAP)
+                .child(createToolButton("X", mb -> close(), "blpc.map.close"))
+                .child(createToolButton("P", mb -> openPartyScreen(), "blpc.map.party"))
+                .child(createToolButton("R", mb -> {
+                    AsyncMapRenderer.clearCache();
+                    TextureCache.clear();
+                }, "blpc.map.redraw"))
+                .child(createToolButton("C", mb -> openConfirmDialog(1),
+                        "blpc.map.unclaim_all", "blpc.map.help_claim", "blpc.map.help_unclaim"))
+                .child(createToolButton("L", mb -> openConfirmDialog(2),
+                        "blpc.map.unload_all", "blpc.map.help_force", "blpc.map.help_drag"));
     }
 
-    private ButtonWidget<?> createToolButton(String label, int y, Consumer<Integer> action,
+    private ButtonWidget<?> createToolButton(String label, Consumer<Integer> action,
                                              String... tooltipKeys) {
         ButtonWidget<?> btn = new ButtonWidget<>();
-        btn.size(BTN_SIZE, BTN_SIZE).pos(0, y)
+        btn.size(BTN_SIZE, BTN_SIZE)
                 .overlay(IKey.str(label))
                 .onMousePressed(mb -> {
                     if (mb == 0) {

@@ -87,7 +87,7 @@ public final class PartySelectDialog {
                     .children(visible, p -> {
                         UUID pId = p.getPartyId();
                         String pName = p.getName();
-                        return new ButtonWidget<>().size(180, 16).padding(4, 0, 0, 0)
+                        return new ButtonWidget<>().height(16).padding(4, 0, 0, 0)
                                 .overlay(IKey.str(pName).alignment(Alignment.CenterLeft))
                                 .onMousePressed(btn -> {
                                     onSelectFinal.accept(pId);

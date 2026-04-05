@@ -50,11 +50,7 @@ blpc.party.settings_title=Party Settings
 blpc.party.members=Members
 blpc.party.members_title=Members
 blpc.party.link_bqu=Link BQu
-blpc.party.link_bqu_title=Link BetterQuesting?
-blpc.party.link_bqu_msg=Party management will be delegated to BetterQuesting.
 blpc.party.unlink_bqu=Unlink BQu
-blpc.party.unlink_bqu_title=Unlink BetterQuesting?
-blpc.party.unlink_bqu_msg=Party management will return to BLPC standalone mode.
 blpc.party.invite_sent=Invitation sent to %s.
 blpc.party.invite_received=%s invited you to party "%s".
 blpc.party.fakeplayer_on=FakePlayer: Allow
@@ -140,6 +136,9 @@ blpc.party.tooltip.transfer=Transfer party ownership to another member
 blpc.party.dialog.add_ally=Select Ally Party
 blpc.party.dialog.add_enemy=Select Enemy Party
 blpc.party.tooltip.open_native=Open BetterQuesting party manager
+blpc.party.tooltip.link_bqu=Toggle BQu party integration\nRequires a BQu party
+blpc.party.tooltip.bqu_no_party=No BQu party found
+blpc.party.tooltip.bqu_party_info=BQu Party
 
 # Transit Notifications
 blpc.transit.member.enter=%s returned home

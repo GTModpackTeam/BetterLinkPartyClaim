@@ -90,7 +90,7 @@ public class SettingsPanel {
                 .addTooltipLine(
                         IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.name").get()))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("\"\"")))
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0));
+                .height(BTN_H).padding(4, 0, 0, 0));
 
         list.child(PartyWidgets.createActionButton(
                 IKey.dynamic(() -> IKey.lang("blpc.party.description_field").get() + ": " +
@@ -110,10 +110,10 @@ public class SettingsPanel {
                 .addTooltipLine(IKey
                         .dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.description").get()))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("\"\"")))
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0));
+                .height(BTN_H).padding(4, 0, 0, 0));
 
         CycleButtonWidget colorBtn = new CycleButtonWidget()
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0)
+                .height(BTN_H).padding(4, 0, 0, 0)
                 .stateCount(DYE_COLORS.length)
                 .value(new IntValue.Dynamic(
                         () -> colorToIndex(party.getColor()),
@@ -131,7 +131,7 @@ public class SettingsPanel {
         list.child(colorBtn);
 
         list.child(new ToggleButton()
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0)
+                .height(BTN_H).padding(4, 0, 0, 0)
                 .value(new BoolValue.Dynamic(
                         party::isFreeToJoin,
                         val -> {
@@ -153,7 +153,7 @@ public class SettingsPanel {
         list.child(createFakePlayerCycleButton(party));
 
         list.child(new ToggleButton()
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0)
+                .height(BTN_H).padding(4, 0, 0, 0)
                 .value(new BoolValue.Dynamic(
                         party::protectsExplosions,
                         val -> {
@@ -171,7 +171,7 @@ public class SettingsPanel {
         // Show current allies as removable entries
         list.children(party.getAllies(), allyId -> {
             String allyName = party.getAllyPartyName(allyId);
-            return new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
+            return new ButtonWidget<>().height(BTN_H).padding(4, 0, 0, 0)
                     .overlay(IKey.str(TextFormatting.YELLOW.toString() + allyName).alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_ally"))
                     .onMousePressed(btn -> {
@@ -200,14 +200,14 @@ public class SettingsPanel {
                             })
                             .build(), true).openPanel();
                 })
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0));
+                .height(BTN_H).padding(4, 0, 0, 0));
 
         list.child(sectionHeader("blpc.party.settings_enemies").marginTop(8));
 
         // Show current enemies as removable entries
         list.children(party.getEnemies(), enemyId -> {
             String enemyName = party.getEnemyPartyName(enemyId);
-            return new ButtonWidget<>().size(W - 16, BTN_H).padding(4, 0, 0, 0)
+            return new ButtonWidget<>().height(BTN_H).padding(4, 0, 0, 0)
                     .overlay(IKey.str(TextFormatting.RED.toString() + enemyName).alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_enemy"))
                     .onMousePressed(btn -> {
@@ -235,7 +235,7 @@ public class SettingsPanel {
                             })
                             .build(), true).openPanel();
                 })
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0));
+                .height(BTN_H).padding(4, 0, 0, 0));
 
         panel.child(list);
 
@@ -251,7 +251,7 @@ public class SettingsPanel {
 
     private static TextWidget<?> sectionHeader(String langKey) {
         return IKey.lang(langKey).color(GuiColors.GOLD).shadow(true)
-                .asWidget().height(14).widthRel(1f);
+                .asWidget().height(14);
     }
 
     private static CycleButtonWidget createTrustCycleButton(Party party, TrustAction action) {
@@ -290,7 +290,7 @@ public class SettingsPanel {
                                                        String tooltipKey, Supplier<String> defaultValueBuilder,
                                                        Supplier<TrustLevel> currentLevelForList) {
         var btn = new CycleButtonWidget()
-                .size(W - 16, BTN_H).padding(4, 0, 0, 0)
+                .height(BTN_H).padding(4, 0, 0, 0)
                 .stateCount(CYCLE_LEVELS.length)
                 .value(new IntValue.Dynamic(getter, setter))
                 .overlay(IKey.dynamic(labelBuilder::get).alignment(Alignment.CenterLeft));

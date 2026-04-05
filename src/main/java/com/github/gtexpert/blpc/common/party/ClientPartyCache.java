@@ -51,6 +51,17 @@ public class ClientPartyCache {
         return bquLinkedPlayers.contains(playerUUID);
     }
 
+    public static Set<UUID> getBQuLinkedPlayers() {
+        return Collections.unmodifiableSet(bquLinkedPlayers);
+    }
+
+    /** Fires all registered sync listeners. Used for optimistic updates that need immediate UI refresh. */
+    public static void fireSyncListeners() {
+        for (Runnable listener : new ArrayList<>(syncListeners)) {
+            listener.run();
+        }
+    }
+
     /** Locally update BQu link state without server sync. Used by BQPartyEventHandler. */
     public static void setLocalBQuLinked(UUID playerUUID, boolean linked) {
         if (linked) {

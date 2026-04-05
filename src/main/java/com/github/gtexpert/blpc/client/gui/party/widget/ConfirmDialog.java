@@ -91,8 +91,8 @@ public final class ConfirmDialog {
         /**
          * Whether to close the parent panel on confirmation. Defaults to {@code true}.
          * <p>
-         * Set to {@code false} for actions where the user should continue
-         * interacting with the parent (e.g. Unlink BQu).
+         * Set to {@code false} for actions that close the screen themselves
+         * (e.g. Disband, which calls {@code displayGuiScreen(null)}).
          */
         public Builder closeParent(boolean close) {
             this.closeParentOnConfirm = close;

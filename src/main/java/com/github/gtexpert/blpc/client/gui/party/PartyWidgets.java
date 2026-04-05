@@ -159,6 +159,7 @@ public final class PartyWidgets {
     public static void setLocalBQuLinked(boolean linked) {
         UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
         ClientPartyCache.setLocalBQuLinked(playerId, linked);
+        ClientPartyCache.fireSyncListeners();
     }
 
     /** Optimistically clears local party data (used after disband). */
@@ -166,6 +167,7 @@ public final class PartyWidgets {
         UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
         ClientPartyCache.setLocalBQuLinked(playerId, false);
         ClientPartyCache.clear();
+        ClientPartyCache.fireSyncListeners();
     }
 
     /**

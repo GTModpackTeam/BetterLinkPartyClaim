@@ -216,7 +216,7 @@ public final class PlayerListPanel {
             }
 
             return Flow.row()
-                    .widthRel(1f).height(PanelSizes.BTN_H)
+                    .height(PanelSizes.BTN_H)
                     .crossAxisAlignment(Alignment.CrossAxis.CENTER)
                     .child(btn);
         }
