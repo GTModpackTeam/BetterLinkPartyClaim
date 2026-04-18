@@ -1,7 +1,5 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
-import net.minecraft.client.Minecraft;
-
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.widgets.Dialog;
 
@@ -30,7 +28,7 @@ public class DisbandDialog {
                 .closeParent(false)
                 .onConfirm(() -> {
                     ModNetwork.INSTANCE.sendToServer(MessagePartyAction.disband());
-                    Minecraft.getMinecraft().displayGuiScreen(null);
+                    parentPanel.getScreen().getMainPanel().closeIfOpen();
                     PartyWidgets.clearLocalPartyData();
                 })
                 .build(parentPanel);

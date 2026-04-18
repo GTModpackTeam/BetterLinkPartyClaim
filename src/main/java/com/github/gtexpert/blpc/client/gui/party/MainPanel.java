@@ -3,8 +3,8 @@ package com.github.gtexpert.blpc.client.gui.party;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextFormatting;
 
+import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.screen.ModularPanel;
@@ -123,15 +123,15 @@ public class MainPanel {
                     .overlay(false, IKey.lang("blpc.party.link_bqu").alignment(Alignment.CenterLeft))
                     .overlay(true, IKey.lang("blpc.party.unlink_bqu").alignment(Alignment.CenterLeft))
                     .addTooltipLine(IKey.lang("blpc.party.tooltip.link_bqu"))
-                    .addTooltipLine(IKey.dynamic(() -> {
+                    .addTooltipLine(IKey.dynamicKey(() -> {
                         Party myParty = ClientPartyCache.getPartyByPlayer(playerId);
                         if (myParty == null) {
-                            return TextFormatting.RED + IKey.lang("blpc.party.tooltip.bqu_no_party").get();
+                            return IKey.lang("blpc.party.tooltip.bqu_no_party").color(GuiColors.RED);
                         }
                         String ownerName = myParty.getOwner() != null ?
                                 PartyWidgets.getDisplayName(myParty.getOwner()) : "?";
-                        return TextFormatting.GRAY + IKey.lang("blpc.party.tooltip.bqu_party_info").get() + ": " +
-                                myParty.getName() + " (" + ownerName + ")";
+                        return IKey.str(IKey.lang("blpc.party.tooltip.bqu_party_info").get() + ": " +
+                                myParty.getName() + " (" + ownerName + ")").color(GuiColors.GRAY);
                     })));
         }
 
@@ -141,9 +141,14 @@ public class MainPanel {
         int btnY = PanelSizes.STANDARD_H - 24;
 
         if (isOwner) {
+            IPanelHandler disbandHandler = IPanelHandler.simple(
+                    panel, (pp, player) -> DisbandDialog.build(panel), true);
             panel.child(PartyWidgets.createActionButton(
                     IKey.lang("blpc.party.disband"), "Open Disband dialog",
-                    () -> PartyWidgets.openSubPanel(panel, DisbandDialog.build(panel)))
+                    () -> {
+                        disbandHandler.deleteCachedPanel();
+                        disbandHandler.openPanel();
+                    })
                     .size(50, 16).pos(PanelSizes.STANDARD_W - 58, btnY));
         }
 
@@ -155,12 +160,16 @@ public class MainPanel {
 
     private static ButtonWidget<?> createMenuButton(IKey label, ModularPanel parent,
                                                     PanelFactory factory, String tooltipKey) {
+        // Dedicated handler per button: avoids "same panel handler already exists" conflicts
+        // when the user returns from a sub-panel and opens a different one.
+        IPanelHandler handler = IPanelHandler.simple(parent, (pp, player) -> factory.create(), true);
         ButtonWidget<?> btn = (ButtonWidget<?>) new ButtonWidget<>().widthRel(1f).height(PanelSizes.BTN_H)
                 .padding(4, 0, 0, 0)
-                .hoverBackground(new Rectangle().color(0x40FFFFFF))
+                .hoverBackground(new Rectangle().color(GuiColors.HOVER))
                 .overlay(label.alignment(Alignment.CenterLeft))
                 .onMousePressed(b -> {
-                    PartyWidgets.openSubPanel(parent, factory.create());
+                    handler.deleteCachedPanel(); // force fresh panel on each open
+                    handler.openPanel();
                     return true;
                 });
         if (tooltipKey != null) {

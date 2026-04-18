@@ -116,7 +116,7 @@ public class CreatePanel {
 
         ButtonWidget<?> btn = new ButtonWidget<>();
         btn.widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0);
-        btn.hoverBackground(new Rectangle().color(0x40FFFFFF));
+        btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
         btn.overlay(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft));
 
         // Tooltip: description if available

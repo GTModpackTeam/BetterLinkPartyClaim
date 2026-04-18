@@ -22,6 +22,8 @@ public final class GuiColors {
     public static final int GRAY = 0xFFAAAAAA;
     /** Light gray — inactive items, non-members. */
     public static final int GRAY_LIGHT = 0xFFCCCCCC;
+    /** Semi-transparent white — button hover background. */
+    public static final int HOVER = 0x40FFFFFF;
 
     private GuiColors() {}
 }

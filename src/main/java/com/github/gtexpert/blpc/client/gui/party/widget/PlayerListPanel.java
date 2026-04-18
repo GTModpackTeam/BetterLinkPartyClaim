@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -196,6 +197,7 @@ public final class PlayerListPanel {
 
             ButtonWidget<?> btn = new ButtonWidget<>();
             btn.widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0);
+            btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
             btn.overlay(IKey.str(finalLabel).color(color).shadow(true).alignment(Alignment.CenterLeft));
 
             if (clickable && (activateAction != null || deactivateAction != null)) {

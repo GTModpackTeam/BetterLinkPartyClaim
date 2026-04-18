@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextFormatting;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -113,8 +112,7 @@ public class ChunkMapScreen extends CustomModularScreen {
             btn.addTooltipLine(IKey.str("")); // 区切り
         }
         for (int i = 1; i < tooltipKeys.length; i++) {
-            String key = tooltipKeys[i];
-            btn.addTooltipLine(IKey.dynamic(() -> TextFormatting.GRAY + IKey.lang(key).get()));
+            btn.addTooltipLine(IKey.lang(tooltipKeys[i]).color(GuiColors.GRAY));
         }
         return btn;
     }

@@ -1,16 +1,16 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.text.TextFormatting;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
@@ -33,9 +33,9 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.client.gui.party.widget.InputDialog;
-import com.github.gtexpert.blpc.client.gui.party.widget.PartySelectDialog;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
+import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 import com.github.gtexpert.blpc.common.party.Party;
 import com.github.gtexpert.blpc.common.party.TrustAction;
 import com.github.gtexpert.blpc.common.party.TrustLevel;
@@ -65,8 +65,6 @@ public class SettingsPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(PanelSizes.LARGE_W, PanelSizes.LARGE_H);
 
-        Runnable refreshPanel = () -> PartyWidgets.reopenPanel(panel, () -> SettingsPanel.build(party));
-
         PanelBuilder.addHeader(panel, "blpc.party.settings_title");
 
         // Tab controller
@@ -91,14 +89,11 @@ public class SettingsPanel {
                 .left(4).right(4).top(40).bottom(4)
                 .addPage(buildPartyInfoPage(party, panel))
                 .addPage(buildProtectionPage(party))
-                .addPage(buildAlliesPage(party, panel, refreshPanel))
-                .addPage(buildEnemiesPage(party, panel, refreshPanel));
+                .addPage(buildAlliesPage(party))
+                .addPage(buildEnemiesPage(party));
 
         panel.child(tabRow);
         panel.child(pagedWidget);
-
-        // Re-build panel on server sync so ally/enemy lists stay current
-        PartyWidgets.addPartyRefreshListener(panel, party.getPartyId(), SettingsPanel::build);
 
         return panel;
     }
@@ -106,22 +101,49 @@ public class SettingsPanel {
     private static IWidget buildPartyInfoPage(Party party, ModularPanel panel) {
         var list = newList();
 
+        // Pre-create handlers to avoid "same panel handler already exists" on repeated clicks.
+        IPanelHandler renameHandler = IPanelHandler.simple(panel, (pp, player) -> InputDialog
+                .builder("blpc.party.dialog.rename")
+                .title("blpc.party.name_field")
+                .defaultValue(party.getName())
+                .confirmLabel("blpc.map.yes")
+                .onSubmit(text -> {
+                    party.setName(text);
+                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.rename(text));
+                })
+                .build(), true);
+
+        IPanelHandler descHandler = IPanelHandler.simple(panel, (pp, player) -> InputDialog
+                .builder("blpc.party.dialog.description")
+                .title("blpc.party.description_field")
+                .defaultValue(party.getDescription())
+                .confirmLabel("blpc.map.yes")
+                .onSubmit(text -> {
+                    party.setDescription(text);
+                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setDescription(text));
+                })
+                .build(), true);
+
+        IPanelHandler colorHandler = IPanelHandler.simple(panel, (pp, player) -> {
+            int startArgb = 0xFF000000 | (party.getColor() & 0xFFFFFF);
+            var dialog = new ColorPickerDialog(color -> {
+                int rgb = color & 0xFFFFFF;
+                party.setColor(rgb);
+                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setColor(rgb));
+            }, startArgb, false);
+            dialog.setCloseOnOutOfBoundsClick(true);
+            return dialog;
+        }, true);
+
         list.child(PartyWidgets.createActionButton(
                 IKey.dynamic(() -> IKey.lang("blpc.party.name_field").get() + ": " + party.getName())
                         .alignment(Alignment.CenterLeft),
                 "Edit name",
-                () -> IPanelHandler.simple(panel, (pp, player) -> InputDialog
-                        .builder("blpc.party.dialog.rename")
-                        .title("blpc.party.name_field")
-                        .defaultValue(party.getName())
-                        .confirmLabel("blpc.map.yes")
-                        .onSubmit(text -> {
-                            party.setName(text);
-                            ModNetwork.INSTANCE.sendToServer(MessagePartyAction.rename(text));
-                        })
-                        .build(), true).openPanel())
-                .addTooltipLine(
-                        IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.name").get()))
+                () -> {
+                    renameHandler.deleteCachedPanel();
+                    renameHandler.openPanel();
+                })
+                .addTooltipLine(underlineKey("blpc.party.tooltip.name"))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("\"\"")))
                 .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
 
@@ -130,18 +152,11 @@ public class SettingsPanel {
                         (party.getDescription().isEmpty() ? "-" : party.getDescription()))
                         .alignment(Alignment.CenterLeft),
                 "Edit description",
-                () -> IPanelHandler.simple(panel, (pp, player) -> InputDialog
-                        .builder("blpc.party.dialog.description")
-                        .title("blpc.party.description_field")
-                        .defaultValue(party.getDescription())
-                        .confirmLabel("blpc.map.yes")
-                        .onSubmit(text -> {
-                            party.setDescription(text);
-                            ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setDescription(text));
-                        })
-                        .build(), true).openPanel())
-                .addTooltipLine(IKey
-                        .dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.description").get()))
+                () -> {
+                    descHandler.deleteCachedPanel();
+                    descHandler.openPanel();
+                })
+                .addTooltipLine(underlineKey("blpc.party.tooltip.description"))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("\"\"")))
                 .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
 
@@ -152,18 +167,11 @@ public class SettingsPanel {
                 IKey.dynamic(() -> IKey.lang("blpc.party.color").get() + ": " + formatColorHex(party.getColor()))
                         .alignment(Alignment.CenterLeft),
                 "Pick color",
-                () -> IPanelHandler.simple(panel, (pp, player) -> {
-                    int startArgb = 0xFF000000 | (party.getColor() & 0xFFFFFF);
-                    var dialog = new ColorPickerDialog(color -> {
-                        int rgb = color & 0xFFFFFF;
-                        party.setColor(rgb);
-                        ModNetwork.INSTANCE.sendToServer(MessagePartyAction.setColor(rgb));
-                    }, startArgb, false);
-                    dialog.setCloseOnOutOfBoundsClick(true);
-                    return dialog;
-                }, true).openPanel())
-                .addTooltipLine(
-                        IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.color").get()))
+                () -> {
+                    colorHandler.deleteCachedPanel();
+                    colorHandler.openPanel();
+                })
+                .addTooltipLine(underlineKey("blpc.party.tooltip.color"))
                 .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
 
         list.child(new ToggleButton()
@@ -176,8 +184,7 @@ public class SettingsPanel {
                         }))
                 .overlay(false, IKey.lang("blpc.party.free_to_join_off").alignment(Alignment.CenterLeft))
                 .overlay(true, IKey.lang("blpc.party.free_to_join_on").alignment(Alignment.CenterLeft))
-                .addTooltipLine(IKey
-                        .dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.free_to_join").get()))
+                .addTooltipLine(underlineKey("blpc.party.tooltip.free_to_join"))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("false"))));
 
         return list;
@@ -204,87 +211,167 @@ public class SettingsPanel {
                         }))
                 .overlay(false, IKey.lang("blpc.party.explosion_off").alignment(Alignment.CenterLeft))
                 .overlay(true, IKey.lang("blpc.party.explosion_on").alignment(Alignment.CenterLeft))
-                .addTooltipLine(
-                        IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang("blpc.party.tooltip.explosion").get()))
+                .addTooltipLine(underlineKey("blpc.party.tooltip.explosion"))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("true"))));
 
         return list;
     }
 
-    private static IWidget buildAlliesPage(Party party, ModularPanel panel, Runnable refreshPanel) {
+    private static IWidget buildAlliesPage(Party party) {
+        return buildTrustPage(party, false);
+    }
+
+    private static IWidget buildEnemiesPage(Party party) {
+        return buildTrustPage(party, true);
+    }
+
+    /**
+     * Builds the inner two-tab (Parties / Players) layout for ally or enemy management.
+     * Toggle buttons update color in-place via {@link IKey#dynamicKey} — panel stays open.
+     */
+    private static IWidget buildTrustPage(Party party, boolean isEnemy) {
+        var controller = new PagedWidget.Controller();
+
+        var tabRow = Flow.row()
+                .childPadding(2)
+                .widthRel(1f).height(TAB_H)
+                .child(new PageButton(0, controller).height(TAB_H).expanded()
+                        .overlay(IKey.lang("blpc.party.tab.parties")))
+                .child(new PageButton(1, controller).height(TAB_H).expanded()
+                        .overlay(IKey.lang("blpc.party.tab.players")));
+
+        var pagedContent = new PagedWidget<>()
+                .controller(controller)
+                .widthRel(1f).expanded()
+                .addPage(buildTrustPartyList(party, isEnemy))
+                .addPage(buildTrustPlayerList(party, isEnemy));
+
+        return Flow.column()
+                .widthRel(1f).heightRel(1f)
+                .child(tabRow)
+                .child(pagedContent);
+    }
+
+    /** All known parties as toggles; myParty excluded. Color = GOLD (ally) / RED (enemy) / WHITE (neutral). */
+    private static IWidget buildTrustPartyList(Party party, boolean isEnemy) {
         var list = newList();
         final UUID myPartyId = party.getPartyId();
+        Collection<Party> allParties = ClientPartyCache.getAllParties();
 
-        list.children(party.getAllies(), allyId -> {
-            String allyName = party.getAllyPartyName(allyId);
-            return new ButtonWidget<>().widthRel(1f).height(BTN_H).padding(4, 0, 0, 0)
-                    .overlay(IKey.str(TextFormatting.YELLOW.toString() + allyName).alignment(Alignment.CenterLeft))
-                    .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_ally"))
+        for (Party other : allParties) {
+            if (other.getPartyId().equals(myPartyId)) continue;
+            final UUID pid = other.getPartyId();
+            final String name = other.getName();
+
+            list.child(new ButtonWidget<>()
+                    .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0)
+                    .hoverBackground(new Rectangle().color(GuiColors.HOVER))
+                    .overlay(IKey.dynamicKey(() -> {
+                        int col = party.isAlly(pid) ? GuiColors.GOLD :
+                                party.isEnemy(pid) ? GuiColors.RED : GuiColors.WHITE;
+                        return IKey.str(name).color(col).alignment(Alignment.CenterLeft);
+                    }))
+                    .addTooltipLine(
+                            IKey.lang(isEnemy ? "blpc.party.tooltip.toggle_enemy" : "blpc.party.tooltip.toggle_ally"))
                     .onMousePressed(btn -> {
-                        party.removeAlly(allyId);
-                        ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeAlly(allyId));
-                        refreshPanel.run();
+                        boolean active = isEnemy ? party.isEnemy(pid) : party.isAlly(pid);
+                        if (active) {
+                            if (isEnemy) {
+                                party.removeEnemy(pid);
+                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeEnemy(pid));
+                            } else {
+                                party.removeAlly(pid);
+                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeAlly(pid));
+                            }
+                        } else {
+                            if (isEnemy) {
+                                party.addEnemy(pid);
+                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addEnemy(pid));
+                            } else {
+                                party.addAlly(pid);
+                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addAlly(pid));
+                            }
+                        }
                         return true;
-                    });
-        });
+                    }));
+        }
 
-        list.child(PartyWidgets.createActionButton(
-                IKey.lang("blpc.party.add_ally").alignment(Alignment.CenterLeft),
-                "Add ally party",
-                () -> {
-                    Set<UUID> excluded = new HashSet<>(party.getAllies());
-                    excluded.addAll(party.getEnemies());
-                    excluded.add(myPartyId);
-                    IPanelHandler.simple(panel, (pp, player) -> PartySelectDialog
-                            .builder("blpc.party.dialog.add_ally")
-                            .excluded(excluded)
-                            .onSelect(selectedId -> {
-                                party.addAlly(selectedId);
-                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addAlly(selectedId));
-                                refreshPanel.run();
-                            })
-                            .build(), true).openPanel();
-                })
-                .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
+        if (allParties.size() <= 1) {
+            list.child(IKey.lang("blpc.party.no_other_parties").color(GuiColors.GRAY)
+                    .asWidget().widthRel(1f).height(BTN_H).marginLeft(4));
+        }
 
         return list;
     }
 
-    private static IWidget buildEnemiesPage(Party party, ModularPanel panel, Runnable refreshPanel) {
+    /**
+     * Online players as toggles. If a player has a party, clicking toggles that party.
+     * Players without a party are shown disabled (grey, no click).
+     */
+    private static IWidget buildTrustPlayerList(Party party, boolean isEnemy) {
         var list = newList();
         final UUID myPartyId = party.getPartyId();
+        var conn = Minecraft.getMinecraft().getConnection();
+        if (conn == null) return list;
 
-        list.children(party.getEnemies(), enemyId -> {
-            String enemyName = party.getEnemyPartyName(enemyId);
-            return new ButtonWidget<>().widthRel(1f).height(BTN_H).padding(4, 0, 0, 0)
-                    .overlay(IKey.str(TextFormatting.RED.toString() + enemyName).alignment(Alignment.CenterLeft))
-                    .addTooltipLine(IKey.lang("blpc.party.tooltip.remove_enemy"))
-                    .onMousePressed(btn -> {
-                        party.removeEnemy(enemyId);
-                        ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeEnemy(enemyId));
-                        refreshPanel.run();
-                        return true;
-                    });
-        });
+        Collection<NetworkPlayerInfo> onlinePlayers = conn.getPlayerInfoMap();
+        boolean anyEntry = false;
 
-        list.child(PartyWidgets.createActionButton(
-                IKey.lang("blpc.party.add_enemy").alignment(Alignment.CenterLeft),
-                "Add enemy party",
-                () -> {
-                    Set<UUID> excluded = new HashSet<>(party.getAllies());
-                    excluded.addAll(party.getEnemies());
-                    excluded.add(myPartyId);
-                    IPanelHandler.simple(panel, (pp, player) -> PartySelectDialog
-                            .builder("blpc.party.dialog.add_enemy")
-                            .excluded(excluded)
-                            .onSelect(selectedId -> {
-                                party.addEnemy(selectedId);
-                                ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addEnemy(selectedId));
-                                refreshPanel.run();
-                            })
-                            .build(), true).openPanel();
-                })
-                .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
+        for (NetworkPlayerInfo info : onlinePlayers) {
+            UUID playerUUID = info.getGameProfile().getId();
+            String playerName = info.getGameProfile().getName();
+            Party playerParty = ClientPartyCache.getPartyByPlayer(playerUUID);
+
+            if (playerParty != null && playerParty.getPartyId().equals(myPartyId)) continue;
+
+            anyEntry = true;
+
+            if (playerParty == null) {
+                // No party — show disabled
+                String noPartyLabel = playerName + " (" + IKey.lang("blpc.party.tab.no_party").get() + ")";
+                list.child(IKey.str(noPartyLabel).color(GuiColors.GRAY).alignment(Alignment.CenterLeft)
+                        .asWidget().widthRel(1f).height(BTN_H).marginLeft(4));
+            } else {
+                final UUID pid = playerParty.getPartyId();
+                final String partyLabel = playerName + " (" + playerParty.getName() + ")";
+                list.child(new ButtonWidget<>()
+                        .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0)
+                        .hoverBackground(new Rectangle().color(GuiColors.HOVER))
+                        .overlay(IKey.dynamicKey(() -> {
+                            int col = party.isAlly(pid) ? GuiColors.GOLD :
+                                    party.isEnemy(pid) ? GuiColors.RED : GuiColors.WHITE;
+                            return IKey.str(partyLabel).color(col).alignment(Alignment.CenterLeft);
+                        }))
+                        .addTooltipLine(IKey
+                                .lang(isEnemy ? "blpc.party.tooltip.toggle_enemy" : "blpc.party.tooltip.toggle_ally"))
+                        .onMousePressed(btn -> {
+                            boolean active = isEnemy ? party.isEnemy(pid) : party.isAlly(pid);
+                            if (active) {
+                                if (isEnemy) {
+                                    party.removeEnemy(pid);
+                                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeEnemy(pid));
+                                } else {
+                                    party.removeAlly(pid);
+                                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.removeAlly(pid));
+                                }
+                            } else {
+                                if (isEnemy) {
+                                    party.addEnemy(pid);
+                                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addEnemy(pid));
+                                } else {
+                                    party.addAlly(pid);
+                                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.addAlly(pid));
+                                }
+                            }
+                            return true;
+                        }));
+            }
+        }
+
+        if (!anyEntry) {
+            list.child(IKey.lang("blpc.party.no_players_online").color(GuiColors.GRAY)
+                    .asWidget().widthRel(1f).height(BTN_H).marginLeft(4));
+        }
 
         return list;
     }
@@ -298,7 +385,12 @@ public class SettingsPanel {
     }
 
     private static String defaultTooltip(String value) {
-        return I18n.format("blpc.party.tooltip.default", TextFormatting.GREEN + value);
+        return IKey.lang("blpc.party.tooltip.default", () -> new Object[] { TextFormatting.GREEN + value }).get();
+    }
+
+    /** Returns an underlined dynamic tooltip label for the given translation key. */
+    private static IKey underlineKey(String langKey) {
+        return IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang(langKey).get());
     }
 
     private static TextWidget<?> sectionHeader(String langKey) {
@@ -346,8 +438,7 @@ public class SettingsPanel {
                 .stateCount(CYCLE_LEVELS.length)
                 .value(new IntValue.Dynamic(getter, setter))
                 .overlay(IKey.dynamic(labelBuilder::get).alignment(Alignment.CenterLeft));
-        btn.addTooltipLine(
-                IKey.dynamic(() -> TextFormatting.UNDERLINE + IKey.lang(tooltipKey).get()));
+        btn.addTooltipLine(underlineKey(tooltipKey));
         btn.addTooltipLine(IKey.dynamic(() -> defaultTooltip(defaultValueBuilder.get())));
         btn.addTooltipLine(IKey.str(""));
         btn.addTooltipLine(IKey.dynamic(() -> buildSelectionList(currentLevelForList.get())));

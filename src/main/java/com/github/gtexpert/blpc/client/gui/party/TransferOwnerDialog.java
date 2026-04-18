@@ -14,6 +14,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
+import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -71,7 +72,7 @@ public class TransferOwnerDialog {
                 .height(PanelSizes.BTN_H)
                 .crossAxisAlignment(Alignment.CrossAxis.CENTER)
                 .child(new ButtonWidget<>().widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0)
-                        .hoverBackground(new Rectangle().color(0x40FFFFFF))
+                        .hoverBackground(new Rectangle().color(GuiColors.HOVER))
                         .overlay(IKey.str(memberName + " [" + roleStr + "]").alignment(Alignment.CenterLeft))
                         .onMousePressed(btn -> {
                             ModNetwork.INSTANCE.sendToServer(

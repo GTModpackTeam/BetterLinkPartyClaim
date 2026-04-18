@@ -1,8 +1,8 @@
 package com.github.gtexpert.blpc.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 
+import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.drawable.Stencil;
@@ -30,6 +30,21 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
     private int selectedRZ = Integer.MIN_VALUE;
     private int lastDragX = Integer.MIN_VALUE;
     private int lastDragZ = Integer.MIN_VALUE;
+
+    public ChunkMapWidget() {
+        tooltipDynamic(tooltip -> {
+            ClaimedChunkData d = ClientCache.get(selectedRX, selectedRZ);
+            if (d == null) return;
+            Party ownerParty = ClientPartyCache.getPartyByPlayer(d.ownerUUID);
+            if (ownerParty != null) {
+                int color = 0xFF000000 | (ownerParty.getColor() & 0xFFFFFF);
+                tooltip.addLine(IKey.str(ownerParty.getName()).color(color));
+            } else {
+                tooltip.addLine(IKey.str(d.ownerName));
+            }
+        });
+        tooltip().setAutoUpdate(true);
+    }
 
     public int getSelectedRX() {
         return selectedRX;
@@ -78,32 +93,6 @@ public class ChunkMapWidget extends Widget<ChunkMapWidget> implements Interactab
         drawPlayerIcon(mc, ox, oy, cs);
 
         Stencil.remove();
-
-        drawHoverTooltip(mc, context.getMouseX(), context.getMouseY());
-    }
-
-    private void drawHoverTooltip(Minecraft mc, int mouseX, int mouseY) {
-        ClaimedChunkData d = ClientCache.get(selectedRX, selectedRZ);
-        if (d == null) return;
-
-        Party ownerParty = ClientPartyCache.getPartyByPlayer(d.ownerUUID);
-        String partyLabel;
-        int textColor;
-        if (ownerParty != null) {
-            partyLabel = ownerParty.getName();
-            textColor = 0xFF000000 | (ownerParty.getColor() & 0xFFFFFF);
-        } else {
-            partyLabel = d.ownerName;
-            textColor = GuiColors.WHITE;
-        }
-
-        FontRenderer fr = mc.fontRenderer;
-        int tw = fr.getStringWidth(partyLabel);
-        int tx = mouseX + 8;
-        int ty = mouseY - fr.FONT_HEIGHT - 2;
-
-        GuiDraw.drawRect(tx - 2, ty - 1, tw + 4, fr.FONT_HEIGHT + 2, 0xCC000000);
-        GuiDraw.drawText(partyLabel, tx, ty, 1f, textColor, true);
     }
 
     private void drawPlayerIcon(Minecraft mc, int ox, int oy, int cs) {
