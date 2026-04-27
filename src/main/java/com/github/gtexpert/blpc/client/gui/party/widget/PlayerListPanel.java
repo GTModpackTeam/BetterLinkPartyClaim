@@ -16,6 +16,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
+import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
 import com.github.gtexpert.blpc.client.gui.party.PanelBuilder;
 import com.github.gtexpert.blpc.client.gui.party.PanelSizes;
 import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
@@ -179,7 +180,7 @@ public final class PlayerListPanel {
             return result;
         }
 
-        private Flow createToggleRow(PlayerEntry entry) {
+        private ButtonWidget<?> createToggleRow(PlayerEntry entry) {
             int color = entry.active ? activeColor : inactiveColor;
             boolean clickable = canClick.test(entry.uuid);
 
@@ -196,9 +197,17 @@ public final class PlayerListPanel {
             Consumer<String> deactivateAction = this.onDeactivate;
 
             ButtonWidget<?> btn = new ButtonWidget<>();
-            btn.widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0);
+            btn.widthRel(1f).height(PanelSizes.BTN_H).padding(0);
             btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
-            btn.overlay(IKey.str(finalLabel).color(color).shadow(true).alignment(Alignment.CenterLeft));
+            btn.child(Flow.row()
+                    .widthRel(1f).heightRel(1f)
+                    .padding(4, 0, 0, 0)
+                    .childPadding(4)
+                    .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+                    .child(new PlayerFaceDrawable(entry.uuid).asWidget()
+                            .size(PanelSizes.FACE_SIZE, PanelSizes.FACE_SIZE))
+                    .child(IKey.str(finalLabel).color(color).shadow(true).alignment(Alignment.CenterLeft)
+                            .asWidget().expanded()));
 
             if (clickable && (activateAction != null || deactivateAction != null)) {
                 String playerName = entry.name;
@@ -217,10 +226,7 @@ public final class PlayerListPanel {
                 btn.addTooltipLine(IKey.lang(tooltipKey));
             }
 
-            return Flow.row()
-                    .height(PanelSizes.BTN_H)
-                    .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                    .child(btn);
+            return btn;
         }
 
         private static class PlayerEntry {

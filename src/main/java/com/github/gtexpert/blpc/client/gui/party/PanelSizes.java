@@ -11,6 +11,7 @@ public final class PanelSizes {
     public static final int DIALOG_H = 70;
     public static final int SELECT_H = 120;
     public static final int BTN_H = 18;
+    public static final int FACE_SIZE = 8;
 
     private PanelSizes() {}
 }

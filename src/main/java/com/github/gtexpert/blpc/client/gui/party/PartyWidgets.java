@@ -1,5 +1,7 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -11,9 +13,13 @@ import org.lwjgl.input.Keyboard;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.ListWidget;
+import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
@@ -185,6 +191,39 @@ public final class PartyWidgets {
             Party refreshed = ClientPartyCache.getParty(partyId);
             return refreshed != null ? rebuilder.apply(refreshed) : null;
         });
+    }
+
+    /**
+     * Wraps a list widget with a search text field that filters items by name.
+     * Uses {@link ListWidget#collapseDisabledChild} (default {@code true}) to hide
+     * non-matching items without removing them.
+     *
+     * @param list        the list widget containing all items
+     * @param widgets     parallel list of widgets to toggle visibility on
+     * @param searchNames parallel list of lowercase names to match against
+     * @return a {@link Flow} column containing the search box and the filtered list
+     */
+    public static Flow wrapWithSearchBox(ListWidget<IWidget, ?> list,
+                                         List<IWidget> widgets, List<String> searchNames) {
+        String[] filterText = { "" };
+        var searchBox = new TextFieldWidget()
+                .widthRel(1f).height(14)
+                .hintText(IKey.lang("blpc.party.search").get())
+                .autoUpdateOnChange(true)
+                .value(new StringValue.Dynamic(
+                        () -> filterText[0],
+                        text -> {
+                            filterText[0] = text;
+                            String lower = text.toLowerCase(Locale.ROOT);
+                            for (int i = 0; i < widgets.size(); i++) {
+                                widgets.get(i).setEnabled(lower.isEmpty() || searchNames.get(i).contains(lower));
+                            }
+                        }));
+
+        return Flow.column()
+                .widthRel(1f).heightRel(1f)
+                .child(searchBox)
+                .child(list.widthRel(1f).expanded());
     }
 
     /**

@@ -13,6 +13,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
+import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -60,8 +61,8 @@ public class ModeratorsPanel {
         return panel;
     }
 
-    private static Flow createRow(Map.Entry<UUID, PartyRole> entry, Party party,
-                                  boolean isOwner, UUID myId) {
+    private static ButtonWidget<?> createRow(Map.Entry<UUID, PartyRole> entry, Party party,
+                                             boolean isOwner, UUID myId) {
         UUID memberId = entry.getKey();
         PartyRole role = entry.getValue();
         String memberName = PartyWidgets.getDisplayName(memberId);
@@ -72,9 +73,17 @@ public class ModeratorsPanel {
         String label = memberName + " [" + roleStr + "]";
 
         ButtonWidget<?> btn = new ButtonWidget<>();
-        btn.widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0);
+        btn.widthRel(1f).height(PanelSizes.BTN_H).padding(0);
         btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
-        btn.overlay(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft));
+        btn.child(Flow.row()
+                .widthRel(1f).heightRel(1f)
+                .padding(4, 0, 0, 0)
+                .childPadding(4)
+                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+                .child(new PlayerFaceDrawable(memberId).asWidget()
+                        .size(PanelSizes.FACE_SIZE, PanelSizes.FACE_SIZE))
+                .child(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft)
+                        .asWidget().expanded()));
 
         if (isOwner && !memberId.equals(myId) && role != PartyRole.OWNER) {
             String newRole = switch (role) {
@@ -97,9 +106,6 @@ public class ModeratorsPanel {
             btn.addTooltipLine(IKey.lang("blpc.party.tooltip.moderator"));
         }
 
-        return Flow.row()
-                .height(PanelSizes.BTN_H)
-                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                .child(btn);
+        return btn;
     }
 }

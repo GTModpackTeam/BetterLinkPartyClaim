@@ -60,8 +60,7 @@ public class MainPanel {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(PanelSizes.STANDARD_W, PanelSizes.STANDARD_H);
 
-        String displayName = party.getName();
-        panel.child(new ScrollingTextWidget(IKey.str(displayName))
+        panel.child(new ScrollingTextWidget(IKey.dynamic(party::getName))
                 .color(GuiColors.WHITE).shadow(true)
                 .alignment(Alignment.Center).left(0).right(20).top(8).height(10));
         panel.child(ButtonWidget.panelCloseButton());

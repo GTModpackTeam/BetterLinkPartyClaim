@@ -3,7 +3,6 @@ package com.github.gtexpert.blpc.client.gui.party;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
@@ -23,7 +22,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.IntValue;
-import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.CycleButtonWidget;
@@ -33,7 +31,6 @@ import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
 import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
@@ -65,8 +62,6 @@ public class SettingsPanel {
     private static final TrustLevel[] CYCLE_LEVELS = { TrustLevel.NONE, TrustLevel.ALLY, TrustLevel.MEMBER };
 
     private static final int TAB_H = 16;
-    private static final int SEARCH_H = 14;
-    private static final int FACE_SIZE = 8;
 
     public static ModularPanel build(Party party) {
         ModularPanel panel = new ModularPanel(PANEL_ID);
@@ -101,8 +96,6 @@ public class SettingsPanel {
 
         panel.child(tabRow);
         panel.child(pagedWidget);
-
-        panel.onCloseAction(ClientPartyCache::fireSyncListeners);
 
         return panel;
     }
@@ -297,7 +290,7 @@ public class SettingsPanel {
             return list;
         }
 
-        return wrapWithSearchBox(list, widgets, searchNames);
+        return PartyWidgets.wrapWithSearchBox(list, widgets, searchNames);
     }
 
     private static IWidget buildTrustPlayerList(Party party, boolean isEnemy) {
@@ -323,7 +316,8 @@ public class SettingsPanel {
                         .padding(4, 0, 0, 0)
                         .childPadding(4)
                         .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                        .child(new PlayerFaceDrawable(playerUUID).asWidget().size(FACE_SIZE, FACE_SIZE))
+                        .child(new PlayerFaceDrawable(playerUUID).asWidget().size(PanelSizes.FACE_SIZE,
+                                PanelSizes.FACE_SIZE))
                         .child(IKey.str(noPartyLabel).color(GuiColors.GRAY).alignment(Alignment.CenterLeft)
                                 .asWidget().expanded());
                 widgets.add(row);
@@ -340,7 +334,8 @@ public class SettingsPanel {
                                 .padding(4, 0, 0, 0)
                                 .childPadding(4)
                                 .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                                .child(new PlayerFaceDrawable(playerUUID).asWidget().size(FACE_SIZE, FACE_SIZE))
+                                .child(new PlayerFaceDrawable(playerUUID).asWidget().size(PanelSizes.FACE_SIZE,
+                                        PanelSizes.FACE_SIZE))
                                 .child(IKey.dynamicKey(() -> IKey.str(partyLabel).color(trustColor(party, pid))
                                         .alignment(Alignment.CenterLeft)).asWidget().expanded()))
                         .addTooltipLine(trustTooltip(isEnemy))
@@ -360,7 +355,7 @@ public class SettingsPanel {
             return list;
         }
 
-        return wrapWithSearchBox(list, widgets, searchNames);
+        return PartyWidgets.wrapWithSearchBox(list, widgets, searchNames);
     }
 
     // --- Trust toggle helpers ---
@@ -394,31 +389,6 @@ public class SettingsPanel {
 
     private static IKey trustTooltip(boolean isEnemy) {
         return IKey.lang(isEnemy ? "blpc.party.tooltip.toggle_enemy" : "blpc.party.tooltip.toggle_ally");
-    }
-
-    // --- Search filter ---
-
-    private static IWidget wrapWithSearchBox(ListWidget<IWidget, ?> list,
-                                             List<IWidget> widgets, List<String> searchNames) {
-        String[] filterText = { "" };
-        var searchBox = new TextFieldWidget()
-                .widthRel(1f).height(SEARCH_H)
-                .hintText(IKey.lang("blpc.party.search").get())
-                .autoUpdateOnChange(true)
-                .value(new StringValue.Dynamic(
-                        () -> filterText[0],
-                        text -> {
-                            filterText[0] = text;
-                            String lower = text.toLowerCase(Locale.ROOT);
-                            for (int i = 0; i < widgets.size(); i++) {
-                                widgets.get(i).setEnabled(lower.isEmpty() || searchNames.get(i).contains(lower));
-                            }
-                        }));
-
-        return Flow.column()
-                .widthRel(1f).heightRel(1f)
-                .child(searchBox)
-                .child(list.expanded());
     }
 
     @SuppressWarnings("unchecked")

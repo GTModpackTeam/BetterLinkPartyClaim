@@ -15,6 +15,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
+import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -61,30 +62,38 @@ public class TransferOwnerDialog {
         return panel;
     }
 
-    private static Flow createTransferRow(Map.Entry<UUID, PartyRole> entry,
-                                          ModularPanel panel, ModularPanel parentPanel) {
+    private static ButtonWidget<?> createTransferRow(Map.Entry<UUID, PartyRole> entry,
+                                                     ModularPanel panel, ModularPanel parentPanel) {
         UUID memberId = entry.getKey();
         String memberName = PartyWidgets.getDisplayName(memberId);
         PartyRole role = entry.getValue();
         String roleStr = IKey.lang("blpc.party.role." + role.name().toLowerCase()).get();
+        String label = memberName + " [" + roleStr + "]";
 
-        return Flow.row()
-                .height(PanelSizes.BTN_H)
+        ButtonWidget<?> btn = new ButtonWidget<>();
+        btn.widthRel(1f).height(PanelSizes.BTN_H).padding(0);
+        btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
+        btn.child(Flow.row()
+                .widthRel(1f).heightRel(1f)
+                .padding(4, 0, 0, 0)
+                .childPadding(4)
                 .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                .child(new ButtonWidget<>().widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0)
-                        .hoverBackground(new Rectangle().color(GuiColors.HOVER))
-                        .overlay(IKey.str(memberName + " [" + roleStr + "]").alignment(Alignment.CenterLeft))
-                        .onMousePressed(btn -> {
-                            ModNetwork.INSTANCE.sendToServer(
-                                    MessagePartyAction.transferOwnership(memberName));
-                            UUID myId = Minecraft.getMinecraft().player.getUniqueID();
-                            Party p = ClientPartyCache.getPartyByPlayer(myId);
-                            if (p != null) {
-                                p.setRole(memberId, PartyRole.OWNER);
-                                p.setRole(myId, PartyRole.ADMIN);
-                            }
-                            ClientPartyCache.fireSyncListeners();
-                            return true;
-                        }));
+                .child(new PlayerFaceDrawable(memberId).asWidget()
+                        .size(PanelSizes.FACE_SIZE, PanelSizes.FACE_SIZE))
+                .child(IKey.str(label).alignment(Alignment.CenterLeft)
+                        .asWidget().expanded()));
+        btn.onMousePressed(b -> {
+            ModNetwork.INSTANCE.sendToServer(
+                    MessagePartyAction.transferOwnership(memberName));
+            UUID myId = Minecraft.getMinecraft().player.getUniqueID();
+            Party p = ClientPartyCache.getPartyByPlayer(myId);
+            if (p != null) {
+                p.setRole(memberId, PartyRole.OWNER);
+                p.setRole(myId, PartyRole.ADMIN);
+            }
+            ClientPartyCache.fireSyncListeners();
+            return true;
+        });
+        return btn;
     }
 }

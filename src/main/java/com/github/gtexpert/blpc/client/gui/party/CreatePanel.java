@@ -51,6 +51,9 @@ public class CreatePanel {
             String name = fieldRef[0].getText().trim();
             if (!name.isEmpty()) {
                 ModNetwork.INSTANCE.sendToServer(MessagePartyAction.create(name));
+                ModularPanel screenRoot = panel.getScreen().getMainPanel();
+                panel.closeIfOpen();
+                registerCreateListener(playerId, screenRoot);
             }
         };
 
@@ -85,6 +88,24 @@ public class CreatePanel {
         return panel;
     }
 
+    /**
+     * Registers a one-shot sync listener that opens MainPanel when the
+     * server confirms party creation. The listener self-removes after firing
+     * and is independent of any open panel (survives panel close).
+     *
+     * @param playerId   the player UUID to check party membership
+     * @param screenRoot the screen's main panel, captured before the CreatePanel is closed
+     */
+    private static void registerCreateListener(UUID playerId, ModularPanel screenRoot) {
+        Runnable[] ref = new Runnable[1];
+        ref[0] = () -> {
+            ClientPartyCache.removeSyncListener(ref[0]);
+            if (ClientPartyCache.getPartyByPlayer(playerId) == null) return;
+            PartyWidgets.openSubPanel(screenRoot, MainPanel.build(playerId));
+        };
+        ClientPartyCache.addSyncListener(ref[0]);
+    }
+
     private static List<PartyEntry> collectAvailableParties(UUID playerId) {
         List<PartyEntry> result = new ArrayList<>();
 
@@ -101,7 +122,6 @@ public class CreatePanel {
             }
         }
 
-        // Invites first, then free-to-join
         result.sort((a, b) -> {
             if (a.invited != b.invited) return a.invited ? -1 : 1;
             return a.displayName.compareToIgnoreCase(b.displayName);
@@ -109,7 +129,7 @@ public class CreatePanel {
         return result;
     }
 
-    private static Flow createPartyRow(PartyEntry entry, ModularPanel panel) {
+    private static ButtonWidget<?> createPartyRow(PartyEntry entry, ModularPanel panel) {
         int color = entry.invited ? GuiColors.GREEN : GuiColors.GRAY_LIGHT;
         String label = entry.invited ? entry.displayName + " [" + IKey.lang("blpc.party.invited_label").get() + "]" :
                 entry.displayName;
@@ -119,7 +139,6 @@ public class CreatePanel {
         btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
         btn.overlay(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft));
 
-        // Tooltip: description if available
         if (!entry.description.isEmpty()) {
             btn.addTooltipLine(IKey.str(entry.description));
         }
@@ -145,10 +164,7 @@ public class CreatePanel {
             return true;
         });
 
-        return Flow.row()
-                .height(PanelSizes.BTN_H)
-                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                .child(btn);
+        return btn;
     }
 
     private static class PartyEntry {

@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -14,6 +15,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
 import com.github.gtexpert.blpc.client.gui.GuiColors;
+import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
 import com.github.gtexpert.blpc.common.network.MessagePartyAction;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
@@ -43,10 +45,28 @@ public class MembersPanel {
         PanelBuilder.addHeader(panel, "blpc.party.members_title");
 
         var entries = collectAllPlayers(party);
-        ListWidget<?, ?> list = new ListWidget<>()
-                .children(entries, entry -> createRow(entry, party, playerId, myRole, canManage, panel));
 
-        PanelBuilder.addList(panel, list);
+        @SuppressWarnings("unchecked")
+        ListWidget<IWidget, ?> list = new ListWidget<>();
+        list.crossAxisAlignment(Alignment.CrossAxis.START);
+
+        var widgets = new ArrayList<IWidget>();
+        var searchNames = new ArrayList<String>();
+
+        for (PlayerEntry entry : entries) {
+            ButtonWidget<?> row = createRow(entry, party, playerId, myRole, canManage);
+            widgets.add(row);
+            searchNames.add(entry.name.toLowerCase(Locale.ROOT));
+            list.child(row);
+        }
+
+        if (widgets.isEmpty()) {
+            PanelBuilder.addList(panel, list);
+        } else {
+            var content = PartyWidgets.wrapWithSearchBox(list, widgets, searchNames);
+            content.left(8).right(8).top(22).bottom(8);
+            panel.child(content);
+        }
 
         PartyWidgets.addPartyRefreshListener(panel, party.getPartyId(), MembersPanel::build);
 
@@ -69,21 +89,15 @@ public class MembersPanel {
         }
 
         result.sort((a, b) -> {
-            // Members first, then non-members; within each group sort by name
             if (a.isMember != b.isMember) return a.isMember ? -1 : 1;
             return a.name.compareToIgnoreCase(b.name);
         });
         return result;
     }
 
-    private static Flow createRow(PlayerEntry entry, Party party, UUID playerId,
-                                  PartyRole myRole, boolean canManage, ModularPanel panel) {
-        int color;
-        if (entry.isMember) {
-            color = PartyWidgets.getRoleColor(entry.role);
-        } else {
-            color = GuiColors.GRAY_LIGHT;
-        }
+    private static ButtonWidget<?> createRow(PlayerEntry entry, Party party, UUID playerId,
+                                             PartyRole myRole, boolean canManage) {
+        int color = entry.isMember ? PartyWidgets.getRoleColor(entry.role) : GuiColors.GRAY_LIGHT;
 
         String label = entry.name;
         if (entry.isMember && entry.role != null) {
@@ -92,9 +106,17 @@ public class MembersPanel {
         }
 
         ButtonWidget<?> btn = new ButtonWidget<>();
-        btn.widthRel(1f).height(PanelSizes.BTN_H).padding(4, 0, 0, 0);
+        btn.widthRel(1f).height(PanelSizes.BTN_H).padding(0);
         btn.hoverBackground(new Rectangle().color(GuiColors.HOVER));
-        btn.overlay(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft));
+        btn.child(Flow.row()
+                .widthRel(1f).heightRel(1f)
+                .padding(4, 0, 0, 0)
+                .childPadding(4)
+                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+                .child(new PlayerFaceDrawable(entry.uuid).asWidget()
+                        .size(PanelSizes.FACE_SIZE, PanelSizes.FACE_SIZE))
+                .child(IKey.str(label).color(color).shadow(true).alignment(Alignment.CenterLeft)
+                        .asWidget().expanded()));
 
         boolean isSelf = entry.uuid.equals(playerId);
         if (entry.isMember) {
@@ -107,16 +129,17 @@ public class MembersPanel {
                     return true;
                 });
                 btn.addTooltipLine(IKey.lang("blpc.party.tooltip.member_self"));
-            } else if (!isSelf && canManage && entry.role != null && myRole != null && myRole.canKick(entry.role)) {
-                String playerName = entry.name;
-                btn.onMousePressed(b -> {
-                    ModNetwork.INSTANCE.sendToServer(MessagePartyAction.kickOrLeave(playerName));
-                    party.removeMember(entry.uuid);
-                    ClientPartyCache.fireSyncListeners();
-                    return true;
-                });
-                btn.addTooltipLine(IKey.lang("blpc.party.tooltip.kick"));
-            }
+            } else if (!isSelf && canManage && entry.role != null && myRole != null &&
+                    myRole.canKick(entry.role)) {
+                        String playerName = entry.name;
+                        btn.onMousePressed(b -> {
+                            ModNetwork.INSTANCE.sendToServer(MessagePartyAction.kickOrLeave(playerName));
+                            party.removeMember(entry.uuid);
+                            ClientPartyCache.fireSyncListeners();
+                            return true;
+                        });
+                        btn.addTooltipLine(IKey.lang("blpc.party.tooltip.kick"));
+                    }
         } else if (canManage) {
             String playerName = entry.name;
             btn.onMousePressed(b -> {
@@ -128,10 +151,7 @@ public class MembersPanel {
             btn.addTooltipLine(IKey.lang("blpc.party.tooltip.invite"));
         }
 
-        return Flow.row()
-                .height(PanelSizes.BTN_H)
-                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
-                .child(btn);
+        return btn;
     }
 
     private static class PlayerEntry {
