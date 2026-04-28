@@ -99,8 +99,8 @@ public class ModeratorsPanel {
 
     private static IWidget roleOptionWidget(UUID memberId, String memberName, PartyRole role,
                                             boolean forSelected) {
-        int color = PartyWidgets.getRoleColor(role);
         if (forSelected) {
+            int color = PartyWidgets.getRoleColor(role);
             String label = PartyWidgets.formatMemberLabel(memberName, role);
             return Flow.row()
                     .widthRel(1f).heightRel(1f)
@@ -113,8 +113,10 @@ public class ModeratorsPanel {
                             .alignment(Alignment.CenterLeft)
                             .asWidget().expanded());
         }
+        // Menu items render inside MenuPanel (context_menu theme):
+        // theme provides "menu" background, #404040 text, no shadow.
         String roleStr = IKey.lang("blpc.party.role." + role.name().toLowerCase(Locale.ROOT)).get();
-        return IKey.str(roleStr).color(color).shadow(true).alignment(Alignment.Center)
-                .asWidget().widthRel(1f).height(12);
+        return IKey.str(roleStr).alignment(Alignment.Center)
+                .asWidget().widthRel(1f);
     }
 }

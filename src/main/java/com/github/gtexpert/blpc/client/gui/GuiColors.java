@@ -24,8 +24,6 @@ public final class GuiColors {
     public static final int HOVER = 0x40FFFFFF;
     /** Semi-transparent white — section divider line. */
     public static final int DIVIDER = 0x30FFFFFF;
-    /** Opaque dark gray — dropdown menu background, prevents see-through onto rows behind. */
-    public static final int MENU_BG = 0xFF1F1F1F;
 
     private GuiColors() {}
 }

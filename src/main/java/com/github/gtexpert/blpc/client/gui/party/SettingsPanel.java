@@ -482,30 +482,19 @@ public class SettingsPanel {
                                 .asWidget()
                                 .widthRel(1f).heightRel(1f).padding(4, 0, 0, 0);
                     }
+                    // Menu items render inside MenuPanel (context_menu theme):
+                    // theme provides "menu" background, #404040 text, no shadow.
                     String roleStr = IKey.lang(
                             "blpc.party.trust_level." + level.name().toLowerCase(Locale.ROOT)).get();
                     return IKey.str(roleStr)
-                            .color(trustLevelColor(level))
-                            .shadow(true)
                             .alignment(Alignment.CenterLeft)
                             .asWidget()
-                            .widthRel(1f).height(14).padding(4, 0, 0, 0)
-                            .background(new Rectangle().color(GuiColors.MENU_BG))
-                            .hoverBackground(new Rectangle().color(GuiColors.HOVER));
+                            .widthRel(1f).padding(4, 0, 0, 0);
                 })
                 .value(new EnumValue.Dynamic<>(TrustLevel.class, getter, setter))
                 .widthRel(1f).height(BTN_H).marginBottom(2)
                 .addTooltipLine(underlineKey(tooltipKey))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip(defaultValueBuilder.get())));
-    }
-
-    private static int trustLevelColor(TrustLevel level) {
-        return switch (level) {
-            case NONE -> GuiColors.GRAY_LIGHT;
-            case ALLY -> GuiColors.GOLD;
-            case MEMBER -> GuiColors.GREEN;
-            case MODERATOR, OWNER -> GuiColors.WHITE;
-        };
     }
 
     private static String buildTrustLabel(Party party, TrustAction action) {
