@@ -1,8 +1,11 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Function;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -18,6 +21,8 @@ import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
+import com.cleanroommc.modularui.widgets.PageButton;
+import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
@@ -35,8 +40,6 @@ import com.github.gtexpert.blpc.common.party.PartyRole;
  */
 public final class PartyWidgets {
 
-    // --- Panel & dialog size constants ---
-
     public static final int STANDARD_W = 220;
     public static final int STANDARD_H = 180;
     public static final int LARGE_W = 260;
@@ -45,10 +48,9 @@ public final class PartyWidgets {
     public static final int DIALOG_H = 70;
     public static final int BTN_H = 18;
     public static final int FACE_SIZE = 8;
+    public static final int TAB_H = 16;
 
     private PartyWidgets() {}
-
-    // --- Panel layout helpers ---
 
     /**
      * Adds a centered title and a close button to the given panel.
@@ -174,6 +176,84 @@ public final class PartyWidgets {
         ClientPartyCache.setLocalBQuLinked(playerId, false);
         ClientPartyCache.clear();
         ClientPartyCache.fireSyncListeners();
+    }
+
+    /**
+     * Adds a top-level tab row and paged content area to the given panel.
+     * Tab row sits below the header (top=22), pages fill the remaining area.
+     */
+    public static void addTabs(ModularPanel panel, PagedWidget.Controller controller,
+                               String[] labelKeys, IWidget[] pages) {
+        var tabRow = Flow.row()
+                .childPadding(2)
+                .left(4).right(4).top(22).height(TAB_H);
+        for (int i = 0; i < labelKeys.length; i++) {
+            tabRow.child(new PageButton(i, controller).height(TAB_H).expanded()
+                    .overlay(IKey.lang(labelKeys[i])));
+        }
+        var paged = new PagedWidget<>()
+                .controller(controller)
+                .left(4).right(4).top(40).bottom(4);
+        for (IWidget page : pages) {
+            paged.addPage(page);
+        }
+        panel.child(tabRow);
+        panel.child(paged);
+    }
+
+    /**
+     * Builds an inner (nested) tabbed widget — a tab row stacked above paged content
+     * inside a {@link Flow#column()} that fills its parent.
+     */
+    public static IWidget buildInnerTabs(String[] labelKeys, IWidget[] pages) {
+        var controller = new PagedWidget.Controller();
+        var tabRow = Flow.row()
+                .childPadding(2)
+                .widthRel(1f).height(TAB_H);
+        for (int i = 0; i < labelKeys.length; i++) {
+            tabRow.child(new PageButton(i, controller).height(TAB_H).expanded()
+                    .overlay(IKey.lang(labelKeys[i])));
+        }
+        var paged = new PagedWidget<>()
+                .controller(controller)
+                .widthRel(1f).expanded();
+        for (IWidget page : pages) {
+            paged.addPage(page);
+        }
+        return Flow.column()
+                .widthRel(1f).heightRel(1f)
+                .child(tabRow)
+                .child(paged);
+    }
+
+    /**
+     * Builds a searchable list of rows. If entries is empty, returns a single-row column
+     * with the empty-state lang key. Otherwise wraps the list with a search text field
+     * that filters rows by their extracted name. Always returns a {@link Flow} that fills
+     * the parent (sizeRel(1f, 1f)) — supports {@code .margin(...)} for outer placement.
+     */
+    public static <T> Flow buildSearchableList(Collection<T> entries,
+                                               Function<T, IWidget> rowFactory,
+                                               Function<T, String> nameExtractor,
+                                               String emptyStateKey) {
+        @SuppressWarnings("unchecked")
+        ListWidget<IWidget, ?> list = new ListWidget<>();
+        list.widthRel(1f).heightRel(1f);
+        list.crossAxisAlignment(Alignment.CrossAxis.START);
+
+        var widgets = new ArrayList<IWidget>();
+        var searchNames = new ArrayList<String>();
+        for (T entry : entries) {
+            IWidget row = rowFactory.apply(entry);
+            widgets.add(row);
+            searchNames.add(nameExtractor.apply(entry).toLowerCase(Locale.ROOT));
+            list.child(row);
+        }
+        if (widgets.isEmpty()) {
+            return Flow.column().child(IKey.lang(emptyStateKey).color(GuiColors.GRAY)
+                    .asWidget().widthRel(1f).height(BTN_H).marginLeft(4));
+        }
+        return wrapWithSearchBox(list, widgets, searchNames);
     }
 
     /**

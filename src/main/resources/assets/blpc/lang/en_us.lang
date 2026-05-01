@@ -11,7 +11,32 @@ key.blpc.toggle=Toggle Minimap
 key.categories.blpc=Better Link Party Claim
 
 # Commands
-command.blpc.move_owner.success=Party (id: %s) owner changed to %s
+command.blpc.move_owner.success=Party "%s" owner changed to %s
+command.blpc.list.empty=No parties exist on this server.
+command.blpc.list.header=Parties (%d):
+command.blpc.info.header=== Party: %s ==
+command.blpc.info.id=ID: %s
+command.blpc.info.owner=Owner: %s
+command.blpc.info.members=Members: %d
+command.blpc.info.claims=Claimed Chunks: %d
+command.blpc.kick.success=Kicked %s from party "%s".
+command.blpc.disband.success=Disbanded party "%s".
+command.blpc.me.no_party=You are not in a party.
+command.blpc.me.your_role=Your role: %s
+command.blpc.here.wilderness=Chunk (%d, %d) is wilderness (unclaimed).
+command.blpc.here.claimed=Chunk (%d, %d) is claimed by party "%s" (owner: %s).
+command.blpc.here.claimed_force=Chunk (%d, %d) is claimed and force-loaded by party "%s" (owner: %s).
+command.blpc.claims.personal=Your claims: %d (force-loaded: %d). You are not in a party.
+command.blpc.claims.party_header=== Claims for party "%s" ==
+command.blpc.claims.party_total=Claimed chunks: %d / %d
+command.blpc.claims.party_force=Force-loaded: %d / %d
+command.blpc.claims.your_share=Your share: %d claims (%d force-loaded)
+command.blpc.invites.empty=You have no pending invitations.
+command.blpc.invites.header=Pending invitations (%d):
+command.blpc.invites.hint=Use /blpc accept <partyName> or /blpc decline <partyName>.
+command.blpc.accept.success=Joined party "%s".
+command.blpc.decline.success=Declined invitation from party "%s".
+command.blpc.leave.success=Left party "%s".
 
 # Map
 blpc.map.close=Close

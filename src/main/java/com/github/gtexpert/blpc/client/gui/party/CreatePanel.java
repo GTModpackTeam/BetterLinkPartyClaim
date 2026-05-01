@@ -45,7 +45,6 @@ public class CreatePanel {
 
         PartyWidgets.addHeader(panel, "blpc.party.create_title");
 
-        // Name input + Create button
         final TextFieldWidget[] fieldRef = new TextFieldWidget[1];
         Runnable doCreate = () -> {
             String name = fieldRef[0].getText().trim();
@@ -73,7 +72,6 @@ public class CreatePanel {
                             return true;
                         })));
 
-        // Scrollable list of available parties (invites + free-to-join)
         List<PartyEntry> entries = collectAvailableParties(playerId);
 
         panel.child(new ListWidget<>()

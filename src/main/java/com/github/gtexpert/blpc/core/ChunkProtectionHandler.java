@@ -48,8 +48,6 @@ import com.github.gtexpert.blpc.common.party.TrustLevel;
  */
 public class ChunkProtectionHandler {
 
-    // --- Helper methods ---
-
     private static boolean isChunkClaimed(int chunkX, int chunkZ) {
         return ChunkManagerData.getInstance().getClaim(chunkX, chunkZ) != null;
     }
@@ -95,32 +93,23 @@ public class ChunkProtectionHandler {
 
         if (claim == null) return true;
         if (player == null) return false;
-
-        // OP bypass
         if (player.canUseCommand(2, "")) return true;
-
-        // Claim owner always allowed
         if (claim.ownerUUID.equals(player.getUniqueID())) return true;
 
         Party party = getPartyForClaim(claim);
 
-        // FakePlayer handling
         if (player instanceof FakePlayer) {
             if (party == null) return false;
             TrustLevel fakeLevel = party.getFakePlayerTrustLevel();
             return fakeLevel.isAtLeast(party.getTrustLevel(action));
         }
 
-        // No party: only owner (already checked above) is allowed
         if (party == null) return false;
 
-        // Trust level check
         TrustLevel effectiveLevel = party.getEffectiveTrustLevel(player.getUniqueID());
-        if (effectiveLevel == null) return false; // Enemy
+        if (effectiveLevel == null) return false; // Enemy: null encodes "no trust"
         return effectiveLevel.isAtLeast(party.getTrustLevel(action));
     }
-
-    // --- Block breaking ---
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
@@ -133,8 +122,6 @@ public class ChunkProtectionHandler {
         }
     }
 
-    // --- Block placing ---
-
     @SubscribeEvent
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.getWorld().isRemote) return;
@@ -144,8 +131,6 @@ public class ChunkProtectionHandler {
             event.setCanceled(true);
         }
     }
-
-    // --- Right-click interactions ---
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -158,8 +143,6 @@ public class ChunkProtectionHandler {
             event.setCanceled(true);
         }
     }
-
-    // --- Item use in claimed chunks ---
 
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
@@ -179,8 +162,6 @@ public class ChunkProtectionHandler {
             event.setCanceled(true);
         }
     }
-
-    // --- Explosions (per-party setting) ---
 
     @SubscribeEvent
     public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
@@ -216,8 +197,6 @@ public class ChunkProtectionHandler {
         return party == null || party.protectsExplosions();
     }
 
-    // --- Entity interactions ---
-
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         if (event.getWorld().isRemote) return;
@@ -236,8 +215,6 @@ public class ChunkProtectionHandler {
         }
     }
 
-    // --- Entity attack ---
-
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
         if (event.getEntityPlayer().world.isRemote) return;
@@ -246,8 +223,6 @@ public class ChunkProtectionHandler {
             event.setCanceled(true);
         }
     }
-
-    // --- Mob griefing ---
 
     @SubscribeEvent
     public static void onMobGriefing(EntityMobGriefingEvent event) {
@@ -261,8 +236,6 @@ public class ChunkProtectionHandler {
             event.setResult(Event.Result.DENY);
         }
     }
-
-    // --- Farmland trampling ---
 
     @SubscribeEvent
     public static void onFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
@@ -285,8 +258,6 @@ public class ChunkProtectionHandler {
             }
         }
     }
-
-    // --- Fluid block generation across chunk boundaries ---
 
     @SubscribeEvent
     public static void onFluidPlaceBlock(BlockEvent.FluidPlaceBlockEvent event) {
@@ -311,8 +282,6 @@ public class ChunkProtectionHandler {
             event.setCanceled(true);
         }
     }
-
-    // --- Fire spread across chunk boundaries ---
 
     @SubscribeEvent
     public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {

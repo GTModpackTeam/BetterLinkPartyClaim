@@ -84,7 +84,7 @@ public class ModConfig {
 
         @Config.Name("Auto Create Party (Singleplayer)")
         @Config.Comment("Automatically create a party named after the player in singleplayer.")
-        public boolean autoCreatePartySingleplayer = false;
+        public boolean autoCreatePartySingleplayer = true;
     }
 
     public static class ServerParty {

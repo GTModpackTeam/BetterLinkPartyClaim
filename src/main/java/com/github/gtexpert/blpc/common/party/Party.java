@@ -285,8 +285,6 @@ public class Party {
         enemies.addAll(source.getEnemies());
     }
 
-    // --- Player name cache ---
-
     /**
      * Returns the cached display name for a player, or {@code null} if unknown.
      * Populated by {@link #resolvePlayerNames()} on the server before sync.
@@ -332,8 +330,6 @@ public class Party {
         return enemyPartyNames.getOrDefault(partyId, partyId.toString().substring(0, 8));
     }
 
-    // --- Invites (memory only, not persisted) ---
-
     public void addInvite(UUID target, long expiryTimestamp) {
         invites.put(target, expiryTimestamp);
     }
@@ -356,8 +352,6 @@ public class Party {
         long now = System.currentTimeMillis();
         invites.entrySet().removeIf(e -> now > e.getValue());
     }
-
-    // --- NBT helpers ---
 
     private static NBTTagList uuidSetToNBT(Collection<UUID> uuids) {
         var list = new NBTTagList();
@@ -394,8 +388,6 @@ public class Party {
             target.put(nameTag.getUniqueId("uuid"), nameTag.getString("name"));
         }
     }
-
-    // --- NBT ---
 
     public NBTTagCompound toNBT() {
         NBTTagCompound tag = new NBTTagCompound();
@@ -437,19 +429,15 @@ public class Party {
      */
     public NBTTagCompound toSyncNBT() {
         NBTTagCompound tag = toNBT();
-        // Player name cache
         if (!playerNames.isEmpty()) {
             tag.setTag("playerNames", uuidNameMapToNBT(playerNames));
         }
-        // Ally party names
         if (!allyPartyNames.isEmpty()) {
             tag.setTag("allyPartyNames", uuidNameMapToNBT(allyPartyNames));
         }
-        // Enemy party names
         if (!enemyPartyNames.isEmpty()) {
             tag.setTag("enemyPartyNames", uuidNameMapToNBT(enemyPartyNames));
         }
-        // Pending invites (UUID only, no expiry)
         if (!invites.isEmpty()) {
             cleanExpiredInvites();
             tag.setTag("pendingInvites", uuidSetToNBT(invites.keySet()));
@@ -458,32 +446,17 @@ public class Party {
     }
 
     public static Party fromNBT(NBTTagCompound tag) {
-        UUID id;
-        if (tag.hasKey("partyIdMost")) {
-            // New UUID format
-            id = tag.getUniqueId("partyId");
-        } else {
-            // Old int format - migrate
-            int oldId = tag.getInteger("id");
-            id = uuidFromIntId(oldId);
-        }
+        UUID id = tag.getUniqueId("partyId");
         String name = tag.getString("name");
         long created = tag.getLong("created");
 
-        // Validate
         if (name.isEmpty()) {
-            // Check if old title exists and use it
-            if (tag.hasKey("title") && !tag.getString("title").isEmpty()) {
-                name = tag.getString("title");
-            } else {
-                name = "Party " + id.toString().substring(0, 8);
-            }
+            name = "Party " + id.toString().substring(0, 8);
             ModLog.IO.warn("Party {} has empty name, using default", id);
         }
 
         Party party = new Party(id, name, created);
 
-        // Members
         NBTTagList memberList = tag.getTagList("members", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < memberList.tagCount(); i++) {
             NBTTagCompound memberTag = memberList.getCompoundTagAt(i);
@@ -492,7 +465,6 @@ public class Party {
             party.addMember(uuid, role);
         }
 
-        // Trust levels
         if (tag.hasKey("trustLevels")) {
             NBTTagCompound trustTag = tag.getCompoundTag("trustLevels");
             for (TrustAction action : TrustAction.values()) {
@@ -503,15 +475,11 @@ public class Party {
         }
         if (tag.hasKey("fakePlayerTrust")) {
             party.setFakePlayerTrustLevel(TrustLevel.fromName(tag.getString("fakePlayerTrust")));
-        } else if (tag.hasKey("allowFakePlayers")) {
-            // Migration from old boolean format
-            party.setFakePlayerTrustLevel(tag.getBoolean("allowFakePlayers") ? TrustLevel.ALLY : TrustLevel.NONE);
         }
         if (tag.hasKey("protectExplosions")) {
             party.setProtectExplosions(tag.getBoolean("protectExplosions"));
         }
 
-        // Allies / Enemies
         for (UUID uuid : uuidSetFromNBT(tag.getTagList("allies", Constants.NBT.TAG_COMPOUND))) {
             party.addAlly(uuid);
         }
@@ -519,7 +487,6 @@ public class Party {
             party.addEnemy(uuid);
         }
 
-        // Ally party names (sync only)
         if (tag.hasKey("allyPartyNames")) {
             uuidNameMapFromNBT(tag.getTagList("allyPartyNames", Constants.NBT.TAG_COMPOUND),
                     party.allyPartyNames);
@@ -529,19 +496,17 @@ public class Party {
                     party.enemyPartyNames);
         }
 
-        // Metadata
         if (tag.hasKey("freeToJoin")) party.setFreeToJoin(tag.getBoolean("freeToJoin"));
         if (tag.hasKey("color")) party.setColor(tag.getInteger("color"));
         if (tag.hasKey("description")) party.setDescription(tag.getString("description"));
         if (tag.hasKey("maxMembers")) party.setMaxMembers(tag.getInteger("maxMembers"));
 
-        // Player name cache
         if (tag.hasKey("playerNames")) {
             uuidNameMapFromNBT(tag.getTagList("playerNames", Constants.NBT.TAG_COMPOUND),
                     party.playerNames);
         }
 
-        // Pending invites (sync only, no expiry on client)
+        // Sync-only: client-side invites have no expiry timestamp.
         if (tag.hasKey("pendingInvites")) {
             for (UUID uuid : uuidSetFromNBT(tag.getTagList("pendingInvites", Constants.NBT.TAG_COMPOUND))) {
                 party.addInvite(uuid, Long.MAX_VALUE);

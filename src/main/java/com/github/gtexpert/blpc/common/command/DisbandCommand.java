@@ -1,8 +1,9 @@
 package com.github.gtexpert.blpc.common.command;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -17,47 +18,59 @@ import org.jetbrains.annotations.Nullable;
 
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.common.BLPCSaveHandler;
+import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
+import com.github.gtexpert.blpc.common.network.MessagePartyEventNotify;
+import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.Party;
-import com.github.gtexpert.blpc.common.party.PartyRole;
+import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
-public class MoveOwnerCommand extends CommandBase {
+public class DisbandCommand extends CommandBase {
 
     @Override
     public @NotNull String getName() {
-        return "move-owner";
+        return "disband";
     }
 
     @Override
     public @NotNull String getUsage(@NotNull ICommandSender sender) {
-        return "/blpc admin move-owner <partyName> <newOwner>";
+        return "/blpc admin disband <partyName>";
     }
 
     @Override
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender,
                         String @NotNull [] args) throws CommandException {
-        if (args.length != 2) {
-            throw new CommandException("/blpc admin move-owner <partyName> <newOwner>");
+        if (args.length != 1) {
+            throw new CommandException("/blpc admin disband <partyName>");
         }
-
         Party party = BLPCCommandHelper.findPartyByName(args[0]);
         if (party == null) {
             throw new CommandException("Party not found: " + args[0]);
         }
 
-        EntityPlayerMP newOwner = server.getPlayerList().getPlayerByUsername(args[1]);
-        if (newOwner == null) {
-            throw new CommandException("Owner player not found: " + args[1]);
+        String partyName = party.getName();
+        List<UUID> members = new ArrayList<>(party.getMemberUUIDs());
+        ChunkManagerData chunks = ChunkManagerData.getInstance();
+        for (UUID memberId : members) {
+            chunks.releaseAllClaims(memberId, sender.getEntityWorld());
         }
 
-        if (!party.isMember(newOwner.getUniqueID())) {
-            throw new CommandException("Player is not a member of this party");
+        PartyManagerData pm = PartyManagerData.getInstance();
+        pm.removeParty(party.getPartyId());
+        for (UUID memberId : members) {
+            pm.setBQuLinked(memberId, false);
         }
-
-        party.setRole(newOwner.getUniqueID(), PartyRole.OWNER);
         PartyProviderRegistry.get().syncToAll();
         BLPCSaveHandler.INSTANCE.markDirty();
-        sender.sendMessage(
-                new TextComponentTranslation("command.blpc.move_owner.success", party.getName(), newOwner.getName()));
+
+        for (UUID memberId : members) {
+            EntityPlayerMP member = server.getPlayerList().getPlayerByUUID(memberId);
+            if (member != null) {
+                ModNetwork.INSTANCE.sendTo(
+                        new MessagePartyEventNotify(MessagePartyEventNotify.DISBANDED, "", ""),
+                        member);
+            }
+        }
+        sender.sendMessage(new TextComponentTranslation("command.blpc.disband.success", partyName));
     }
 
     @Override
@@ -66,18 +79,6 @@ public class MoveOwnerCommand extends CommandBase {
                                                    String @NotNull [] args, @Nullable BlockPos targetPos) {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(args, BLPCCommandHelper.allPartyNames());
-        }
-        if (args.length == 2) {
-            Party party = BLPCCommandHelper.findPartyByName(args[0]);
-            if (party != null) {
-                List<String> memberNames = party.getMembers().keySet().stream()
-                        .map(uuid -> server.getPlayerList().getPlayerByUUID(uuid))
-                        .filter(p -> p != null && party.getRole(p.getUniqueID()) != PartyRole.OWNER)
-                        .map(EntityPlayerMP::getName)
-                        .collect(Collectors.toList());
-                return getListOfStringsMatchingLastWord(args, memberNames);
-            }
-            return getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames());
         }
         return Collections.emptyList();
     }

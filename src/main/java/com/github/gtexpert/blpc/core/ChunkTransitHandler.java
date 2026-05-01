@@ -56,11 +56,9 @@ public class ChunkTransitHandler {
             return;
         }
 
-        // Chunk boundary crossed
         ChunkManagerData chunkData = ChunkManagerData.getInstance();
         PartyManagerData partyData = PartyManagerData.getInstance();
 
-        // Handle leaving the previous chunk
         if (prev != null) {
             int prevX = unpackX(prev);
             int prevZ = unpackZ(prev);
@@ -81,7 +79,6 @@ public class ChunkTransitHandler {
             }
         }
 
-        // Handle entering the current chunk
         ClaimedChunkData curClaim = chunkData.getClaim(cx, cz);
         if (curClaim != null) {
             Party curParty = partyData.getPartyByPlayer(curClaim.ownerUUID);
@@ -98,7 +95,6 @@ public class ChunkTransitHandler {
             }
         }
 
-        // Apply effects immediately on chunk change
         if (ModConfig.Defaults.enableAreaEffects) {
             applyAreaEffects(player, cx, cz);
         }
@@ -131,20 +127,16 @@ public class ChunkTransitHandler {
         MessageChunkTransitNotify packet = new MessageChunkTransitNotify(
                 transitPlayer.getName(), relation, entered);
 
-        // Send to all online party members
         for (UUID memberId : claimParty.getMembers().keySet()) {
             EntityPlayerMP member = getOnlinePlayer(memberId);
             if (member != null && !member.getUniqueID().equals(transitPlayer.getUniqueID())) {
                 ModNetwork.INSTANCE.sendTo(packet, member);
             }
         }
-        // For enemies, also notify the invader
         if (relation == RelationType.ENEMY) {
             ModNetwork.INSTANCE.sendTo(packet, transitPlayer);
         }
     }
-
-    // --- Area Effects ---
 
     private static void onEnemyEnter(UUID partyId, UUID enemyId) {
         activeInvasions.computeIfAbsent(partyId, k -> ConcurrentHashMap.newKeySet()).add(enemyId);
@@ -176,7 +168,6 @@ public class ChunkTransitHandler {
 
         RelationType rel = resolveRelation(claimParty, player);
 
-        // Enemy debuff
         if (rel == RelationType.ENEMY) {
             player.addPotionEffect(new PotionEffect(
                     MobEffects.WEAKNESS, POTION_DURATION, ModConfig.Defaults.enemyWeaknessAmplifier, true, true));
@@ -186,7 +177,7 @@ public class ChunkTransitHandler {
             }
         }
 
-        // Defender buff (only when enemies are invading this party's territory)
+        // Defender buff: only active when enemies are present.
         if (rel == RelationType.MEMBER) {
             Set<UUID> invaders = activeInvasions.get(claimParty.getPartyId());
             if (invaders != null && !invaders.isEmpty()) {

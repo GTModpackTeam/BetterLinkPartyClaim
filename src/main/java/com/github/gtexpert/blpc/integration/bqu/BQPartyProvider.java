@@ -44,8 +44,6 @@ public class BQPartyProvider implements IPartyProvider {
 
     private final DefaultPartyProvider fallback = new DefaultPartyProvider();
 
-    // --- Query: BQu first, fallback to self-managed ---
-
     @Override
     public boolean areInSameParty(UUID playerA, UUID playerB) {
         try {
@@ -90,8 +88,6 @@ public class BQPartyProvider implements IPartyProvider {
     public boolean hasNativeParty(UUID playerUUID) {
         return PartyManager.INSTANCE.getParty(playerUUID) != null;
     }
-
-    // --- Mutation: BQu first (by player UUID), fallback to self-managed ---
 
     @Override
     public boolean createParty(EntityPlayerMP player, String name) {
@@ -269,8 +265,6 @@ public class BQPartyProvider implements IPartyProvider {
         return true;
     }
 
-    // --- Sync ---
-
     @Override
     public void syncToAll() {
         NetPartySync.sendSync(null, null);
@@ -294,7 +288,6 @@ public class BQPartyProvider implements IPartyProvider {
                     0L);
             boolean hasLinkedMember = false;
             for (UUID memberId : bqParty.getMembers()) {
-                // Only include bquLinked members in BLPC's party view
                 if (!pmData.isBQuLinked(memberId)) continue;
                 EnumPartyStatus status = bqParty.getStatus(memberId);
                 party.addMember(memberId, mapRole(status));
@@ -302,7 +295,6 @@ public class BQPartyProvider implements IPartyProvider {
                 hasLinkedMember = true;
             }
             if (!hasLinkedMember) continue;
-            // Copy BLPC settings from self-managed party (prefer owner's party)
             Party ownerSelfParty = null;
             Party fallbackSelfParty = null;
             for (UUID memberId : party.getMemberUUIDs()) {
@@ -344,7 +336,7 @@ public class BQPartyProvider implements IPartyProvider {
         NBTTagCompound root = new NBTTagCompound();
         root.setTag("parties", list);
 
-        // Always include bquLinked flags (even if empty) so client clears stale state
+        // Included even when empty so the client clears stale bquLinked state.
         root.setTag("bquLinked", selfData.getTagList("bquLinked", Constants.NBT.TAG_COMPOUND));
 
         return root;

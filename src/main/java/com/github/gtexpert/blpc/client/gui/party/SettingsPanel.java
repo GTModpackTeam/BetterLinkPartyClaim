@@ -24,7 +24,6 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.CycleButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
-import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.SliderWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
@@ -58,41 +57,26 @@ public class SettingsPanel {
 
     private static final TrustLevel[] CYCLE_LEVELS = { TrustLevel.NONE, TrustLevel.ALLY, TrustLevel.MEMBER };
 
-    private static final int TAB_H = 16;
-
     public static ModularPanel build(Party party) {
         ModularPanel panel = new ModularPanel(PANEL_ID);
         panel.size(PartyWidgets.LARGE_W, PartyWidgets.LARGE_H);
 
         PartyWidgets.addHeader(panel, "blpc.party.settings_title");
 
-        // Tab controller
         var controller = new PagedWidget.Controller();
-
-        // Tab button row
-        var tabRow = Flow.row()
-                .childPadding(2)
-                .left(4).right(4).top(22).height(TAB_H)
-                .child(new PageButton(0, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.settings_tab_party")))
-                .child(new PageButton(1, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.settings_tab_protection")))
-                .child(new PageButton(2, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.settings_tab_allies")))
-                .child(new PageButton(3, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.settings_tab_enemies")));
-
-        // Paged content area
-        var pagedWidget = new PagedWidget<>()
-                .controller(controller)
-                .left(4).right(4).top(40).bottom(4)
-                .addPage(buildPartyInfoPage(party, panel))
-                .addPage(buildProtectionPage(party))
-                .addPage(buildAlliesPage(party))
-                .addPage(buildEnemiesPage(party));
-
-        panel.child(tabRow);
-        panel.child(pagedWidget);
+        PartyWidgets.addTabs(panel, controller,
+                new String[] {
+                        "blpc.party.settings_tab_party",
+                        "blpc.party.settings_tab_protection",
+                        "blpc.party.settings_tab_allies",
+                        "blpc.party.settings_tab_enemies"
+                },
+                new IWidget[] {
+                        buildPartyInfoPage(party, panel),
+                        buildProtectionPage(party),
+                        buildAlliesPage(party),
+                        buildEnemiesPage(party)
+                });
 
         return panel;
     }
@@ -159,7 +143,6 @@ public class SettingsPanel {
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("\"\"")))
                 .widthRel(1f).height(BTN_H).padding(4, 0, 0, 0));
 
-        // Divider between name/description and color/free-to-join
         list.child(new Rectangle().color(GuiColors.DIVIDER).asWidget().height(1).widthRel(1f).marginTop(4)
                 .marginBottom(4));
 
@@ -187,7 +170,6 @@ public class SettingsPanel {
                 .addTooltipLine(underlineKey("blpc.party.tooltip.free_to_join"))
                 .addTooltipLine(IKey.dynamic(() -> defaultTooltip("false"))));
 
-        // Max members: label + slider (0 = unlimited, max = 100)
         list.child(IKey.dynamic(() -> buildMaxMembersLabel(party))
                 .alignment(Alignment.CenterLeft)
                 .asWidget().widthRel(1f).height(10).marginLeft(4).marginTop(4)
@@ -225,7 +207,6 @@ public class SettingsPanel {
         }
         list.child(createFakePlayerCycle(party));
 
-        // Divider between trust settings and explosion toggle
         list.child(new Rectangle().color(GuiColors.DIVIDER).asWidget().height(1).widthRel(1f).marginTop(4)
                 .marginBottom(4));
 
@@ -258,26 +239,9 @@ public class SettingsPanel {
      * Toggle buttons update color in-place via {@link IKey#dynamicKey} — panel stays open.
      */
     private static IWidget buildTrustPage(Party party, boolean isEnemy) {
-        var controller = new PagedWidget.Controller();
-
-        var tabRow = Flow.row()
-                .childPadding(2)
-                .widthRel(1f).height(TAB_H)
-                .child(new PageButton(0, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.tab.parties")))
-                .child(new PageButton(1, controller).height(TAB_H).expanded()
-                        .overlay(IKey.lang("blpc.party.tab.players")));
-
-        var pagedContent = new PagedWidget<>()
-                .controller(controller)
-                .widthRel(1f).expanded()
-                .addPage(buildTrustPartyList(party, isEnemy))
-                .addPage(buildTrustPlayerList(party, isEnemy));
-
-        return Flow.column()
-                .widthRel(1f).heightRel(1f)
-                .child(tabRow)
-                .child(pagedContent);
+        return PartyWidgets.buildInnerTabs(
+                new String[] { "blpc.party.tab.parties", "blpc.party.tab.players" },
+                new IWidget[] { buildTrustPartyList(party, isEnemy), buildTrustPlayerList(party, isEnemy) });
     }
 
     private static IWidget buildTrustPartyList(Party party, boolean isEnemy) {
@@ -383,8 +347,6 @@ public class SettingsPanel {
 
         return PartyWidgets.wrapWithSearchBox(list, widgets, searchNames);
     }
-
-    // --- Trust toggle helpers ---
 
     private static void toggleTrust(Party party, UUID pid, boolean isEnemy) {
         boolean active = isEnemy ? party.isEnemy(pid) : party.isAlly(pid);

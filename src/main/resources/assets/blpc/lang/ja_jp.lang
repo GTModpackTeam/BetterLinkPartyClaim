@@ -11,7 +11,32 @@ key.blpc.toggle=ミニマップ切替
 key.categories.blpc=Better Link Party Claim
 
 # Commands
-command.blpc.move_owner.success=パーティ(id:%s)の所有者を%sに変更しました。
+command.blpc.move_owner.success=パーティ「%s」の所有者を%sに変更しました。
+command.blpc.list.empty=このサーバーにはパーティが存在しません。
+command.blpc.list.header=パーティ一覧 (%d 件):
+command.blpc.info.header=== パーティ: %s ==
+command.blpc.info.id=ID: %s
+command.blpc.info.owner=オーナー: %s
+command.blpc.info.members=メンバー数: %d
+command.blpc.info.claims=確保チャンク数: %d
+command.blpc.kick.success=%s をパーティ「%s」からキックしました。
+command.blpc.disband.success=パーティ「%s」を解散しました。
+command.blpc.me.no_party=あなたはパーティに所属していません。
+command.blpc.me.your_role=あなたのロール: %s
+command.blpc.here.wilderness=チャンク (%d, %d) は未確保です。
+command.blpc.here.claimed=チャンク (%d, %d) はパーティ「%s」が確保中（オーナー: %s）。
+command.blpc.here.claimed_force=チャンク (%d, %d) はパーティ「%s」が確保＆常時読込中（オーナー: %s）。
+command.blpc.claims.personal=あなたの確保数: %d（常時読込: %d）。パーティに未所属です。
+command.blpc.claims.party_header=== パーティ「%s」の確保状況 ==
+command.blpc.claims.party_total=確保チャンク数: %d / %d
+command.blpc.claims.party_force=常時読込数: %d / %d
+command.blpc.claims.your_share=あなたの貢献: 確保 %d（常時読込 %d）
+command.blpc.invites.empty=届いている招待はありません。
+command.blpc.invites.header=招待一覧 (%d 件):
+command.blpc.invites.hint=/blpc accept <partyName> または /blpc decline <partyName> で操作してください。
+command.blpc.accept.success=パーティ「%s」に参加しました。
+command.blpc.decline.success=パーティ「%s」からの招待を辞退しました。
+command.blpc.leave.success=パーティ「%s」から脱退しました。
 
 # Map
 blpc.map.close=閉じる

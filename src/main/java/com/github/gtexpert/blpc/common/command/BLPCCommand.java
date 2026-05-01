@@ -8,7 +8,16 @@ import org.jetbrains.annotations.NotNull;
 public class BLPCCommand extends CommandTreeBase {
 
     public BLPCCommand() {
-        addSubcommand(new MoveOwnerCommand());
+        addSubcommand(new ListCommand());
+        addSubcommand(new InfoCommand());
+        addSubcommand(new MeCommand());
+        addSubcommand(new HereCommand());
+        addSubcommand(new ClaimsCommand());
+        addSubcommand(new InvitesCommand());
+        addSubcommand(new AcceptCommand());
+        addSubcommand(new DeclineCommand());
+        addSubcommand(new LeaveCommand());
+        addSubcommand(new AdminCommand());
     }
 
     @Override
@@ -18,11 +27,11 @@ public class BLPCCommand extends CommandTreeBase {
 
     @Override
     public @NotNull String getUsage(@NotNull ICommandSender sender) {
-        return "/blpc <move-owner>";
+        return "/blpc <list|info|me|here|claims|invites|accept|decline|leave|admin>";
     }
 
     @Override
     public int getRequiredPermissionLevel() {
-        return 3;
+        return 0;
     }
 }

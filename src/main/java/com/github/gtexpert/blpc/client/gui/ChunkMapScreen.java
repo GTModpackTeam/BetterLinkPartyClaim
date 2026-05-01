@@ -113,7 +113,7 @@ public class ChunkMapScreen extends CustomModularScreen {
             btn.addTooltipLine(IKey.lang(tooltipKeys[0]));
         }
         if (tooltipKeys.length > 1) {
-            btn.addTooltipLine(IKey.str("")); // 区切り
+            btn.addTooltipLine(IKey.str(""));
         }
         for (int i = 1; i < tooltipKeys.length; i++) {
             btn.addTooltipLine(IKey.lang(tooltipKeys[i]).color(GuiColors.GRAY));

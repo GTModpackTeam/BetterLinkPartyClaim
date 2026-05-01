@@ -225,7 +225,6 @@ public class MessagePartyAction implements IMessage {
                         success = selfProvider.createParty(player, name);
                     }
                     case ACTION_DISBAND -> {
-                        // Ensure self-managed party exists (may need to create from BQu data)
                         getOrCreateSelfParty(player, provider);
                         PartyManagerData pmDisband = PartyManagerData.getInstance();
                         Party disbandParty = pmDisband.getPartyByPlayer(player.getUniqueID());
@@ -324,7 +323,6 @@ public class MessagePartyAction implements IMessage {
                         boolean isSelf = msg.stringArg.equals(player.getName());
                         Map<UUID, PartyRole> klMembersCopy = klParty != null ?
                                 new HashMap<>(klParty.getMembers()) : Collections.emptyMap();
-                        // Resolve target UUID before kick (target may be offline)
                         UUID klTargetUUID = null;
                         if (isSelf) {
                             klTargetUUID = player.getUniqueID();
@@ -385,7 +383,6 @@ public class MessagePartyAction implements IMessage {
                         boolean linked = "true".equals(msg.stringArg);
                         PartyManagerData pmLink = PartyManagerData.getInstance();
                         Party linkParty = pmLink.getPartyByPlayer(player.getUniqueID());
-                        // Permission check: if player has an existing party, they need ADMIN+ role
                         if (linkParty != null) {
                             PartyRole linkRole = linkParty.getRole(player.getUniqueID());
                             if (linkRole != null && !linkRole.canInvite() && !player.canUseCommand(2, "")) {
@@ -399,7 +396,6 @@ public class MessagePartyAction implements IMessage {
                             }
                             pmLink.setBQuLinked(player.getUniqueID(), true);
                         } else {
-                            // Only unlink if currently linked
                             if (!pmLink.isBQuLinked(player.getUniqueID())) break;
                             pmLink.setBQuLinked(player.getUniqueID(), false);
                             getOrCreateSelfParty(player, provider);
@@ -450,7 +446,6 @@ public class MessagePartyAction implements IMessage {
                         } catch (IllegalArgumentException e) {
                             break;
                         }
-                        // Don't allow self-reference
                         if (targetPartyId.equals(party.getPartyId())) break;
                         switch (msg.action) {
                             case ACTION_ADD_ALLY -> party.addAlly(targetPartyId);
@@ -537,7 +532,6 @@ public class MessagePartyAction implements IMessage {
                         try {
                             UUID joinId = UUID.fromString(msg.stringArg);
                             PartyManagerData pmJoin = PartyManagerData.getInstance();
-                            // Player must not already be in a party
                             if (pmJoin.getPartyByPlayer(player.getUniqueID()) != null) break;
                             Party joinParty = pmJoin.getParty(joinId);
                             if (joinParty == null || !joinParty.isFreeToJoin()) break;
