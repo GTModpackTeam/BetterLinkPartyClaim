@@ -10,6 +10,11 @@ import org.jetbrains.annotations.NotNull;
 import com.github.gtexpert.blpc.api.modules.IModule;
 import com.github.gtexpert.blpc.api.util.ModUtility;
 
+/**
+ * Convenience base for modules that depend on {@code CoreModule}.
+ * Subclasses inherit a single-element dependency set pointing at
+ * {@link Modules#MODULE_CORE} so they always run after core initialization.
+ */
 public abstract class BaseModule implements IModule {
 
     @NotNull

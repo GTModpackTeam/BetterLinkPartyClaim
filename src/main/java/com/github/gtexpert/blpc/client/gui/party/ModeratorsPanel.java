@@ -29,6 +29,7 @@ import com.github.gtexpert.blpc.common.party.PartyRole;
  * Shows ALL party members in a single list, sorted by role (OWNER → ADMIN → MEMBER).
  * OWNER can change non-self/non-owner members' role via a {@link CycleButtonWidget}
  * (MEMBER ↔ ADMIN). OWNER role is reserved for the {@link TransferOwnerDialog}.
+ * Includes a search box for filtering by member name.
  */
 public class ModeratorsPanel {
 
@@ -53,21 +54,41 @@ public class ModeratorsPanel {
                     .compareToIgnoreCase(PartyWidgets.getDisplayName(b.getKey()));
         });
 
-        ListWidget<?, ?> list = new ListWidget<>()
-                .children(sorted, entry -> createRow(entry, party, isOwner, playerId));
+        @SuppressWarnings("unchecked")
+        ListWidget<IWidget, ?> list = new ListWidget<>();
+        list.crossAxisAlignment(Alignment.CrossAxis.START);
 
-        PartyWidgets.addList(panel, list);
+        var widgets = new ArrayList<IWidget>();
+        var searchNames = new ArrayList<String>();
+        for (Map.Entry<UUID, PartyRole> entry : sorted) {
+            String name = PartyWidgets.getDisplayName(entry.getKey());
+            IWidget row = createRow(entry, name, party, isOwner, playerId);
+            widgets.add(row);
+            searchNames.add(name.toLowerCase(Locale.ROOT));
+            list.child(row);
+        }
 
-        PartyWidgets.addSyncCloseListener(panel);
+        if (widgets.isEmpty()) {
+            PartyWidgets.addList(panel, list);
+        } else {
+            var content = PartyWidgets.wrapWithSearchBox(list, widgets, searchNames);
+            // margin instead of left/right/top/bottom: Flow.column() pre-fills sizeRel(1f, 1f),
+            // adding START+END units would conflict with SIZE.
+            content.margin(8, 8, 22, 8);
+            panel.child(content);
+        }
+
+        // No sync-close listener: the cycle button's IntValue.Dynamic and the role tooltip's
+        // IKey.dynamic re-read party state on each frame, so role changes refresh in place
+        // without rebuilding the panel. Closing on every cycle would interrupt bulk edits.
 
         return panel;
     }
 
-    private static IWidget createRow(Map.Entry<UUID, PartyRole> entry, Party party,
-                                     boolean isOwner, UUID myId) {
+    private static IWidget createRow(Map.Entry<UUID, PartyRole> entry, String memberName,
+                                     Party party, boolean isOwner, UUID myId) {
         UUID memberId = entry.getKey();
         PartyRole role = entry.getValue();
-        String memberName = PartyWidgets.getDisplayName(memberId);
         boolean canEdit = isOwner && !memberId.equals(myId) && role != PartyRole.OWNER;
 
         if (!canEdit) {

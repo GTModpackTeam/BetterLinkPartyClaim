@@ -35,6 +35,20 @@ import com.github.gtexpert.blpc.common.party.PartyManagerData;
 import com.github.gtexpert.blpc.common.party.PartyRole;
 import com.github.gtexpert.blpc.module.Modules;
 
+/**
+ * Core module — always loaded, runs first.
+ * <p>
+ * Responsibilities:
+ * <ul>
+ * <li>Register network packets via {@link ModNetwork#init()}.</li>
+ * <li>Wire up {@link TicketManager} for forced chunk loading.</li>
+ * <li>Install {@link DefaultPartyProvider} as the baseline party provider
+ * (later replaced by {@code BQuModule} when BetterQuesting is present).</li>
+ * <li>Load and save world data through {@link BLPCSaveHandler}.</li>
+ * <li>Auto-create the configured server party on {@code serverStarting}.</li>
+ * <li>Register protection / transit / event handlers.</li>
+ * </ul>
+ */
 @TModule(
          moduleID = Modules.MODULE_CORE,
          containerID = Tags.MODID,

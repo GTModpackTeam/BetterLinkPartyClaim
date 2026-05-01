@@ -18,6 +18,14 @@ import com.github.gtexpert.blpc.api.util.Mods;
 import com.github.gtexpert.blpc.integration.IntegrationSubmodule;
 import com.github.gtexpert.blpc.module.Modules;
 
+/**
+ * JourneyMap integration module.
+ * <p>
+ * Loaded only when {@code journeymap} is installed. On the client, hooks the
+ * claim sync stream so JourneyMap displays per-chunk claim overlays. The
+ * sync handler is re-registered on every reconnect to recover from JourneyMap
+ * resetting its overlay state on disconnect.
+ */
 @TModule(
          moduleID = Modules.MODULE_JMAP,
          containerID = Tags.MODID,

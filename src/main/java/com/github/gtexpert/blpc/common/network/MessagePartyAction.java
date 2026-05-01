@@ -28,7 +28,24 @@ import com.github.gtexpert.blpc.common.party.TrustLevel;
 
 import io.netty.buffer.ByteBuf;
 
-/** C→S: Party operation request. Supports 21+ action types via a single packet. */
+/**
+ * C→S packet for party operations. A single message multiplexes all party
+ * mutations through an integer {@code action} discriminator and a
+ * {@code stringArg} payload.
+ * <p>
+ * <b>Wire protocol stability:</b> the {@code ACTION_*} constants are part of
+ * the on-wire format. Do not renumber existing actions; append new ones at the
+ * end. Removing an action requires a coordinated client/server release.
+ * <p>
+ * <b>Authorization:</b> the server-side {@link Handler} re-derives the active
+ * provider per request from {@link PartyManagerData#isBQuLinked} so a malicious
+ * client cannot bypass BQu integration. Role checks are enforced via
+ * {@link #getAdminParty} / {@link #getOrCreateSelfParty}.
+ * <p>
+ * Use the static factory methods (e.g. {@link #create}, {@link #invite}) when
+ * sending from the client — they encode arguments consistently with the
+ * server-side decoder.
+ */
 public class MessagePartyAction implements IMessage {
 
     public static final int ACTION_CREATE = 0;
@@ -399,7 +416,10 @@ public class MessagePartyAction implements IMessage {
                         success = true;
                     }
                     case ACTION_TOGGLE_FAKE_PLAYERS -> {
-                        // Legacy: cycle NONE -> ALLY -> MEMBER -> NONE
+                        // Retained for wire-protocol stability — current UI uses
+                        // ACTION_SET_FAKEPLAYER_TRUST to set a level directly. This branch
+                        // cycles NONE → ALLY → MEMBER → NONE for any legacy client still
+                        // sending action=8.
                         Party toggleParty = getOrCreateSelfParty(player, activeProvider);
                         if (toggleParty != null) {
                             PartyRole toggleRole = toggleParty.getRole(player.getUniqueID());

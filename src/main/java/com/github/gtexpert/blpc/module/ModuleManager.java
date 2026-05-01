@@ -20,6 +20,32 @@ import com.github.gtexpert.blpc.Tags;
 import com.github.gtexpert.blpc.api.modules.*;
 import com.github.gtexpert.blpc.common.ModLog;
 
+/**
+ * Singleton that drives BLPC's module system.
+ * <p>
+ * <b>Discovery</b> happens at FML Construction via Forge's {@link ASMDataTable}:
+ * <ul>
+ * <li>Classes annotated with {@link ModuleContainer} become containers.</li>
+ * <li>Classes annotated with {@link TModule} become modules. The annotation's
+ * {@code modDependencies} gates loading on installed Forge mods.</li>
+ * </ul>
+ * <b>Configuration</b> is read from {@code config/<modid>/modules.cfg}. Each
+ * module exposes a boolean toggle keyed by {@code containerID:moduleID}; modules
+ * marked {@link TModule#coreModule()} are always loaded first within their
+ * container regardless of the config.
+ * <p>
+ * <b>Dependency resolution</b> drops modules whose {@link IModule#getDependencyUids()}
+ * are not all loaded, then topologically sorts the survivors so a module always
+ * runs lifecycle methods after its dependencies.
+ * <p>
+ * <b>Lifecycle dispatch</b> forwards FML events ({@code construction} →
+ * {@code preInit} → {@code init} → {@code postInit} → {@code loadComplete} →
+ * server start/stop) to every loaded module in dependency order. The current
+ * stage is exposed via {@link #getStage()} and {@link #hasPassedStage}.
+ * <p>
+ * Add a new module by creating a class annotated with {@code @TModule} that
+ * implements {@link IModule}. No manual registration is required.
+ */
 public class ModuleManager implements IModuleManager {
 
     private static final ModuleManager INSTANCE = new ModuleManager();

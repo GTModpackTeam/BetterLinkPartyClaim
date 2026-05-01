@@ -143,14 +143,18 @@ public final class PartyWidgets {
      * Registers a sync listener that closes the panel when server data changes.
      * The listener is automatically removed when the panel closes.
      * <p>
-     * Panels are not reopened automatically to avoid MUI handler conflicts.
-     * The user reopens via the P button, which always creates a fresh handler.
+     * Skips closing while a sub-panel is on top: {@link ModularPanel#closeIfOpen()}
+     * always cascades to {@code closeSubPanels()}, which would dismiss the user's
+     * in-progress sub-panel (Settings, Members, etc.) on every server sync.
+     * Dynamic widget bindings (BoolValue.Dynamic, IKey.dynamic, ...) keep visible
+     * values fresh without rebuilding the panel.
      *
      * @param panel the currently open panel
      */
     public static void addSyncCloseListener(ModularPanel panel) {
         Runnable syncListener = () -> {
             if (!panel.isOpen()) return;
+            if (panel.getScreen().getPanelManager().getTopMostPanel() != panel) return;
             panel.closeIfOpen();
         };
         ClientPartyCache.addSyncListener(syncListener);

@@ -19,6 +19,19 @@ import com.github.gtexpert.blpc.client.gui.MinimapHUD;
 import com.github.gtexpert.blpc.module.ModuleManager;
 import com.github.gtexpert.blpc.module.Modules;
 
+/**
+ * Forge entry point for BLPC.
+ * <p>
+ * Each FML lifecycle event is delegated to {@link ModuleManager}, which fans
+ * the call out to every loaded {@link com.github.gtexpert.blpc.api.modules.IModule}.
+ * Functionality lives in modules ({@code CoreModule}, {@code BQuModule}, ...) —
+ * this class only wires Forge into the module pipeline.
+ * <p>
+ * Client-only handlers ({@link KeyInputHandler}, {@link MinimapHUD}) are
+ * registered during {@link #init} on the client side. ModularUI is a hard
+ * dependency; BetterQuesting and JourneyMap are soft dependencies whose
+ * integrations live behind their own modules.
+ */
 @Mod(modid = Tags.MODID,
      version = Tags.VERSION,
      name = Tags.MODNAME,

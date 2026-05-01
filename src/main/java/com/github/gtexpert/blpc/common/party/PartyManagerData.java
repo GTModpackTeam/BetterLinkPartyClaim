@@ -8,6 +8,18 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 
+/**
+ * Server-side authoritative party storage.
+ * <p>
+ * Parties are persisted by {@link com.github.gtexpert.blpc.common.BLPCSaveHandler}
+ * to {@code world/betterlink/pc/parties/&lt;id&gt;.dat}. The {@code bquLinkedPlayers}
+ * set tracks which players have opted into BetterQuesting integration; lookup
+ * via {@link #isBQuLinked(UUID)} drives provider selection in
+ * {@link com.github.gtexpert.blpc.common.network.MessagePartyAction.Handler}.
+ * <p>
+ * The {@code migrated} flag records whether legacy (pre-FTB-Lib-layout) data
+ * has already been imported, so migration is a one-time operation.
+ */
 public class PartyManagerData {
 
     private static volatile PartyManagerData instance;

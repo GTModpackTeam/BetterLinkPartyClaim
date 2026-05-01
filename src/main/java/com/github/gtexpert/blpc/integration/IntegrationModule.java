@@ -9,6 +9,13 @@ import com.github.gtexpert.blpc.common.ModLog;
 import com.github.gtexpert.blpc.module.BaseModule;
 import com.github.gtexpert.blpc.module.Modules;
 
+/**
+ * Umbrella module for third-party integrations.
+ * <p>
+ * Carries no logic of its own — every {@link IntegrationSubmodule} declares it
+ * as a dependency, so disabling this module in {@code modules.cfg} disables
+ * all integrations at once (BetterQuesting, JourneyMap, ...).
+ */
 @TModule(
          moduleID = Modules.MODULE_INTEGRATION,
          containerID = Tags.MODID,

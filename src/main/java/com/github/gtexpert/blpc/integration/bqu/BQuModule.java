@@ -16,6 +16,14 @@ import com.github.gtexpert.blpc.api.util.Mods;
 import com.github.gtexpert.blpc.integration.IntegrationSubmodule;
 import com.github.gtexpert.blpc.module.Modules;
 
+/**
+ * BetterQuesting integration module.
+ * <p>
+ * Loaded only when {@code betterquesting} is installed. Replaces the
+ * {@code DefaultPartyProvider} registered by {@code CoreModule} with a
+ * {@link BQPartyProvider} that delegates to BQu's party system, and registers
+ * the native BQu party screen as an alternative entry point on the client.
+ */
 @TModule(
          moduleID = Modules.MODULE_BQU,
          containerID = Tags.MODID,
