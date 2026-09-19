@@ -15,12 +15,25 @@ RetroFuturaGradle (RFG v2) + GTNH Buildscripts. **Do not edit `build.gradle`** (
 ./gradlew test               # Run JUnit 5 tests
 ```
 
-## Key Rules
+## Rules
 
-Enforced conventions (Java 25 syntax, imports, GUI colors/entry points, network wire protocol, side boundary, key bindings, logging, integration rules) live in `.claude/rules/*.md` — read those, not this file, for anything build-breaking or merge-blocking. One environment note not covered there: **local builds need JDK 25** — spotless' googlejavaformat can't parse switch expressions on an older daemon JVM. If the Gradle daemon is an older Java, run with `-Dorg.gradle.java.home=<jdk25>` (e.g. `/usr/lib/jvm/zulu-25`); compilation uses the Java 25 toolchain regardless.
+- `.agents/rules/code-conventions.md` — Java 25 syntax (arrow switch, pattern instanceof, `var`), imports, side boundary, network wire protocol, GUI color conventions, key bindings, logging categories.
+- `.agents/rules/build-verify.md` — build verification steps (spotless → build → test → runClient).
+- `.agents/rules/integration-rules.md` — BQu, JourneyMap, and AddonRegistry integration rules.
+- `.agents/rules/doc-accuracy.md` — documentation must match code. Verification checklist.
+- `.agents/rules/review-checklist.md` — code review checklist for all PRs.
 
-## Architecture
+### Skills
 
-**Entry point for discovery:** `api/BLPCAPI` is the central façade and index (GregTech `GregTechAPI` analog) — read it first; it documents every subsystem and addon extension point. Public addon surface lives under `api/` (`modules/`, `party/`, `event/`, `util/`).
+- `.agents/skills/blpc-overview/SKILL.md` — Architecture overview (parent skill, package layout, conventions, data schemas, UI patterns, config, etc.).
+- `.agents/skills/blpc-network/SKILL.md` — Network layer (wire protocol, PartyAction dispatch, ClientNotify).
+- `.agents/skills/blpc-party/SKILL.md` — Party system (Provider SPI, Trust levels, data persistence, server party).
+- `.agents/skills/blpc-gui/SKILL.md` — GUI/UI (panel catalog, color conventions, widgets, sync patterns, commands).
+- `.agents/skills/blpc-integration-bqu/SKILL.md` — BetterQuesting integration (BQuPartyProvider, link/unlink flow, Mixin).
+- `.agents/skills/blpc-integration-jmap/SKILL.md` — JourneyMap v2 API integration (overlays, addon buttons, OptionsRegistry, Waypoint Team Sync).
+- `.agents/skills/blpc-config/SKILL.md` — Configuration (ModConfig, Chunk Transit, Mixins).
 
-See `.claude/skills/blpc-overview/SKILL.md` for full reference (package layout, conventions, data schemas, UI patterns, config, etc.).
+### Documentation
+
+- `DEVELOPER.md` — Addon developer guide. AddonRegistry (modId dedup), PartyBackend SPI, QueryPartyUtil, PartyEvent/ChunkModifiedEvent, Module Framework, utility helpers.
+- `CHANGELOG.md` — Release notes.

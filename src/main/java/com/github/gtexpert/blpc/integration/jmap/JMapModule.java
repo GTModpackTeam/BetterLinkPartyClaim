@@ -13,7 +13,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.Tags;
-import com.github.gtexpert.blpc.api.integration.IntegrationPanelRegistry;
+import com.github.gtexpert.blpc.api.integration.AddonRegistry;
 import com.github.gtexpert.blpc.api.modules.TModule;
 import com.github.gtexpert.blpc.api.util.Mods;
 import com.github.gtexpert.blpc.integration.IntegrationSubmodule;
@@ -52,8 +52,8 @@ public class JMapModule extends IntegrationSubmodule {
             MinecraftForge.EVENT_BUS.register(waypointSyncHandler);
             JMapWaypointOutgoing.register();
             MinecraftForge.EVENT_BUS.register(this);
-            IntegrationPanelRegistry.registerAction(
-                    "blpc.addons.journeymap", null, () -> true, JMapSettingsPanel::open);
+            AddonRegistry.registerAction(
+                    "journeymap", "blpc.addons.journeymap", null, () -> true, JMapSettingsPanel::open);
         }
     }
 

@@ -21,6 +21,10 @@ Registered at `PRIORITY_HIGH` when BQu is present, replacing `DefaultPartyProvid
 - **`getPartyId(UUID)`** — derives from BQu's integer party id via `Party.uuidFromIntId(...)`, identical for every member even without BLPC-side records.
 - Party **settings mutations** (`ACTION_SET_TRUST_LEVEL`, `ACTION_SET_COLOR`, ally/enemy, etc.) intentionally read/write `PartyManagerData` directly — BLPC-only concepts with no BQu equivalent.
 
+### Fallback Methods
+
+`findByName()`, `allPartyNames()`, and `pendingInvitesFor()` delegate to `DefaultPartyProvider` fallback. This is needed when a player has no BQu party but needs to interact with a self-managed party (e.g. server party lookup).
+
 ## Link/Unlink Flow
 
 Toggled via `ToggleButton` in `MainPanel` with `BoolValue.Dynamic`:
@@ -52,3 +56,7 @@ Disbanding does NOT touch the BQu party — manage BQu's party through BetterQue
 ## Persistence
 
 `config.dat` in `world/betterlink/pc/` stores `bquLinkedPlayers` set (+ legacy migrated flag). Party data itself lives in BQu when linked — `PartyManagerData` only stores BLPC-specific settings (trust, color, allies/enemies).
+
+## Addon Registration
+
+Both BQu and JourneyMap integrations register their AddonPanel buttons via `AddonRegistry.register()` / `AddonRegistry.registerAction()` in their respective modules (`BQuModule`, `JMapModule`). The `modId` parameter is used for deduplication. This is the recommended API for third-party add-on integrations.

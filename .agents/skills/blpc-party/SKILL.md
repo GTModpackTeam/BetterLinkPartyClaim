@@ -58,6 +58,12 @@ world/betterlink/pc/
 
 `BLPCSaveHandler` uses atomic write + backup-swap for crash safety. `loadAll` at `ServerStarting`, `saveAll` at `WorldSave` + `ServerStopping`.
 
+## Server Party
+
+When `ModConfig.serverParty.enabled` + `ModConfig.serverParty.freeToJoin` are both true, new players are automatically joined to the server party as MEMBER on login (see `PlayerLoginHandler.onPlayerLogin()`).
+
+The server party is looked up by name via `IPartyProvider.findByName()` — `BQuPartyProvider` delegates this to `DefaultPartyProvider` fallback for non-BQu players.
+
 ## BQu Integration
 
 See `blpc-integration-bqu` for BQuPartyProvider details, link/unlink/disband flow, and NetPartyActionMixin.

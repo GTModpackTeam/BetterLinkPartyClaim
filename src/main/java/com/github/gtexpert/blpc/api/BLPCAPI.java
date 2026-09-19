@@ -9,8 +9,8 @@ import com.github.gtexpert.blpc.modules.ModuleManager;
 
 /**
  * Central access point and discoverability index for BLPC — the first class a new
- * contributor or addon author should read. Modeled on GregTech's {@code GregTechAPI}:
- * one façade that points at every public subsystem and extension point so nothing has
+ * contributor or addon author should read.
+ * A single façade that points at every public subsystem and extension point so nothing has
  * to be hunted for.
  *
  * <h2>Where things live</h2>

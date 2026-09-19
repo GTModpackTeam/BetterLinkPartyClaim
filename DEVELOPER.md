@@ -10,14 +10,14 @@ shows current coverage:
 | Query party data                | `api.util` (`PartyQueryUtil`)   | Available |
 | Party lifecycle events          | `api.event` (`PartyEvent`)      | Available |
 | Claim lifecycle events          | `api.event` (`ChunkModifiedEvent`) | Available |
-| Addons hub settings panel       | `api.integration`               | Available |
+| Addons hub settings panel       | `api.integration` (`AddonRegistry`) | Available |
 | Module framework                | `api.modules`                   | Available |
 
 Start at [`api/BLPCAPI.java`](src/main/java/com/github/gtexpert/blpc/api/BLPCAPI.java) —
-it's the central façade and package index (a `GregTechAPI`-style entry point) that links
+it's the central façade and package index that links
 every subsystem described below.
 
-Registry-based registration calls (`PartyProviderRegistry`, `IntegrationPanelRegistry`)
+Registry-based registration calls (`PartyProviderRegistry`, `AddonRegistry`)
 should happen from your mod's `preInit`/`init`, guarded by whichever FML phase the
 registry expects (noted per-section below) — see [Module Framework](#module-framework)
 if your integration is itself driven by BLPC's module system.
@@ -71,6 +71,42 @@ public class MyPartyProvider implements IPartyProvider {
 All mutation methods identify the acting party via the player's UUID — no explicit
 party-ID parameter is needed except `acceptInvite(player, partyId)`, which targets a
 *different* party than the one the player currently belongs to (or none).
+
+#### Default methods on `IPartyProvider`
+
+The following default methods are provided and may be overridden by implementations:
+
+- **`findByName(String)`** — returns the party with the given name, or `null`. Default: `null`.
+  `BQuPartyProvider` delegates to `DefaultPartyProvider` fallback so server-party lookups work
+  even when the player has no BQu party.
+- **`allPartyNames()`** — returns the names of all known parties. Default: empty list.
+- **`pendingInvitesFor(UUID)`** — returns all parties with a pending invite for the player.
+  Default: empty list.
+- **`getPartyId(UUID)`** — returns a stable storage key for the player's party (identical for
+  every member). Default: `null`.
+- **`getEffectiveParty(UUID)`** — returns the fully-populated `Party` for authoritative
+  server-side checks (trust resolution, claim limits, chunk-transit). Default: `null`.
+- **`isLinkedParty(UUID)`** — `true` if the player is in a BQu-linked party. Default: `false`.
+- **`ensureNativePartyWithMembers(UUID, UUID...)`** — ensures a native party exists with the
+  given members. Returns `true` if created.
+
+#### Server Party
+
+When `ModConfig.serverParty.enabled` and `ModConfig.serverParty.freeToJoin` are both enabled,
+`PlayerLoginHandler.onPlayerLogin()` automatically joins new players (who have no native party)
+to the configured server party as `MEMBER`. The server party is looked up by name via
+`findByName()` — implementations like `BQuPartyProvider` delegate this to `DefaultPartyProvider`
+fallback for non-linked players.
+
+Configure in `config/blpc/blpc.cfg`:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Auto-create shared party on server start |
+| `name` | String | `"Server"` | Party name |
+| `freeToJoin` | boolean | `true` | Open join (auto-join on login) |
+| `owner` | String | `""` | Owner player name (empty = server-owned) |
+| `moderators` | String[] | `[]` | Moderator player names |
 
 ### Party domain types
 
@@ -186,10 +222,10 @@ public void onClaimed(ChunkModifiedEvent.Post.Claim e) {
 
 ## Addons Hub — Settings Panels
 
-### IntegrationPanelRegistry
+### AddonRegistry (Recommended)
 
-Add your own entry to the party menu's **Addons** hub — the searchable list of per-mod
-settings panels (BetterQuesting, JourneyMap today). Requires a
+Third-party integrations MUST use `AddonRegistry` — a `@SideOnly(CLIENT)` façade with
+`modId` deduplication that replaces raw `IntegrationPanelRegistry` calls. Requires a
 [ModularUI](https://github.com/CleanroomMC/ModularUI) dependency, since the factory
 builds a `ModularPanel`.
 
@@ -197,7 +233,8 @@ builds a `ModularPanel`.
 // From a client-guarded init block — lazy method reference so the panel class
 // is never loaded on a dedicated server.
 if (event.getSide().isClient()) {
-    IntegrationPanelRegistry.register(
+    AddonRegistry.register(
+        "mymod",                   // modId for deduplication
         "mymod.addons.label",      // button label lang key
         "mymod.addons.tooltip",    // tooltip lang key, or null for no tooltip
         () -> true,                // availability predicate — hide the entry when false
@@ -205,17 +242,15 @@ if (event.getSide().isClient()) {
 }
 ```
 
-The entry appears automatically under the party menu's Addons entry once `available`
-returns `true` — no changes to BLPC's own UI code are needed. See
-`integration/bqu/BQuSettingsPanel.java` in BLPC's own source for a complete reference
-implementation of a panel-backed entry.
+Registering the same `modId` twice is safe — the second call is silently ignored.
 
 If your integration doesn't need its own `ModularPanel` — e.g. it just opens another
 mod's native settings screen — register an action-only entry instead with
 `registerAction(...)`:
 
 ```java
-IntegrationPanelRegistry.registerAction(
+AddonRegistry.registerAction(
+    "mymod",                   // modId for deduplication
     "mymod.addons.label",
     null,                       // tooltip lang key, or null
     () -> true,                 // availability predicate
@@ -224,8 +259,14 @@ IntegrationPanelRegistry.registerAction(
 
 `AddonsPanel` distinguishes the two via `Entry.hasPanel()`: panel entries open a
 sub-panel through `IPanelHandler`, action entries just invoke `Runnable.run()` on click.
-See `integration/jmap/JMapSettingsPanel.java`, which uses `registerAction(...)` to jump
+See `integration/jmap/JMapSettingsPanel.java`, which uses `registerAction()` to jump
 straight to JourneyMap's own Addon Options screen.
+
+### IntegrationPanelRegistry
+
+The shared registry that backs `AddonsPanel`. New integrations should use
+`AddonRegistry` instead — `IntegrationPanelRegistry` is kept for backward compatibility
+with existing built-in integrations (BQu, JourneyMap).
 
 ---
 

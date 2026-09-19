@@ -22,8 +22,7 @@ import com.github.gtexpert.blpc.client.gui.party.TransferOwnerPanel;
 
 /**
  * Central catalog of every BLPC screen and panel — the single place to discover
- * "what GUIs exist and how to open them" (analogous to GregTech's
- * {@code RecipeMaps} holder for recipe maps).
+ * "what GUIs exist and how to open them".
  * <p>
  * The {@code *_ID} constants mirror each panel's own {@code PANEL_ID} so the full
  * set of panel identifiers is browsable from one file; the {@code open*} / build
