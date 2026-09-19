@@ -16,13 +16,12 @@ Forge `@Config` at `common/ModConfig.java`. Auto-syncs on in-game change.
 |---|---|---|---|
 | `maxClaimsPerPlayer` | int (0–10000) | 1000 | Max chunks claimable per player |
 | `maxForceLoadsPerPlayer` | int (0–10000) | 64 | Max force-loaded chunks per player |
-| `additiveLimits` | boolean | true | Party claim limit = sum of members' limits |
+| `additiveLimits` | boolean | true | Party limit = sum of members' limits |
 | `allowOfflineChunkLoading` | boolean | true | Keep force-loaded chunks when all offline |
-| `blockedClaimingDimensions` | int[] | [] | Dimension IDs where chunk claiming is disallowed (e.g. 1 for The End) |
+| `blockedClaimingDimensions` | int[] | [] | Dimension IDs where claiming disallowed |
 
-**Party required to claim:** `ClaimChunk.Handler.isPartyMissing` rejects claims without a party. Rejection sends `ClientNotify.claimFailed(REASON_NO_PARTY, ...)`.
-
-**Blocked dimensions:** `ClaimChunk.Handler.isDimensionBlocked` rejects new claims/force-loads whose `dim` is listed in `blockedClaimingDimensions`. Rejection sends `ClientNotify.claimFailed(REASON_DIMENSION_BLOCKED, ...)`.
+Party required: `ClaimChunk.Handler.isPartyMissing` rejects → `ClientNotify.claimFailed(REASON_NO_PARTY)`.
+Blocked dimensions: `ClaimChunk.Handler.isDimensionBlocked` → `REASON_DIMENSION_BLOCKED`.
 
 ### Party (`ModConfig.party`)
 
@@ -34,11 +33,21 @@ Forge `@Config` at `common/ModConfig.java`. Auto-syncs on in-game change.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `enabled` | boolean | false | Auto-create shared party on server start |
+| `enabled` | boolean | false | Auto-create shared party on start |
 | `name` | String | "Server" | Party name |
-| `freeToJoin` | boolean | true | Open join |
-| `owner` | String | "" | Owner player name (empty = server-owned) |
-| `moderators` | String[] | [] | Moderator player names |
+| `freeToJoin` | boolean | true | Open join (auto-join on login) |
+| `owner` | String | "" | Owner player name |
+| `moderators` | String[] | [] | Moderator names |
+
+Auto-join: when `enabled` + `freeToJoin`, new players added as MEMBER via `PlayerLoginHandler`.
+
+### Protection (`ModConfig.protection`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `blockEditWhitelist` | String[] | `[]` | Blocks bypassing edit protection |
+| `blockInteractWhitelist` | String[] | `[]` | Blocks bypassing interact protection |
+| `itemUseBlacklist` | String[] | `[]` | Items always blocked in claimed chunks |
 
 ### Data (`ModConfig.data`)
 
@@ -51,63 +60,29 @@ Forge `@Config` at `common/ModConfig.java`. Auto-syncs on in-game change.
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `enableAreaEffects` | boolean | true | Potion effects for area control |
-| `enableTransitNotify` | boolean | true | Toast notifications on chunk entry/exit — the only on-screen claim-protection indicator |
+| `enableTransitNotify` | boolean | true | Toast on chunk entry/exit |
 
-### Internal Defaults (`ModConfig.Defaults`)
+### Defaults (`ModConfig.Defaults`)
 
-| Constant | Value | Description |
-|---|---|---|
-| `enableProtection` | true | Master protection toggle |
-| `protectMobGriefing` | true | Prevent mob griefing |
-| `protectFireSpread` | true | Prevent fire spread |
-| `protectFluidFlow` | true | Prevent fluid flow |
-| `transitToastDuration` | 3000 | Toast duration (ms) |
-| `enemyWeaknessAmplifier` | 0 | Weakness level (0 = I) |
-| `enemyMiningFatigue` | true | Mining fatigue for enemies |
-| `defenderResistanceAmplifier` | 0 | Resistance level (0 = I) |
+`enableProtection`=true, `protectMobGriefing`=true, `transitToastDuration`=3000ms, `enemyWeaknessAmplifier`=0, `enemyMiningFatigue`=true, `defenderResistanceAmplifier`=0.
 
-## Chunk Transit System
+## Chunk Transit
 
-Players receive toast notifications and potion effects when entering/leaving claimed chunks.
+`ChunkTransitHandler` (`PlayerTickEvent.END`): detects crossings, sends `ClientNotify.chunkTransit()`, applies effects.
 
-- **`RelationType`** — `MEMBER`, `ALLY`, `ENEMY`, `NONE`.
-- **`ChunkTransitHandler`** — `PlayerTickEvent.END` listener. Detects chunk crossings, sends `ClientNotify.chunkTransit(...)`, applies effects.
-- **`BLPCToast`** — `IToast` with Builder. Factory methods: `fromTransit`, `fromPartyEvent`, `fromClaimFailed`.
+**Transit toasts** — third-person for party members, second-person for the transiting player:
+- MEMBER: returned home / went exploring
+- ALLY: came to visit / went home
+- ENEMY: invaded / fled
+- NONE: entering/leaving territory (transiting player only)
 
-### Notification Messages
+Dense cluster crossings within same party → no notification.
 
-Third-party wording (seen by other party members watching someone cross their claim boundary):
-
-| Relation | Enter | Leave |
-|---|---|---|
-| MEMBER | "%s returned home" | "%s went exploring" |
-| ALLY | "%s came to visit" | "%s went home" |
-| ENEMY | "Invaded by %s" | "%s fled" |
-
-Second-person wording (`ClientNotify.isSelf()` — sent to the transiting player about their own crossing, `blpc.transit.<relation>.<direction>.self` keys) so the toast doesn't read like a report about someone else:
-
-| Relation | Enter | Leave |
-|---|---|---|
-| MEMBER | "You're back on protected land" | "You left your protected land" |
-| ALLY | "Entering %s's territory (Ally)" | "Leaving %s's territory (Ally)" |
-| ENEMY | "You invaded %s's territory" | "You left %s's territory" |
-| NONE (unrelated claim owner) | "Entering %s's territory" | "Leaving %s's territory" |
-
-Moving between two chunks claimed by the same party (e.g. inside a dense claim cluster) is not treated as a boundary crossing — no notification, no area-effect re-trigger.
-
-NONE toasts go only to the transiting player (informational — no party members notified, no area effects) and are always second-person. MEMBER/ALLY/ENEMY toasts go to the claim's party members (third-person) plus the transiting player themself (second-person, always — not just for ENEMY).
-
-### Area Effects (every 20 ticks)
-
-- **Enemy debuff**: Weakness + optional Mining Fatigue. Removed on leaving.
-- **Defender buff**: Resistance + Strength. Active while enemies present.
+**Area Effects** (every 20 ticks): Enemy = Weakness + optional Mining Fatigue. Defender = Resistance + Strength.
 
 ## Mixins
 
-MixinBooter (`ILateMixinLoader`, pinned to **v10.7**). Conditional late-stage injection:
+MixinBooter v10.7. `BLPCMixinLoader` loads only `betterquesting` + `modularui` configs. No JourneyMap mixin.
 
-- **`BLPCMixinLoader`** — Loads mixin configs for `BetterQuesting` and `ModularUI` only. No JourneyMap entry (waypoint detection uses v2 `WaypointEvent` API).
-- **`NetPartyActionMixin`** — Injects into BQu's `NetPartyAction.deleteParty()` to auto-unlink affected players.
-- **`OverlayStackMixin`** — ModularUI overlay compatibility.
-
-Configs: `mixins.blpc.betterquesting.json`, `mixins.blpc.modularui.json`. No `mixins.blpc.journeymap.json` (removed in v0.15.0).
+- `NetPartyActionMixin` — auto-unlink on BQu party delete.
+- `OverlayStackMixin` — ModularUI overlay compatibility.

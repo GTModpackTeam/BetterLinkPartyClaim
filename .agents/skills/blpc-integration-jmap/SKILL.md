@@ -64,3 +64,7 @@ Party-owned waypoints mirrored to all online members via a locked "BLPC Party" `
 **Periodic sync:** `JMapWaypointSyncHandler.onClientTick` re-applies every `getWaypointSyncInterval()` ticks (0 = disabled).
 
 **Key classes:** `JMapPlugin`, `JMapClientConfig`, `JMapSettingsPanel`, `JMapClaimSyncHandler`, `JMapWaypointOutgoing`, `JMapWaypointSyncHandler`, `JMapModule`.
+
+## Addon Registration
+
+Registered via `AddonRegistry.registerAction()` in `JMapModule` with modId `"journeymap"`.

@@ -15,7 +15,7 @@ public class ModUtility {
         return new ResourceLocation(Tags.MODID, path);
     }
 
-    /** Alias of {@link #id(String)} — mirrors {@code GTUtility.gregtechId()} for discoverability. */
+    /** Alias of {@link #id(String)} — mirrors {@code id(String)} for discoverability. */
     public static @NotNull ResourceLocation blpcId(String path) {
         return id(path);
     }

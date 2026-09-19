@@ -2,7 +2,7 @@
 name: blpc-overview
 description: >-
   Architecture overview for the BLPC project (parent skill).
-  Detailed references are split into feature-specific skills (blpc-network, blpc-party, blpc-gui, blpc-integration-jmap, blpc-config).
+  Detailed references are split into feature-specific skills (blpc-network, blpc-party, blpc-gui, blpc-integration-jmap, blpc-config, addon).
 user-invocable: false
 ---
 
@@ -15,81 +15,64 @@ Base package: `com.github.gtexpert.blpc`.
 | Skill | Content |
 |---|---|
 | `blpc-network` | Network layer (wire protocol, PartyAction dispatch, ClientNotify) |
-| `blpc-party` | Party system (Provider SPI, Trust, BQu integration, persistence) |
-| `blpc-gui` | GUI/UI (panel catalog, color conventions, widgets, sync patterns, commands) |
+| `blpc-party` | Party system (Provider SPI, Trust, PartyRole, BQu integration, persistence) |
+| `blpc-gui` | GUI/UI (panel catalog, Screens constants, color conventions, widgets, sync patterns, commands) |
 | `blpc-integration-jmap` | JourneyMap integration (v2 API, overlays, Waypoint Team Sync) |
 | `blpc-integration-bqu` | BetterQuesting integration (BQuPartyProvider, link/unlink, Mixin) |
 | `blpc-config` | Configuration (ModConfig, Chunk Transit, Mixins) |
+| `addon` | AddonRegistry API, AddonsPanel, third-party integration registration |
 
 ## Build System
 
-RetroFuturaGradle (RFG) with GTNH Buildscripts. **Do not edit `build.gradle`** (auto-generated). Mod-specific config: `buildscript.properties`. Dependencies: `dependencies.gradle`. Debug flags: `debug_bqu`, `debug_jmap`, `debug_all` in `buildscript.properties`. Spotless enforced (formatting: `spotless.importorder` local + `spotless.eclipseformat.xml` via Blowdryer).
+RetroFuturaGradle (RFG) + GTNH Buildscripts. **Do not edit `build.gradle`** (auto-generated). Config: `buildscript.properties`, deps: `dependencies.gradle`. Spotless enforced.
 
 | Dependency | Role | Required? |
 |---|---|---|
 | ModularUI | GUI framework | Yes |
-| BetterQuesting Unofficial | Party system backend (when present) | Optional (module) |
-| JourneyMap API (`journeymap-api-forge:1.12.2-2.0.0`, `compileOnlyApi`) | v2 overlay/waypoint/options API | Optional |
-| JourneyMap mod jar (`compileOnly`, not runtime-required) | Compile-time target for `AddonOptionsManager` reference | Optional |
+| BetterQuesting Unofficial | Party system backend | Optional |
+| JourneyMap API (`compileOnlyApi`) | v2 overlay/waypoint/options | Optional |
 
-MixinBooter is pinned to **v10.7** (`mixinProviderSpec` in `buildscript.properties`) — v11.5 causes dev-environment loading failures.
+MixinBooter v10.7. v11.5 causes dev-loading failures.
 
 ## Java 25 Syntax (Mandatory)
 
-Jabel (`enableModernJavaSyntax = true`) compiles Java 25 features to JVM 8 bytecode.
-
-| Feature | Requirement | Example |
-|---|---|---|
-| **Switch expressions** | Always use arrow form (`->`) | `case X -> { ... }` |
-| **Pattern matching instanceof** | Always use instead of separate cast | `if (obj instanceof MyClass mc)` |
-| **`var`** | Use for local variables where type is obvious | `var entry : map.entrySet()` |
-| **Multi-label case** | Combine related cases | `case A, B, C -> { ... }` |
-
-Do NOT use `var` for: primitives, ambiguous types, or fields.
+Arrow switch, pattern instanceof, `var` for obvious types, multi-label case. NEVER `var` for primitives/fields/ambiguous.
 
 ## Module System
 
-Annotation-driven module framework:
+- **`api/modules/`** — `IModule`, `@TModule`, `IModuleContainer`, `ModuleContainer`, `ModuleStage`, `IModuleManager`.
+- **`module/`** — `ModuleManager` (ASM scanning, config-driven enable/disable), `Modules` (constants), `BaseModule`.
+- **`core/CoreModule`** — `@TModule(coreModule=true)`. Registers network, ForgeChunkManager, `DefaultPartyProvider`.
+- **`integration/`** — `IntegrationModule` (parent gate), `IntegrationSubmodule` (abstract base).
 
-- **`api/modules/`** — `IModule`, `TModule` (annotation), `IModuleContainer`, `ModuleContainer`, `ModuleStage`, `IModuleManager`.
-- **`module/`** — `ModuleManager` (ASM scanning, dependency resolution, config-driven enable/disable), `Modules` (container + module ID constants), `BaseModule`.
-- **`core/CoreModule`** — `@TModule(coreModule=true)`. Registers network packets, ForgeChunkManager callback, and `DefaultPartyProvider`.
-- **`integration/IntegrationModule`** — Parent gate for all integration submodules.
-- **`integration/IntegrationSubmodule`** — Abstract base for mod-specific integrations.
-
-Modules discovered at FML Construction via `@TModule`. `modDependencies` gates on `Loader.isModLoaded()`. Module enable/disable: `config/blpc/modules.cfg`.
-
-## Naming Conventions
-
-- **Panel IDs:** `blpc.map`, `blpc.party`, `blpc.map.dialog.confirm`, `blpc.party.dialog.invite`
-- **Lang keys:** `blpc.map.*` for map screen, `blpc.party.*` for party screen
-- **Mod ID constants:** `api/util/Mods.Names`
+Discovered at FML Construction via `@TModule`. `modDependencies` gates on `Loader.isModLoaded()`. Enable/disable: `config/blpc/modules.cfg`.
 
 ## Package Layout
 
-**Start here:** `api/BLPCAPI` is the central access point and discoverability index — one façade documenting every subsystem and addon extension point (`partyProvider()`, `moduleManager()`, `MODID`). Read it first.
+**Start here:** `api/BLPCAPI` — central access point and discoverability index. Read first.
 
-- **`api/`** — Public addon-facing surface. `BLPCAPI` (façade/index), `modules/`, `party/` (SPI + domain types), `event/` (`ChunkModifiedEvent`, `PartyEvent`), `util/` (`Mods`, `ModUtility`, `PartyQueryUtil`, `EnumUtils`), `integration/` (`IntegrationPanelRegistry`).
+- **`api/`** — Public addon surface. `BLPCAPI`, `modules/`, `party/` (`Party`, `PartyRole`, `TrustLevel`, `TrustAction`, `RelationType`, `IPartyProvider`, `PartyProviderRegistry`), `event/` (`ChunkModifiedEvent`, `PartyEvent`), `util/` (`Mods`, `ModUtility`, `PartyQueryUtil`, `EnumUtils`), `integration/` (`AddonRegistry`, `IntegrationPanelRegistry`).
 - **`common/party/`** — `PartyManagerData`, `DefaultPartyProvider`, `ClientPartyCache`.
 - **`common/chunk/`** — `ChunkManagerData`, `ClaimedChunkData`, `ClientClaimCache`, `TicketManager`.
 - **`common/waypoint/`** — `PartyWaypointData`, `WaypointManagerData`, `ClientWaypointCache`.
-- **`common/network/`** — IMessage contracts (see `blpc-network`).
-- **`client/network/`** — S→C handlers `@SideOnly(Side.CLIENT)` (see `blpc-network`).
-- **`client/gui/`** — ModularUI screens (see `blpc-gui`).
-- **`client/input/`** — `KeyInputHandler`. Two keybinds, category `key.categories.blpc`, both `KeyConflictContext.IN_GAME`: `open_map` (M) → `Screens.openMap()`, `open_party` (P) → `Screens.openPartyDirect()`. Registered in `init()` (FMLInitializationEvent).
-- **`client/map/`** — Async chunk rendering, texture caching, claim overlay.
-- **`client/cache/`** — `ClientCacheKey` + `ClientCachePersistence` (debounced NBT snapshot for reconnect).
-- **`integration/jmap/`** — JourneyMap v2 API integration (see `blpc-integration-jmap`).
-- **`integration/bqu/`** — BetterQuesting integration (see `blpc-integration-bqu`).
+- **`common/network/`** — IMessage contracts. `ModNetwork`, `NbtMessage`, `PlayerLoginHandler`.
+- **`client/network/`** — S→C handlers `@SideOnly(CLIENT)`. `ClientPacketHandlers` (SPI installer).
+- **`client/gui/`** — ModularUI screens. `Screens` (catalog + constants), `AddonsPanel`, `PartyWidgets`, `PartyMenuBuilder`, `BLPCColors`, `GuiColors`.
+- **`client/map/`** — Async chunk rendering. `ChunkMapScreen`, `ChunkMapWidget`, `AsyncMapRenderer`, `TextureCache`.
+- **`client/input/`** — `KeyInputHandler` (open_map M, open_party P).
+- **`client/cache/`** — `ClientCacheKey`, `ClientCachePersistence`.
+- **`core/`** — `ChunkProtectionHandler`, `ChunkTransitHandler`, `CoreEventHandler`, `CoreModule`.
+- **`mixins/`** — `BLPCMixinLoader`, `NetPartyActionMixin`, `OverlayStackMixin`.
+- **`integration/`** — `BQuModule`/`BQuPartyProvider`, `JMapModule`/`JMapPlugin`. Addon registration via `AddonRegistry`.
+- **`modules/`** — `BaseModule`, `ModuleManager`, `Modules`.
 
 ## Localization
 
-Lang files in `src/main/resources/assets/blpc/lang/`: `en_us.lang` and `ja_jp.lang`. Both cover keybindings, commands, map UI, party UI, roles, trust, protection, allies/enemies, tooltips, search, transit notifications, party event/claim failure notifications, addon panels, and Fair Play config.
+`en_us.lang` and `ja_jp.lang` — keybindings, commands, map UI, party UI, roles, trust, protection, allies/enemies, tooltips, search, transit, party events, addon panels, Fair Play config.
 
 ## Adding a New Integration Module
 
 1. Create `integration/<modid>/` package.
-2. Create module class extending `IntegrationSubmodule` with `@TModule(modDependencies=Mods.Names.THE_MOD)`.
-3. Add module ID constant to `Modules.java`.
-4. Add mod ID to `Mods` enum and `Mods.Names`.
-5. (Optional) Register settings: `IntegrationPanelRegistry.register(...)` for panel-backed or `registerAction(...)` for action-only.
+2. Class extending `IntegrationSubmodule` with `@TModule(modDependencies=Mods.Names.THE_MOD)`.
+3. Add module ID to `Modules.java`. Add mod ID to `Mods` enum + `Mods.Names`.
+4. Register via `AddonRegistry.register()` or `registerAction()` with `modId` — NEVER raw `IntegrationPanelRegistry`.

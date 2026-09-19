@@ -1,6 +1,6 @@
 ---
 name: blpc-gui
-description: GUI/UI reference for BLPC — panel catalog, color conventions, widget patterns, client-side sync, commands.
+description: GUI/UI reference for BLPC — panel catalog, Screens constants, color conventions, widgets, sync patterns, commands.
 user-invocable: false
 ---
 
@@ -10,84 +10,62 @@ user-invocable: false
 
 | Panel ID | File | Purpose |
 |---|---|---|
-| `blpc.party` | `MainPanel.java` | Party menu (`PartyMenuBuilder` fluent composition) |
+| `blpc.party` | `MainPanel.java` | Party menu (`PartyMenuBuilder` fluent) |
 | `blpc.party.create` | `CreatePanel.java` | Create-or-join (no party) |
 | `blpc.party.settings` | `SettingsPanel.java` | Protection, ally/enemy (tabbed) |
 | `blpc.party.members` | `MembersPanel.java` | Member list |
 | `blpc.party.moderators` | `ModeratorsPanel.java` | Moderator promote/demote |
 | `blpc.party.addons` | `AddonsPanel.java` | Addons hub — per-mod settings |
-| `blpc.party.addons.journeymap` | `JMapSettingsPanel.java` | Opens JMap AddonOptionsManager |
 | `blpc.party.addons.bqu` | `BQuSettingsPanel.java` | BQu link/unlink + native manager |
+| `blpc.party.addons.journeymap` | `JMapSettingsPanel.java` | Opens JMap AddonOptionsManager |
 | `blpc.party.dialog.disband` | MainPanel (inline `ConfirmDialog`) | Disband confirmation |
 | `blpc.party.dialog.transfer` | `TransferOwnerPanel.java` | Transfer ownership |
 
-`MainPanel` pre-creates nav sub-panel handlers once per open, reuses across `rebuildMenu`. Handler closures re-read party from cache by UUID via `livePartyRef`.
+`MainPanel` pre-creates sub-panel handlers once per open. Handler closures re-read party via `livePartyRef`.
 
-## Color Conventions
+## Screens Constants
 
-Two holders, split by surface:
-
-- **`BLPCColors`** — semantic party/map colors. Single source of truth via accessor methods. `text()`, `buttonText()`, `owner()`, `admin()`, `warning()`, `subtext()`, `inactive()`, `divider()`, `mapBackground()`, `mapBorder()`, `mapSelection()`, `mapUnloaded()`, claim overlays (`claimOwn`/`claimParty`/`claimOther`/`claimHatching`/`claimBorder`), `partyArgb()`.
-- **`GuiColors`** — fixed vanilla-context ARGB: `WHITE`, `GOLD`, `GREEN`, `RED`, `GRAY`, `DIVIDER`.
-
-**Never inline `0x…` color literals** — only exception: dynamic per-party `getColor()` ARGB composition.
-
-## ModLog Categories
-
-| Category | Logger | Purpose |
+| Constant | Value | Source |
 |---|---|---|
-| `ModLog.ROOT` | `blpc` | General |
-| `ModLog.IO` | `blpc/IO` | File I/O |
-| `ModLog.PARTY` | `blpc/Party` | Party operations |
-| `ModLog.MODULE` | `blpc/Module` | Module system |
-| `ModLog.SYNC` | `blpc/Sync` | Client sync |
-| `ModLog.BQU` | `blpc/BQu` | BQu integration |
-| `ModLog.MIGRATION` | `blpc/Migration` | Data migration |
-| `ModLog.UI` | `blpc/UI` | Panel navigation |
-| `ModLog.PROTECTION` | `blpc/Protection` | Chunk protection |
+| `MAP` | `blpc.map` | `ChunkMapScreen` |
+| `PARTY` | `blpc.party` | `MainPanel` |
+| `PARTY_CREATE` | `blpc.party.create` | `CreatePanel` |
+| `PARTY_SETTINGS` | `blpc.party.settings` | `SettingsPanel` |
+| `PARTY_MEMBERS` | `blpc.party.members` | `MembersPanel` |
+| `PARTY_MODERATORS` | `blpc.party.moderators` | `ModeratorsPanel` |
+| `PARTY_TRANSFER` | `blpc.party.transfer` | `TransferOwnerPanel` |
+| `PARTY_ADDONS` | `blpc.party.addons` | `AddonsPanel` |
+
+Open via: `Screens.openMap()`, `Screens.openPartyDirect()`, `Screens.partyMain(...)`.
+
+## Color & Styling
+
+- **`BLPCColors`** — semantic colors (accessor methods). Single source of truth.
+- **`GuiColors`** — fixed vanilla-context ARGB (`WHITE`, `GOLD`, `GREEN`, `RED`, `GRAY`, `DIVIDER`).
+- NEVER inline `0x…` colors. Exception: per-party `getColor()` ARGB composition.
+- Use `PartyWidgets` utilities/constants — NEVER hard-code dimensions.
 
 ## MUI Widget Patterns
 
-| Widget | Usage | Notes |
-|---|---|---|
-| `CycleButtonWidget` + `IntValue.Dynamic` | Multi-state settings (trust levels) | `length()` + `stateChild(i, ...)` |
-| `ToggleButton` + `BoolValue.Dynamic` | Boolean settings | `overlay(false/true, ...)` |
-| `ListWidget` + `LiveSearchableList` | Scrollable lists | `rebuild(Collection<T>)` for live-update — used by `MembersPanel`, `ModeratorsPanel`, `TransferOwnerPanel`, and `SettingsPanel`'s ally/enemy tabs |
-| `Dialog<T>` | Modal confirmations | `closeWith(result)` |
-| `Flow.col()` / `Flow.row()` | Layout | `childPadding(n)` |
-| `IKey.dynamic` / `*Value.Dynamic` | Per-frame reactive state | Preferred over widget tree rebuild |
+- `CycleButtonWidget` + `IntValue.Dynamic` — multi-state (trust levels)
+- `ToggleButton` + `BoolValue.Dynamic` — boolean settings
+- `ListWidget` + `LiveSearchableList` — scrollable lists with live-update
+- `Dialog<T>` — modal confirmations
+- `Flow.col()` / `Flow.row()` — layout
 
-**`PartyWidgets`** is the single styling/factory source:
-- **Dimensions**: `BTN_H`, `TAB_H`, `FACE_SIZE`, `ROW_INDENT`, `STANDARD_W/H`, `LARGE_W/H`, `DIALOG_W/H`
-- **Labels**: `buttonLabel`, `buttonLabelLeft`, `rowLabel`
-- **Widgets**: `dialogButton`, `toggleButton`, `createPlayerRow`, `faceRow`, `divider()`
-- **Live-update**: `addSyncRefreshListener`, `closeIfTopMost`, `livePartyRef`, `sendAndApply`
-- **Member lists**: `collectSortedMembers`, `byRoleThenName()`
+## Sync Pattern
 
-## Client-Side Sync Pattern
+`ClientPartyCache.loadFromNBT()` replaces every `Party` — captured references go stale. Read via `getParty()` or `livePartyRef`.
 
-`ClientPartyCache.loadFromNBT()` replaces every `Party` instance — a captured reference goes stale immediately. Read fresh via `getParty(partyId)` or `livePartyRef`.
-
-**Live-update is the default.** Panels stay mounted across syncs. Use `addSyncRefreshListener(panel, onSync)`. Callback deferred via `addScheduledTask`.
-
-**`LiveSearchableList<T>`** — search box + list + parallel filter. `buildContainer()` + `rebuild(Collection<T>)`.
-
-**Optimistic mutation:** `sendAndApply(IMessage, partyId, Consumer<Party>)` — send, apply to cache, fire listeners.
+Live-update default: `addSyncRefreshListener(panel, onSync)`.
+Optimistic mutation: `sendAndApply(IMessage, partyId, Consumer<Party>)`.
 
 ## Reusable Templates
 
-- **`ConfirmDialog`** — Yes/No (`Dialog<Boolean>`), 220×70.
-- **`InputDialog`** — Text field + submit (`Dialog<Void>`), 220×70.
-- **`LiveSearchableList<T>`** — search + list + filter.
-- **`PartyMenuBuilder`** — fluent builder: `.navHandler`, `.nav`, `.widget`, `.tooltip`, `.visible`, `.buildInto`.
-- **`TransferOwnerPanel`** — OWNER-only member picker.
+- `ConfirmDialog` (Yes/No), `InputDialog` (text + submit), `LiveSearchableList<T>`
+- `PartyMenuBuilder` — fluent: `.navHandler`, `.nav`, `.widget`, `.tooltip`, `.visible`
 
 ## Commands
 
-`/blpc` root tree (permission 0), registered by `CoreModule.serverStarting()`.
-
-**Player subcommands** (extend `PlayerCommand`, perm 0): `list`, `info`, `me`, `here`, `claims`, `invites`, `accept`, `decline`, `leave`, `admin`.
-
-**Admin subcommands** (extend `AdminSubCommand`, perm 3): `move-owner`, `kick`, `disband`.
-
-Query helpers: `PartyQueryUtil` (API), `BLPCCommandHelper` (internal — `activeProviderFor`, `requirePartyByName`, `resolveOwnerName`).
+`/blpc` root (perm 0): `list`, `info`, `me`, `here`, `claims`, `invites`, `accept`, `decline`, `leave`, `admin`.
+Admin (perm 3): `move-owner`, `kick`, `disband`.

@@ -16,15 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaces direct `IntegrationPanelRegistry.register()` calls in built-in integrations (BQu, JourneyMap).
   - Third-party integrations can register an AddonPanel button without touching BLPC's shared code.
 
-- **Party EMC cache in ClientPartyCache**
-  - Added `updatePartyEmc()`, `getLocalPartyEmc()`, and `clearPartyEmc()` so BLET can read cached Party EMC on the client side without hitting the server directly.
-  - The cache is cleared on disconnect and refreshed when party data syncs.
-
 - **IntegrationPanelRegistry duplicate prevention**
   - Registering the same integration twice no longer creates a duplicate button — the registry now checks for existing entries by label key before adding.
 
 - **ModuleManager duplicate setup guard**
   - Calling `setup()` a second time (which can happen when BLET shares the same ModuleManager instance) now skips the second load instead of duplicating modules.
+
+### Fixed
+
+- **`BQuPartyProvider.findByName()` returning `null`**
+  - Added `findByName()`, `allPartyNames()`, and `pendingInvitesFor()` overrides that delegate to `DefaultPartyProvider` fallback.
+  - This fixes server party lookup when a player has no BQu party but the server party is self-managed.
 
 [0.16.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.16.0
 
