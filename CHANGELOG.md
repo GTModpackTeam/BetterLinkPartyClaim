@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
+## [0.15.3]
+
+### Added
+
+- **Server Party auto-join**
+    - When **Server Party > Enable** and **Free to Join** are both enabled, new players are now automatically added to the configured Server Party as a MEMBER on login.
+    - This makes the "Free to Join" flag actually functional — previously the flag was set on the party but no automatic join was performed.
+
+[0.15.3]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.15.3
+
+* * *
+
 ## [0.15.2]
 
 ### Added

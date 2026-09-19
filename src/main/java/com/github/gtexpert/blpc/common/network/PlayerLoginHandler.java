@@ -70,8 +70,21 @@ public class PlayerLoginHandler {
             }
         }
 
-        // Auto-create party if configured
         IPartyProvider activeProvider = PartyProviderRegistry.get();
+
+        // Auto-join server party if configured
+        if (!activeProvider.hasNativeParty(player.getUniqueID()) && ModConfig.serverParty.enabled) {
+            Party serverParty = activeProvider.findByName(ModConfig.serverParty.name);
+            if (serverParty != null && serverParty.isFreeToJoin()) {
+                serverParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
+                ModLog.PARTY.info("Auto-joined player {} to server party \"{}\" on login",
+                        player.getName(), ModConfig.serverParty.name);
+                BLPCSaveHandler.INSTANCE.markDirty();
+                activeProvider.syncToAll();
+            }
+        }
+
+        // Auto-create party if configured
         if (!activeProvider.hasNativeParty(player.getUniqueID())) {
             boolean isSingleplayer = player.getServer() != null && player.getServer().isSinglePlayer();
             boolean shouldCreate = isSingleplayer && ModConfig.party.autoCreatePartySingleplayer;
