@@ -1,6 +1,5 @@
 package com.github.gtexpert.blpc.api.integration;
 
-import java.lang.Deprecated;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

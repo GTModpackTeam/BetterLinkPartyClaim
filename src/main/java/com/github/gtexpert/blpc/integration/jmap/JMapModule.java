@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.Tags;
 import com.github.gtexpert.blpc.api.integration.AddonRegistry;
-import com.github.gtexpert.blpc.api.integration.IntegrationPanelRegistry;
 import com.github.gtexpert.blpc.api.modules.TModule;
 import com.github.gtexpert.blpc.api.util.Mods;
 import com.github.gtexpert.blpc.integration.IntegrationSubmodule;

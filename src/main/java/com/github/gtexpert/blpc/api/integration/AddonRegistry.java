@@ -1,16 +1,13 @@
 package com.github.gtexpert.blpc.api.integration;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
-import com.cleanroommc.modularui.screen.ModularPanel;
-
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import com.cleanroommc.modularui.screen.ModularPanel;
 
 /**
  * Add-on registration API for BLPC integrations.
@@ -27,7 +24,9 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * custom {@link BooleanSupplier} to control visibility.
  * <p>
  * <b>Example:</b>
- * <pre>{@code
+ * 
+ * <pre>
+ * {@code
  * // In JMapModule.init():
  * AddonRegistry.register(
  *     "journeymap", "blpc.addons.journeymap", "blpc.addons.journeymap.overlays_tooltip",
@@ -40,9 +39,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  *     "journeymap", "blpc.addons.journeymap", null,
  *     () -> JourneyMap.openMap()
  * );
- * }</pre>
+ * }
+ * </pre>
  *
- * @see IntegrationPanelRegistry  (the concrete registry used by {@code AddonsPanel})
+ * @see IntegrationPanelRegistry (the concrete registry used by {@code AddonsPanel})
  */
 @SideOnly(Side.CLIENT)
 public final class AddonRegistry {
