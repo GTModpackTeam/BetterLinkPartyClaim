@@ -28,26 +28,12 @@ public final class IntegrationPanelRegistry {
      */
     public static final class Entry {
 
+        private final Object modId;
         private final String labelKey;
         private final String tooltipKey;
         private final BooleanSupplier available;
         private final Function<UUID, ModularPanel> factory;
         private final Runnable action;
-
-        /**
-         * @deprecated Use {@link #Entry(String, String, String, BooleanSupplier, Function)} instead.
-         *             Old entries get {@code modId=null} which prevents AddonRegistry dedup.
-         */
-        @Deprecated
-        Entry(String labelKey, String tooltipKey, BooleanSupplier available,
-              Function<UUID, ModularPanel> factory) {
-            this.modId = null;
-            this.labelKey = labelKey;
-            this.tooltipKey = tooltipKey;
-            this.available = available;
-            this.factory = factory;
-            this.action = null;
-        }
 
         Entry(String modId, String labelKey, String tooltipKey, BooleanSupplier available,
               Function<UUID, ModularPanel> factory) {
@@ -59,13 +45,9 @@ public final class IntegrationPanelRegistry {
             this.action = null;
         }
 
-        /**
-         * @deprecated Use {@link #Entry(String, String, String, BooleanSupplier, Runnable)} instead.
-         */
-        @Deprecated
-        Entry(String labelKey, String tooltipKey, BooleanSupplier available,
+        Entry(String modId, String labelKey, String tooltipKey, BooleanSupplier available,
               Runnable action) {
-            this.modId = null;
+            this.modId = modId;
             this.labelKey = labelKey;
             this.tooltipKey = tooltipKey;
             this.available = available;
@@ -75,7 +57,7 @@ public final class IntegrationPanelRegistry {
 
         /** Unique add-on identifier set when registered via AddonRegistry, or {@code null}. */
         public String getModId() {
-            return modId;
+            return modId.toString();
         }
 
         public String labelKey() {
