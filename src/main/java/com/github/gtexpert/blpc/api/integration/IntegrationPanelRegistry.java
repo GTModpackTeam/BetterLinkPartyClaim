@@ -1,5 +1,6 @@
 package com.github.gtexpert.blpc.api.integration;
 
+import java.lang.Deprecated;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,8 +35,14 @@ public final class IntegrationPanelRegistry {
         private final Function<UUID, ModularPanel> factory;
         private final Runnable action;
 
+        /**
+         * @deprecated Use {@link #Entry(String, String, String, BooleanSupplier, Function)} instead.
+         *             Old entries get {@code modId=null} which prevents AddonRegistry dedup.
+         */
+        @Deprecated
         Entry(String labelKey, String tooltipKey, BooleanSupplier available,
               Function<UUID, ModularPanel> factory) {
+            this.modId = null;
             this.labelKey = labelKey;
             this.tooltipKey = tooltipKey;
             this.available = available;
@@ -43,12 +50,33 @@ public final class IntegrationPanelRegistry {
             this.action = null;
         }
 
-        Entry(String labelKey, String tooltipKey, BooleanSupplier available, Runnable action) {
+        Entry(String modId, String labelKey, String tooltipKey, BooleanSupplier available,
+              Function<UUID, ModularPanel> factory) {
+            this.modId = modId;
+            this.labelKey = labelKey;
+            this.tooltipKey = tooltipKey;
+            this.available = available;
+            this.factory = factory;
+            this.action = null;
+        }
+
+        /**
+         * @deprecated Use {@link #Entry(String, String, String, BooleanSupplier, Runnable)} instead.
+         */
+        @Deprecated
+        Entry(String labelKey, String tooltipKey, BooleanSupplier available,
+              Runnable action) {
+            this.modId = null;
             this.labelKey = labelKey;
             this.tooltipKey = tooltipKey;
             this.available = available;
             this.factory = null;
             this.action = action;
+        }
+
+        /** Unique add-on identifier set when registered via AddonRegistry, or {@code null}. */
+        public String getModId() {
+            return modId;
         }
 
         public String labelKey() {
@@ -84,30 +112,50 @@ public final class IntegrationPanelRegistry {
     private IntegrationPanelRegistry() {}
 
     /**
-     * Registers an integration's settings entry.
+     * Registers an integration's settings entry with a mod-specific id.
      *
-     * @param labelKey   lang key for the button label (also serves as the panel title source)
+     * @param modId      unique identifier for the mod (used for dedup)
+     * @param labelKey   lang key for the button label
      * @param tooltipKey lang key for the button tooltip, or {@code null}
      * @param available  runtime predicate — the entry is hidden when it returns {@code false}
      * @param factory    builds the mod's settings panel for the given player UUID
      */
-    public static void register(String labelKey, String tooltipKey, BooleanSupplier available,
+    public static void register(String modId, String labelKey, String tooltipKey,
+                                BooleanSupplier available,
                                 Function<UUID, ModularPanel> factory) {
+        // Dedup by modId — same mod registered twice is silently ignored
         for (Entry e : ENTRIES) {
-            if (e.labelKey.equals(labelKey)) {
+            if (modId.equals(e.getModId())) {
                 return;
             }
         }
-        ENTRIES.add(new Entry(labelKey, tooltipKey, available, factory));
+        ENTRIES.add(new Entry(modId, labelKey, tooltipKey, available, factory));
     }
 
     /**
      * Registers an action-only entry (no sub-panel). Clicking the button runs {@code action}
      * directly — useful for opening an external screen (e.g. JourneyMap's own settings UI).
+     *
+     * @param modId      unique identifier for the mod (used for dedup)
+     * @param labelKey   lang key for the button label
+     * @param tooltipKey lang key for the button tooltip, or {@code null}
+     * @param available  runtime predicate — the entry is hidden when it returns {@code false}
+     * @param action     action to run when the button is clicked
      */
-    public static void registerAction(String labelKey, String tooltipKey, BooleanSupplier available,
+    public static void registerAction(String modId, String labelKey, String tooltipKey,
+                                      BooleanSupplier available,
                                       Runnable action) {
-        ENTRIES.add(new Entry(labelKey, tooltipKey, available, action));
+        for (Entry e : ENTRIES) {
+            if (modId.equals(e.getModId())) {
+                return;
+            }
+        }
+        ENTRIES.add(new Entry(modId, labelKey, tooltipKey, available, action));
+    }
+
+    /** All registered entries, in registration order. */
+    static List<Entry> getEntries() {
+        return Collections.unmodifiableList(ENTRIES);
     }
 
     /** Currently-available entries, in registration order. */

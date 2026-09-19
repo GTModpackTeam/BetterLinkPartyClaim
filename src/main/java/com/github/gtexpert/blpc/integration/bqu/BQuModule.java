@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.Tags;
-import com.github.gtexpert.blpc.api.integration.IntegrationPanelRegistry;
+import com.github.gtexpert.blpc.api.integration.AddonRegistry;
 import com.github.gtexpert.blpc.api.modules.TModule;
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.api.util.Mods;
@@ -42,8 +42,8 @@ public class BQuModule extends IntegrationSubmodule {
     public void init(FMLInitializationEvent event) {
         if (event.getSide().isClient()) {
             PartyProviderRegistry.registerNativeScreenOpener(BQuScreenHelper::openPartyScreen);
-            IntegrationPanelRegistry.register(
-                    "blpc.addons.bqu", "blpc.addons.bqu.tooltip",
+            AddonRegistry.register(
+                    "bqu", "blpc.addons.bqu", "blpc.addons.bqu.tooltip",
                     PartyProviderRegistry::hasNativeScreen, BQuSettingsPanel::build);
         }
     }

@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AddonRegistry — unified add-on registration API**
+  - New `AddonRegistry.register()` / `registerAction()` with a `modId` for deduplication.
+  - Replaces direct `IntegrationPanelRegistry.register()` calls in built-in integrations (BQu, JourneyMap).
+  - Third-party integrations can register an AddonPanel button without touching BLPC's shared code.
+
+- **Party EMC cache in ClientPartyCache**
+  - Added `updatePartyEmc()`, `getLocalPartyEmc()`, and `clearPartyEmc()` so BLET can read cached Party EMC on the client side without hitting the server directly.
+  - The cache is cleared on disconnect and refreshed when party data syncs.
+
 - **IntegrationPanelRegistry duplicate prevention**
   - Registering the same integration twice no longer creates a duplicate button — the registry now checks for existing entries by label key before adding.
 
