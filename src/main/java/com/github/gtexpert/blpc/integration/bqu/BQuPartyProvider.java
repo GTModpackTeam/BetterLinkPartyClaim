@@ -120,6 +120,22 @@ public class BQuPartyProvider implements IPartyProvider {
         return PartyManager.INSTANCE.getParty(playerUUID) != null;
     }
 
+    @Override
+    @Nullable
+    public Party findByName(String name) {
+        return fallback.findByName(name);
+    }
+
+    @Override
+    public List<String> allPartyNames() {
+        return fallback.allPartyNames();
+    }
+
+    @Override
+    public List<Party> pendingInvitesFor(UUID playerUUID) {
+        return fallback.pendingInvitesFor(playerUUID);
+    }
+
     /**
      * Checks the player's <em>current</em> BQu party membership for any linked member, rather
      * than a per-player flag — a member who joined this same BQu party after the owner's link

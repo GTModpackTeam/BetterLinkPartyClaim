@@ -93,6 +93,11 @@ public final class IntegrationPanelRegistry {
      */
     public static void register(String labelKey, String tooltipKey, BooleanSupplier available,
                                 Function<UUID, ModularPanel> factory) {
+        for (Entry e : ENTRIES) {
+            if (e.labelKey.equals(labelKey)) {
+                return;
+            }
+        }
         ENTRIES.add(new Entry(labelKey, tooltipKey, available, factory));
     }
 

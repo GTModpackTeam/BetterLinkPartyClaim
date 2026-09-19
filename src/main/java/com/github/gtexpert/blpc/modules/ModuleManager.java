@@ -108,6 +108,10 @@ public class ModuleManager implements IModuleManager {
     }
 
     public void setup(ASMDataTable asmDataTable, File configDirectory) {
+        if (currentStage != ModuleStage.C_SETUP) {
+            ModLog.MODULE.debug("setup() already called, skipping duplicate registration");
+            return;
+        }
         discoverContainers(asmDataTable);
         containers = containers.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
