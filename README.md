@@ -58,8 +58,8 @@ See [CurseForge](https://www.curseforge.com/minecraft/mc-mods/better-link-party-
 
 - Minecraft 1.12.2, Forge
 - **Required:** [ModularUI](https://www.curseforge.com/minecraft/mc-mods/modularui) 3.1.5+
-- **Optional:** [BetterQuesting Unofficial](https://www.curseforge.com/minecraft/mc-mods/better-questing-unofficial)
-- **Optional:** [JourneyMap](https://www.curseforge.com/minecraft/mc-mods/journeymap) 6.0.0-beta.2+
+- **Optional:** [BetterQuesting Unofficial](https://www.curseforge.com/minecraft/mc-mods/better-questing-unofficial) 4.3.2+
+- **Optional:** [JourneyMap](https://www.curseforge.com/minecraft/mc-mods/journeymap) 6.0.8+
 
 ## For Developers
 
