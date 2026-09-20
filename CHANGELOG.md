@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
+## [0.16.1]
+
+### Fixed
+
+- **Crash when a fireball ticks with a null world reference**
+  - `ChunkProtectionHandler.onMobGriefing()` now safely handles entities with a null `world` field, which can occur during certain tick phases with fireballs and other projectiles.
+
+[0.16.1]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.16.1
+
+* * *
+
 ## [0.16.0]
 
 ### Added
@@ -28,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `findByName()`, `allPartyNames()`, and `pendingInvitesFor()` overrides that delegate to `DefaultPartyProvider` fallback.
   - This fixes server party lookup when a player has no BQu party but the server party is self-managed.
 
-[0.16.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.16.0
+[0.16.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.16.0
 
 * * *
 
@@ -40,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When **Server Party > Enable** and **Free to Join** are both enabled, new players are now automatically added to the configured Server Party as a MEMBER on login.
   - This makes the "Free to Join" flag actually functional — previously the flag was set on the party but no automatic join was performed.
 
-[0.15.3]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.15.3
+[0.15.3]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.15.3
 
 * * *
 
@@ -64,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Opening the chunk map for the first time no longer causes a brief freeze**
   - On modpacks with a huge number of blocks, the very first time you opened the map screen could hang the game for a few seconds while it prepared the terrain colors. That preparation now happens quietly in the background instead.
 
-[0.15.2]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.15.2
+[0.15.2]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.15.2
 
 * * *
 
@@ -92,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Chunk protection not working correctly across dimensions**
   - All protection events (block edit, block interact, attack entity, item use, explosions, fire spread, fluid flow, mob griefing) now check the dimension of the event, not just the chunk coordinates.
 
-[0.15.1]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.15.1
+[0.15.1]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.15.1
 
 * * *
 
@@ -127,7 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Key bindings not showing in Minecraft's Controls screen**
 
-[0.15.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.15.0
+[0.15.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.15.0
 
 * * *
 
@@ -155,7 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BQu-linked parties could drift out of sync with BLPC.** A player who joined an already-linked BetterQuesting party through BQu's own party screen (rather than BLPC's) was previously invisible to BLPC's protection, claim-limit, and party-management logic — they could be wrongly denied access to their own party's claims, get a separate personal claim limit instead of sharing the party's pool, and be unable to use party settings, disband, or unlink through BLPC's UI. Party membership is now resolved consistently between BQu and BLPC in all of these paths.
 
-[0.14.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.14.0
+[0.14.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.14.0
 
 * * *
 
@@ -181,7 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The always-on minimap (`N` key) has been removed.
   - The full-screen chunk map (`M` key) is unaffected; JourneyMap users get claim overlays on their own map instead (see Added, above).
 
-[0.13.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.13.0
+[0.13.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.13.0
 
 * * *
 
@@ -203,7 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Button labels now use clear, high-contrast text against the menu buttons.
   - Role names (Owner, Admin) and ally/enemy names display in bright, readable colors instead of dark, muddy ones.
 
-[0.12.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.12.0
+[0.12.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.12.0
 
 * * *
 
@@ -232,7 +243,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BQu party appearing without linking**
   - Creating a party in BQu would make it show up in BLPC's party list even when BQu Link was OFF.
 
-[0.11.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.11.0
+[0.11.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.11.0
 
 * * *
 
@@ -269,7 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Sub-panel handlers were accumulating on each menu rebuild.
   - Empty tracking sets were left behind on player logout.
 
-[0.10.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.10.0
+[0.10.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.10.0
 
 * * *
 
@@ -285,7 +296,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dedicated-server crash on party creation**
   - Creating a party on a dedicated server no longer crashes due to a missing client-only color method.
 
-[0.9.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.9.0
+[0.9.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.9.0
 
 * * *
 
@@ -337,4 +348,4 @@ Initial release.
 - Required: ModularUI 3.1.5+.
 - Optional: BetterQuesting (party integration), JourneyMap (minimap integration).
 
-[0.8.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/v0.8.0
+[0.8.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.8.0

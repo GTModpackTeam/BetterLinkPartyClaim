@@ -16,6 +16,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.entity.EntityMobGriefingEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
@@ -248,12 +249,15 @@ public class ChunkProtectionHandler {
     @SubscribeEvent
     public static void onMobGriefing(EntityMobGriefingEvent event) {
         if (!ModConfig.Defaults.enableProtection || !ModConfig.Defaults.protectMobGriefing) return;
+
         Entity entity = event.getEntity();
-        if (entity.world.isRemote) return;
+        World world = entity != null ? entity.world : null;
+
+        if (world == null || world.isRemote) return;
 
         int chunkX = MathHelper.floor(entity.posX) >> 4;
         int chunkZ = MathHelper.floor(entity.posZ) >> 4;
-        int dim = entity.world.provider.getDimension();
+        int dim = world.provider.getDimension();
         if (isChunkClaimed(chunkX, chunkZ, dim)) {
             event.setResult(Event.Result.DENY);
         }
