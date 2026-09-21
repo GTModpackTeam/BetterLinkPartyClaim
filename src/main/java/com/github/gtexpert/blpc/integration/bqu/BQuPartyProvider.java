@@ -132,6 +132,11 @@ public class BQuPartyProvider implements IPartyProvider {
     }
 
     @Override
+    public List<Party> getAllParties() {
+        return fallback.getAllParties();
+    }
+
+    @Override
     public List<Party> pendingInvitesFor(UUID playerUUID) {
         return fallback.pendingInvitesFor(playerUUID);
     }
@@ -354,6 +359,11 @@ public class BQuPartyProvider implements IPartyProvider {
         entry.getValue().setStatus(targetId, role);
         NetPartySync.quickSync(entry.getID());
         return true;
+    }
+
+    @Override
+    public long countClaims(UUID partyId) {
+        return ChunkManagerData.getInstance().countClaimsForParty(partyId);
     }
 
     @Override

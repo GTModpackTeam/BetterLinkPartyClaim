@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 import com.github.gtexpert.blpc.api.party.IPartyProvider;
 import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.common.BLPCSaveHandler;
-import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
 public class AcceptCommand extends PlayerCommand {
 
@@ -42,7 +41,7 @@ public class AcceptCommand extends PlayerCommand {
         if (!party.hasInvite(player.getUniqueID())) {
             throw new CommandException("No pending invite from party: " + args[0]);
         }
-        if (PartyManagerData.getInstance().getPartyByPlayer(player.getUniqueID()) != null) {
+        if (BLPCCommandHelper.resolveParty(player) != null) {
             throw new CommandException("You are already in a party. Leave first with /blpc leave.");
         }
         if (!party.canAddMember()) {

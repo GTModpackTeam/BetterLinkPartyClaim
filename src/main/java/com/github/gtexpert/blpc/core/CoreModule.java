@@ -96,7 +96,7 @@ public class CoreModule implements IModule {
                     ownerProfile = event.getServer().getPlayerProfileCache()
                             .getGameProfileForUsername(ownerName);
                     if (ownerProfile != null) {
-                        serverParty.addMember(ownerProfile.getId(), PartyRole.OWNER);
+                        pmData.addMember(serverParty.getPartyId(), ownerProfile.getId(), PartyRole.OWNER);
                     } else {
                         ModLog.PARTY.warn("Owner player '{}' not found in profile cache", ownerName);
                     }
@@ -107,7 +107,7 @@ public class CoreModule implements IModule {
                     GameProfile modProfile = event.getServer().getPlayerProfileCache()
                             .getGameProfileForUsername(modName);
                     if (modProfile != null) {
-                        serverParty.addMember(modProfile.getId(), PartyRole.ADMIN);
+                        pmData.addMember(serverParty.getPartyId(), modProfile.getId(), PartyRole.ADMIN);
                     } else {
                         ModLog.PARTY.warn("Moderator player '{}' not found in profile cache", modName);
                     }

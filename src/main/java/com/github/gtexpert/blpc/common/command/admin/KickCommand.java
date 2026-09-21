@@ -55,7 +55,7 @@ public class KickCommand extends AdminSubCommand {
 
         String targetName = BLPCCommandHelper.resolveName(server, party, targetUUID);
         ChunkManagerData.getInstance().releaseAllClaims(targetUUID, sender.getEntityWorld());
-        party.removeMember(targetUUID);
+        PartyManagerData.getInstance().removeMember(party.getPartyId(), targetUUID);
         PartyManagerData.getInstance().setBQuLinked(targetUUID, false);
         PartyProviderRegistry.get().syncToAll();
         BLPCSaveHandler.INSTANCE.markDirty();

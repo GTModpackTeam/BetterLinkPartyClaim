@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
@@ -28,62 +27,56 @@ import com.github.gtexpert.blpc.common.network.message.PartySync;
  */
 public class DefaultPartyProvider implements IPartyProvider {
 
+    // --- Query ---
+
     @Override
     public boolean areInSameParty(UUID playerA, UUID playerB) {
-        PartyManagerData data = getPartyData();
+        var data = getPartyData();
         if (data == null) return false;
-        Party party = data.getPartyByPlayer(playerA);
+        var party = data.getPartyByPlayer(playerA);
         return party != null && party.isMember(playerB);
     }
 
     @Override
     @Nullable
     public String getPartyName(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
-        if (data == null) return null;
-        Party party = data.getPartyByPlayer(playerUUID);
+        var party = getEffectiveParty(playerUUID);
         return party != null ? party.getName() : null;
     }
 
     @Override
     public List<UUID> getPartyMembers(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
-        if (data == null) return Collections.emptyList();
-        Party party = data.getPartyByPlayer(playerUUID);
+        var party = getEffectiveParty(playerUUID);
         return party != null ? party.getMemberUUIDs() : Collections.emptyList();
     }
 
     @Override
     @Nullable
     public String getRole(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
-        if (data == null) return null;
-        Party party = data.getPartyByPlayer(playerUUID);
+        var party = getEffectiveParty(playerUUID);
         if (party == null) return null;
-        PartyRole role = party.getRole(playerUUID);
+        var role = party.getRole(playerUUID);
         return role != null ? role.name() : null;
     }
 
     @Override
     @Nullable
     public UUID getPartyId(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
-        if (data == null) return null;
-        Party party = data.getPartyByPlayer(playerUUID);
+        var party = getEffectiveParty(playerUUID);
         return party != null ? party.getPartyId() : null;
     }
 
     @Override
     @Nullable
     public Party getEffectiveParty(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
+        var data = getPartyData();
         return data != null ? data.getPartyByPlayer(playerUUID) : null;
     }
 
     @Override
     @Nullable
     public Party findByName(String name) {
-        PartyManagerData data = getPartyData();
+        var data = getPartyData();
         if (data == null) return null;
         return data.getAllParties().stream()
                 .filter(p -> p.getName().equals(name))
@@ -93,7 +86,7 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     @Override
     public List<String> allPartyNames() {
-        PartyManagerData data = getPartyData();
+        var data = getPartyData();
         if (data == null) return Collections.emptyList();
         return data.getAllParties().stream()
                 .map(Party::getName)
@@ -101,8 +94,14 @@ public class DefaultPartyProvider implements IPartyProvider {
     }
 
     @Override
+    public List<Party> getAllParties() {
+        var data = getPartyData();
+        return data != null ? new ArrayList<>(data.getAllParties()) : Collections.emptyList();
+    }
+
+    @Override
     public List<Party> pendingInvitesFor(UUID playerUUID) {
-        PartyManagerData data = getPartyData();
+        var data = getPartyData();
         if (data == null) return Collections.emptyList();
         List<Party> result = new ArrayList<>();
         for (Party party : data.getAllParties()) {
@@ -112,20 +111,26 @@ public class DefaultPartyProvider implements IPartyProvider {
     }
 
     @Override
+    public long countClaims(UUID partyId) {
+        return ChunkManagerData.getInstance().countClaimsForParty(partyId);
+    }
+
+    // --- Mutation (all delegate to PartyManagerData for reverse-index consistency) ---
+
+    @Override
     public boolean createParty(EntityPlayerMP player, String name) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        UUID playerId = player.getUniqueID();
-        if (data.getPartyByPlayer(playerId) != null) return false;
-        data.createParty(name, playerId);
+        var data = PartyManagerData.getInstance();
+        if (data.getPartyByPlayer(player.getUniqueID()) != null) return false;
+        data.createParty(name, player.getUniqueID());
         return true;
     }
 
     @Override
     public boolean disbandParty(EntityPlayerMP player) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        Party party = data.getPartyByPlayer(player.getUniqueID());
+        var data = PartyManagerData.getInstance();
+        var party = getEffectiveParty(player.getUniqueID());
         if (party == null) return false;
-        PartyRole role = party.getRole(player.getUniqueID());
+        var role = party.getRole(player.getUniqueID());
         if (role == null || !role.canDisband()) return false;
 
         data.removeParty(party.getPartyId());
@@ -135,10 +140,10 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     @Override
     public boolean renameParty(EntityPlayerMP player, String newName) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        Party party = data.getPartyByPlayer(player.getUniqueID());
+        var data = PartyManagerData.getInstance();
+        var party = getEffectiveParty(player.getUniqueID());
         if (party == null) return false;
-        PartyRole role = party.getRole(player.getUniqueID());
+        var role = party.getRole(player.getUniqueID());
         if (role == null || !role.canEditName()) return false;
         party.setName(newName);
         return true;
@@ -146,16 +151,16 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     @Override
     public boolean invitePlayer(EntityPlayerMP inviter, String targetUsername) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        Party party = data.getPartyByPlayer(inviter.getUniqueID());
+        var data = PartyManagerData.getInstance();
+        var party = getEffectiveParty(inviter.getUniqueID());
         if (party == null) return false;
-        PartyRole role = party.getRole(inviter.getUniqueID());
+        var role = party.getRole(inviter.getUniqueID());
         if (role == null || !role.canInvite()) return false;
-        MinecraftServer server = inviter.getServer();
+        var server = inviter.getServer();
         if (server == null) return false;
-        EntityPlayerMP target = server.getPlayerList().getPlayerByUsername(targetUsername);
+        var target = server.getPlayerList().getPlayerByUsername(targetUsername);
         if (target == null) return false;
-        UUID targetId = target.getUniqueID();
+        var targetId = target.getUniqueID();
         if (party.isMember(targetId)) return false;
         if (data.getPartyByPlayer(targetId) != null) return false;
         party.addInvite(targetId, System.currentTimeMillis() + 300000L);
@@ -167,23 +172,23 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     @Override
     public boolean acceptInvite(EntityPlayerMP player, UUID partyId) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        UUID playerId = player.getUniqueID();
+        var data = PartyManagerData.getInstance();
+        var playerId = player.getUniqueID();
         if (data.getPartyByPlayer(playerId) != null) return false;
-        Party party = data.getParty(partyId);
+        var party = data.getParty(partyId);
         if (party == null) return false;
         if (!party.hasInvite(playerId)) return false;
         party.removeInvite(playerId);
-        party.addMember(playerId, PartyRole.MEMBER);
+        data.addMember(partyId, playerId, PartyRole.MEMBER);
         return true;
     }
 
     @Override
     public boolean kickOrLeave(EntityPlayerMP actor, String targetUsername) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        Party party = data.getPartyByPlayer(actor.getUniqueID());
+        var data = PartyManagerData.getInstance();
+        var party = getEffectiveParty(actor.getUniqueID());
         if (party == null) return false;
-        MinecraftServer server = actor.getServer();
+        var server = actor.getServer();
         if (server == null) return false;
 
         UUID targetId;
@@ -191,30 +196,30 @@ public class DefaultPartyProvider implements IPartyProvider {
             targetId = actor.getUniqueID();
             if (party.getRole(targetId) == PartyRole.OWNER) return false;
         } else {
-            UUID resolved = party.findMemberByUsername(server, targetUsername);
+            var resolved = party.findMemberByUsername(server, targetUsername);
             if (resolved == null) return false;
             targetId = resolved;
-            PartyRole actorRole = party.getRole(actor.getUniqueID());
-            PartyRole targetRole = party.getRole(targetId);
+            var actorRole = party.getRole(actor.getUniqueID());
+            var targetRole = party.getRole(targetId);
             if (actorRole == null || targetRole == null) return false;
             if (!actorRole.canKick(targetRole)) return false;
         }
 
-        party.removeMember(targetId);
+        data.removeMember(party.getPartyId(), targetId);
         return true;
     }
 
     @Override
     public boolean changeRole(EntityPlayerMP actor, String targetUsername, String newRole) {
-        PartyManagerData data = PartyManagerData.getInstance();
-        Party party = data.getPartyByPlayer(actor.getUniqueID());
+        var data = PartyManagerData.getInstance();
+        var party = getEffectiveParty(actor.getUniqueID());
         if (party == null) return false;
-        MinecraftServer server = actor.getServer();
+        var server = actor.getServer();
         if (server == null) return false;
 
-        UUID targetId = party.findMemberByUsername(server, targetUsername);
+        var targetId = party.findMemberByUsername(server, targetUsername);
         if (targetId == null) return false;
-        PartyRole actorRole = party.getRole(actor.getUniqueID());
+        var actorRole = party.getRole(actor.getUniqueID());
         if (actorRole == null || !actorRole.canChangeRole()) return false;
         PartyRole role;
         try {
@@ -222,15 +227,17 @@ public class DefaultPartyProvider implements IPartyProvider {
         } catch (IllegalArgumentException e) {
             return false;
         }
-        party.setRole(targetId, role);
+        data.setRole(party.getPartyId(), targetId, role);
         return true;
     }
 
+    // --- Sync ---
+
     @Override
     public void syncToAll() {
-        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        var server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server == null) return;
-        PartyManagerData data = PartyManagerData.getInstance();
+        var data = PartyManagerData.getInstance();
         ModNetwork.INSTANCE.sendToAll(new PartySync(data.serializeForSync()));
     }
 
@@ -241,15 +248,14 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     @Override
     public NBTTagCompound serializeForClient() {
-        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        var server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server == null) return new NBTTagCompound();
         return PartyManagerData.getInstance().serializeForSync();
     }
 
     @Nullable
     private static PartyManagerData getPartyData() {
-        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-        if (server == null) return null;
-        return PartyManagerData.getInstance();
+        var server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        return server != null ? PartyManagerData.getInstance() : null;
     }
 }

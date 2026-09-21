@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.api.party.PartyRole;
-import com.github.gtexpert.blpc.common.party.PartyManagerData;
+import com.github.gtexpert.blpc.api.util.PartyQueryUtil;
 
 public class ListCommand extends PlayerCommand {
 
@@ -27,7 +27,7 @@ public class ListCommand extends PlayerCommand {
     @Override
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender,
                         String @NotNull [] args) {
-        var parties = PartyManagerData.getInstance().getAllParties();
+        var parties = PartyQueryUtil.provider().getAllParties();
         if (parties.isEmpty()) {
             sender.sendMessage(new TextComponentTranslation("command.blpc.list.empty"));
             return;

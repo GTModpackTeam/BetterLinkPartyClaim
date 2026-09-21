@@ -19,6 +19,7 @@ import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
 import com.github.gtexpert.blpc.api.party.PartyRole;
 import com.github.gtexpert.blpc.common.BLPCSaveHandler;
 import com.github.gtexpert.blpc.common.command.BLPCCommandHelper;
+import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
 public class MoveOwnerCommand extends AdminSubCommand {
 
@@ -50,7 +51,7 @@ public class MoveOwnerCommand extends AdminSubCommand {
             throw new CommandException("Player is not a member of this party");
         }
 
-        party.setRole(newOwner.getUniqueID(), PartyRole.OWNER);
+        PartyManagerData.getInstance().setRole(party.getPartyId(), newOwner.getUniqueID(), PartyRole.OWNER);
         PartyProviderRegistry.get().syncToAll();
         BLPCSaveHandler.INSTANCE.markDirty();
         sender.sendMessage(

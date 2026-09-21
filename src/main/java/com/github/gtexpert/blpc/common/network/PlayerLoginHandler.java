@@ -56,8 +56,8 @@ public class PlayerLoginHandler {
                 if (oldParty != null && pmData.getPartyByPlayer(onlineUUID) == null) {
                     PartyRole role = oldParty.getRole(offlineUUID);
                     if (role == null) role = PartyRole.MEMBER;
-                    oldParty.removeMember(offlineUUID);
-                    oldParty.addMember(onlineUUID, role);
+                    pmData.removeMember(oldParty.getPartyId(), offlineUUID);
+                    pmData.addMember(oldParty.getPartyId(), onlineUUID, role);
 
                     ChunkManagerData chunkData = ChunkManagerData.getInstance();
                     chunkData.transferOwnership(offlineUUID, onlineUUID);
@@ -70,13 +70,14 @@ public class PlayerLoginHandler {
             }
         }
 
+        var pmData = PartyManagerData.getInstance();
         IPartyProvider activeProvider = PartyProviderRegistry.get();
 
         // Auto-join server party if configured
         if (!activeProvider.hasNativeParty(player.getUniqueID()) && ModConfig.serverParty.enabled) {
             Party serverParty = activeProvider.findByName(ModConfig.serverParty.name);
             if (serverParty != null && serverParty.isFreeToJoin()) {
-                serverParty.addMember(player.getUniqueID(), PartyRole.MEMBER);
+                pmData.addMember(serverParty.getPartyId(), player.getUniqueID(), PartyRole.MEMBER);
                 ModLog.PARTY.info("Auto-joined player {} to server party \"{}\" on login",
                         player.getName(), ModConfig.serverParty.name);
                 BLPCSaveHandler.INSTANCE.markDirty();

@@ -59,7 +59,7 @@ public class ModeratorsPanel {
     }
 
     private static List<MemberEntry> collectSorted(Party party) {
-        return PartyWidgets.collectSortedMembers(party, null);
+        return PartyWidgets.collectSortedMembers(party, null, r -> r != PartyRole.OWNER);
     }
 
     private static IWidget createRow(MemberEntry entry, UUID partyId, boolean isOwner, UUID myId) {

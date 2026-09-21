@@ -30,7 +30,7 @@ public class LeaveCommand extends PlayerCommand {
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender,
                         String @NotNull [] args) throws CommandException {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        Party party = PartyManagerData.getInstance().getPartyByPlayer(player.getUniqueID());
+        Party party = BLPCCommandHelper.resolveParty(player);
         if (party == null) {
             throw new CommandException("You are not in a party.");
         }
