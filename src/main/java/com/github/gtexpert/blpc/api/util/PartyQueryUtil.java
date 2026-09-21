@@ -76,4 +76,10 @@ public final class PartyQueryUtil {
     public static IPartyProvider provider() {
         return PartyProviderRegistry.get();
     }
+
+    /** Returns the owner UUID of the given player's party, or {@code null} if no party. */
+    @Nullable
+    public static UUID getOwner(UUID playerUUID) {
+        return PartyProviderRegistry.get().getOwner(playerUUID);
+    }
 }

@@ -24,6 +24,8 @@ All Java code MUST follow these conventions. Violations are build-breaking or me
 ## Party
 
 - Use player UUID to identify party (no `partyId` param except `acceptInvite`).
+- Query methods: use `IPartyProvider` / `PartyQueryUtil` — e.g. `PartyQueryUtil.provider().getEffectiveParty(uuid)`, `PartyQueryUtil.resolveParty(player)`. NEVER `PartyManagerData.getInstance().getPartyByPlayer()` from outside internal packages.
+- Mutation methods: use `PartyManagerData.addMember()`/`removeMember()`/`setRole()` — NEVER direct `Party.addMember()`/`Party.removeMember()` from outside `PartyManagerData`. This maintains the O(1) reverse index.
 - Fail-soft: `dispatch()` rolls back via `syncToPlayer(actor)` on failure.
 
 ## GUI
@@ -33,6 +35,7 @@ All Java code MUST follow these conventions. Violations are build-breaking or me
 - Use `PartyWidgets` utilities/constants — NEVER hard-code dimensions.
 - `MainPanel` uses `PartyMenuBuilder` fluent API.
 - Live-update: read fresh `Party` via `livePartyRef` — NEVER hold captured `Party`.
+- `PartyWidgets.collectSortedMembers(party, exclude, roleFilter)` — use `roleFilter` for panels that need to exclude certain roles (e.g. moderators exclude `PartyRole.OWNER`).
 
 ## Key Bindings
 

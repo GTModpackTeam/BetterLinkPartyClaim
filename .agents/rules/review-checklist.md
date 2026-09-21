@@ -14,5 +14,7 @@ Code review checklist. Apply to ALL code changes before merge.
 - JMap v2 only (`journeymap.api.v2.*`), `@JourneyMapPlugin`, event registries
 - Addon registration via `AddonRegistry.register()`/`registerAction()` with `modId`
 - `BQuPartyProvider.findByName()`, `allPartyNames()`, `pendingInvitesFor()` → `DefaultPartyProvider` fallback
+- Query methods use `IPartyProvider` / `PartyQueryUtil` — NEVER `PartyManagerData.getInstance().getPartyByPlayer()` from outside internal packages
+- Mutation methods use `PartyManagerData.addMember()`/`removeMember()`/`setRole()` — NEVER direct `Party.addMember()`/`Party.removeMember()` from outside `PartyManagerData`
 
 Report: CRITICAL → WARNING → SUGGESTION. Each: file, line, description, fix.

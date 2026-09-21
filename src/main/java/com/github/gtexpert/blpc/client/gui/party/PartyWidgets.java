@@ -393,9 +393,20 @@ public final class PartyWidgets {
      * skipping one UUID (e.g. the acting player in a transfer/kick picker).
      */
     public static List<MemberEntry> collectSortedMembers(Party party, @Nullable UUID exclude) {
+        return collectSortedMembers(party, exclude, null);
+    }
+
+    /**
+     * Collects sorted member entries, optionally filtered by role predicate.
+     * 
+     * @param roleFilter if non-null, only members whose role passes this predicate are included
+     */
+    public static List<MemberEntry> collectSortedMembers(Party party, @Nullable UUID exclude,
+                                                         @Nullable java.util.function.Predicate<PartyRole> roleFilter) {
         List<MemberEntry> result = new ArrayList<>();
         for (Map.Entry<UUID, PartyRole> entry : party.getMembers().entrySet()) {
             if (exclude != null && entry.getKey().equals(exclude)) continue;
+            if (roleFilter != null && !roleFilter.test(entry.getValue())) continue;
             result.add(new MemberEntry(entry.getKey(), getDisplayName(entry.getKey()), entry.getValue()));
         }
         result.sort(byRoleThenName());

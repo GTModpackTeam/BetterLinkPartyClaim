@@ -15,7 +15,7 @@ Base package: `com.github.gtexpert.blpc`.
 | Skill | Content |
 |---|---|
 | `blpc-network` | Network layer (wire protocol, PartyAction dispatch, ClientNotify) |
-| `blpc-party` | Party system (Provider SPI, Trust, PartyRole, BQu integration, persistence) |
+| `blpc-party` | Party system (Provider SPI, Trust, PartyRole, BQu integration, persistence, O(1) reverse index) |
 | `blpc-gui` | GUI/UI (panel catalog, Screens constants, color conventions, widgets, sync patterns, commands) |
 | `blpc-integration-jmap` | JourneyMap integration (v2 API, overlays, Waypoint Team Sync) |
 | `blpc-integration-bqu` | BetterQuesting integration (BQuPartyProvider, link/unlink, Mixin) |
@@ -51,20 +51,26 @@ Discovered at FML Construction via `@TModule`. `modDependencies` gates on `Loade
 
 **Start here:** `api/BLPCAPI` — central access point and discoverability index. Read first.
 
-- **`api/`** — Public addon surface. `BLPCAPI`, `modules/`, `party/` (`Party`, `PartyRole`, `TrustLevel`, `TrustAction`, `RelationType`, `IPartyProvider`, `PartyProviderRegistry`), `event/` (`ChunkModifiedEvent`, `PartyEvent`), `util/` (`Mods`, `ModUtility`, `PartyQueryUtil`, `EnumUtils`), `integration/` (`AddonRegistry`, `IntegrationPanelRegistry`).
-- **`common/party/`** — `PartyManagerData`, `DefaultPartyProvider`, `ClientPartyCache`.
+- **`api/`** — Public addon surface. `BLPCAPI`, `modules/`, `party/` (`Party`, `PartyRole`, `TrustLevel`, `TrustAction`, `RelationType`, `IPartyProvider` with `getOwner`, `getAllParties`, `countClaims` default methods, `PartyProviderRegistry`), `event/` (`ChunkModifiedEvent`, `PartyEvent`), `util/` (`Mods`, `ModUtility`, `PartyQueryUtil` — query party data without depending on internal packages, `EnumUtils`), `integration/` (`AddonRegistry`, `IntegrationPanelRegistry`).
+- **`common/party/`** — `PartyManagerData` (O(1) reverse index for `getPartyByPlayer`), `DefaultPartyProvider`, `ClientPartyCache`.
 - **`common/chunk/`** — `ChunkManagerData`, `ClaimedChunkData`, `ClientClaimCache`, `TicketManager`.
 - **`common/waypoint/`** — `PartyWaypointData`, `WaypointManagerData`, `ClientWaypointCache`.
 - **`common/network/`** — IMessage contracts. `ModNetwork`, `NbtMessage`, `PlayerLoginHandler`.
 - **`client/network/`** — S→C handlers `@SideOnly(CLIENT)`. `ClientPacketHandlers` (SPI installer).
-- **`client/gui/`** — ModularUI screens. `Screens` (catalog + constants), `AddonsPanel`, `PartyWidgets`, `PartyMenuBuilder`, `BLPCColors`, `GuiColors`.
+- **`client/gui/`** — ModularUI screens. `Screens` (catalog + constants), `AddonsPanel`, `PartyWidgets` (`collectSortedMembers` with `roleFilter`), `PartyMenuBuilder`, `BLPCColors`, `GuiColors`.
 - **`client/map/`** — Async chunk rendering. `ChunkMapScreen`, `ChunkMapWidget`, `AsyncMapRenderer`, `TextureCache`.
 - **`client/input/`** — `KeyInputHandler` (open_map M, open_party P).
 - **`client/cache/`** — `ClientCacheKey`, `ClientCachePersistence`.
-- **`core/`** — `ChunkProtectionHandler`, `ChunkTransitHandler`, `CoreEventHandler`, `CoreModule`.
+- **`core/`** — `ChunkProtectionHandler`, `ChunkTransitHandler`, `CoreEventHandler` (uses `PartyProviderRegistry.get().getAllParties()`), `CoreModule`.
 - **`mixins/`** — `BLPCMixinLoader`, `NetPartyActionMixin`, `OverlayStackMixin`.
 - **`integration/`** — `BQuModule`/`BQuPartyProvider`, `JMapModule`/`JMapPlugin`. Addon registration via `AddonRegistry`.
 - **`modules/`** — `BaseModule`, `ModuleManager`, `Modules`.
+
+## API Usage Guidelines
+
+- **Query operations**: Use `PartyQueryUtil` or `IPartyProvider` methods. Never call `PartyManagerData.getInstance().getPartyByPlayer()` from outside internal packages.
+- **Mutation operations**: Use `PartyManagerData.addMember()`/`removeMember()`/`setRole()` — never direct `Party.addMember()`/`Party.removeMember()`. This maintains the O(1) reverse index.
+- **Admin commands**: Use `BLPCCommandHelper.resolveParty(player)` instead of direct `PartyManagerData` calls.
 
 ## Localization
 

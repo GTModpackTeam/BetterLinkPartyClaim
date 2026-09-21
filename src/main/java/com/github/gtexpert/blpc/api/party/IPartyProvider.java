@@ -69,6 +69,16 @@ public interface IPartyProvider {
         return null;
     }
 
+    /**
+     * Returns the owner UUID of the player's party, or {@code null} if they have no party.
+     * This is a convenience shortcut for {@code getEffectiveParty(uuid).getOwner()}.
+     */
+    @Nullable
+    default UUID getOwner(UUID playerUUID) {
+        var party = getEffectiveParty(playerUUID);
+        return party != null ? party.getOwner() : null;
+    }
+
     /** Returns the party with the given name, or null if none exists. */
     @Nullable
     default Party findByName(String name) {
@@ -77,6 +87,16 @@ public interface IPartyProvider {
 
     /** Returns the names of all known parties. */
     default List<String> allPartyNames() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Returns all known {@link Party} objects, or an empty list.
+     * <p>
+     * Default returns empty — self-managed provider overrides this to return
+     * {@code PartyManagerData.getInstance().getAllParties()}.
+     */
+    default List<Party> getAllParties() {
         return Collections.emptyList();
     }
 
@@ -150,6 +170,17 @@ public interface IPartyProvider {
      * Implementations that support per-player sync should override this.
      */
     default void syncToPlayer(EntityPlayerMP player) {}
+
+    /**
+     * Returns the number of chunk claims owned by members of the given party.
+     * <p>
+     * Default implementation returns 0 (self-managed parties rely on
+     * {@link com.github.gtexpert.blpc.common.chunk.ChunkManagerData} directly).
+     * Override in providers that need cross-party claim counting.
+     */
+    default long countClaims(UUID partyId) {
+        return 0;
+    }
 
     /** Returns NBT data representing all parties for client-side cache. */
     NBTTagCompound serializeForClient();

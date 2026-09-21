@@ -11,7 +11,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
-import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.network.message.SyncClaims;
 import com.github.gtexpert.blpc.common.party.PartyManagerData;
@@ -116,10 +115,9 @@ public class ChunkManagerData {
         return (int) claims.values().stream().filter(filter).count();
     }
 
-    /** Member UUIDs of {@code partyId}, or {@code null} when the party doesn't exist. */
     private static Set<UUID> memberIdsOf(UUID partyId) {
-        Party party = PartyManagerData.getInstance().getParty(partyId);
-        return party == null ? null : new HashSet<>(party.getMemberUUIDs());
+        var party = PartyManagerData.getInstance().getParty(partyId);
+        return party != null ? new HashSet<>(party.getMemberUUIDs()) : null;
     }
 
     public void enqueueClaim(ClaimedChunkData data) {

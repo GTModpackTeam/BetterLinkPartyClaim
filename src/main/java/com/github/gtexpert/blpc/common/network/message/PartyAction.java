@@ -261,7 +261,7 @@ public class PartyAction implements IMessage {
             UUID playerId = c.player.getUniqueID();
             if (MinecraftForge.EVENT_BUS.post(new PartyEvent.Pre.Created(name, playerId))) return false;
             if (!c.selfProvider.createParty(c.player, name)) return false;
-            Party created = PartyManagerData.getInstance().getPartyByPlayer(playerId);
+            Party created = c.selfProvider.getEffectiveParty(playerId);
             if (created != null) {
                 MinecraftForge.EVENT_BUS.post(
                         new PartyEvent.Post.Created(created.getPartyId(), created.getName(), playerId));
@@ -306,7 +306,7 @@ public class PartyAction implements IMessage {
         }
 
         private static boolean invitePlayer(ActionContext c) {
-            Party inviterParty = PartyManagerData.getInstance().getPartyByPlayer(c.player.getUniqueID());
+            Party inviterParty = c.provider.getEffectiveParty(c.player.getUniqueID());
             if (inviterParty != null && !inviterParty.canAddMember()) {
                 notifyPlayer(c.player, ClientNotify.EVENT_PARTY_FULL, "", "");
                 return false;
@@ -317,7 +317,7 @@ public class PartyAction implements IMessage {
             if (srv != null) {
                 EntityPlayerMP target = srv.getPlayerList().getPlayerByUsername(c.stringArg);
                 if (target != null) {
-                    Party party = PartyManagerData.getInstance().getPartyByPlayer(c.player.getUniqueID());
+                    Party party = c.provider.getEffectiveParty(c.player.getUniqueID());
                     String partyName = party != null ? party.getName() :
                             c.provider.getPartyName(c.player.getUniqueID());
                     String resolvedPartyName = partyName != null ? partyName : "";
@@ -352,7 +352,7 @@ public class PartyAction implements IMessage {
                 return false;
             }
 
-            Party joinedParty = PartyManagerData.getInstance().getPartyByPlayer(c.player.getUniqueID());
+            Party joinedParty = c.selfProvider.getEffectiveParty(c.player.getUniqueID());
             if (joinedParty != null) {
                 UUID joinerId = c.player.getUniqueID();
                 MinecraftForge.EVENT_BUS.post(
@@ -367,7 +367,7 @@ public class PartyAction implements IMessage {
         }
 
         private static boolean kickOrLeave(ActionContext c) {
-            Party party = PartyManagerData.getInstance().getPartyByPlayer(c.player.getUniqueID());
+            Party party = c.selfProvider.getEffectiveParty(c.player.getUniqueID());
             boolean isSelf = c.stringArg.equals(c.player.getName());
             Map<UUID, PartyRole> membersCopy = party != null ? new HashMap<>(party.getMembers()) :
                     Collections.emptyMap();
@@ -417,7 +417,7 @@ public class PartyAction implements IMessage {
             String[] parts = c.stringArg.split(":", 2);
             if (parts.length != 2) return false;
 
-            Party actorParty = PartyManagerData.getInstance().getPartyByPlayer(c.player.getUniqueID());
+            Party actorParty = c.selfProvider.getEffectiveParty(c.player.getUniqueID());
             MinecraftServer srv = c.player.getServer();
             EntityPlayerMP target = srv != null ? srv.getPlayerList().getPlayerByUsername(parts[0]) : null;
             String oldRole = (actorParty != null && target != null) ?
@@ -526,7 +526,7 @@ public class PartyAction implements IMessage {
             UUID targetId = party.findMemberByUsername(srv, c.stringArg);
             if (targetId == null) return false;
 
-            party.setRole(targetId, PartyRole.OWNER);
+            PartyManagerData.getInstance().setRole(party.getPartyId(), targetId, PartyRole.OWNER);
             String newOwnerName = c.stringArg;
             String senderName = c.player.getName();
             EntityPlayerMP sender = c.player;
@@ -625,7 +625,7 @@ public class PartyAction implements IMessage {
                 return false;
             }
             UUID joinerId = c.player.getUniqueID();
-            party.addMember(joinerId, PartyRole.MEMBER);
+            pm.addMember(joinId, joinerId, PartyRole.MEMBER);
             MinecraftForge.EVENT_BUS
                     .post(new PartyEvent.Post.MemberJoined(party.getPartyId(), party.getName(), joinerId));
             String joinerName = c.player.getName();
@@ -639,12 +639,11 @@ public class PartyAction implements IMessage {
         // -- Shared helpers -----------------------------------------------------------------
 
         private static Party getOrCreateSelfParty(EntityPlayerMP player, IPartyProvider provider) {
-            PartyManagerData pmData = PartyManagerData.getInstance();
-            Party party = pmData.getPartyByPlayer(player.getUniqueID());
+            Party party = provider.getEffectiveParty(player.getUniqueID());
             if (party == null) {
                 String partyName = provider.getPartyName(player.getUniqueID());
                 if (partyName != null) {
-                    party = pmData.createParty(partyName, player.getUniqueID());
+                    party = PartyManagerData.getInstance().createParty(partyName, player.getUniqueID());
                 }
             }
             return party;

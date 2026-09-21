@@ -12,7 +12,6 @@ import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.common.ModConfig;
 import com.github.gtexpert.blpc.common.chunk.ChunkManagerData;
 import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
-import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
 public class ClaimsCommand extends PlayerCommand {
 
@@ -35,7 +34,7 @@ public class ClaimsCommand extends PlayerCommand {
         int personalForce = (int) chunks.getClaimsByOwner(player.getUniqueID()).stream()
                 .filter(c -> c.isForceLoaded).count();
 
-        Party party = PartyManagerData.getInstance().getPartyByPlayer(player.getUniqueID());
+        Party party = BLPCCommandHelper.resolveParty(player);
         if (party == null) {
             sender.sendMessage(new TextComponentTranslation("command.blpc.claims.personal",
                     personalClaims, personalForce));

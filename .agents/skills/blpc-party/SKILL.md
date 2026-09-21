@@ -10,12 +10,17 @@ user-invocable: false
 
 Party management is abstracted via `IPartyProvider`, allowing transparent switching between self-managed parties and BQu's party system:
 
-- **`api/party/IPartyProvider`** — Full interface: query methods (`areInSameParty`, `getPartyName`, `getPartyMembers`, `getRole`; `default` methods `findByName`, `allPartyNames`, `pendingInvitesFor`) and mutation methods (`createParty`, `disbandParty`, `renameParty`, `invitePlayer`, `acceptInvite`, `kickOrLeave`, `changeRole`, `syncToAll`). Most mutations identify party via player UUID. Exception: `acceptInvite(player, partyId)`.
+- **`api/party/IPartyProvider`** — Full interface: query methods (`areInSameParty`, `getPartyName`, `getPartyMembers`, `getRole`; `default` methods `findByName`, `allPartyNames`, `pendingInvitesFor`, **`getOwner`**, **`getAllParties`**, **`countClaims`**) and mutation methods (`createParty`, `disbandParty`, `renameParty`, `invitePlayer`, `acceptInvite`, `kickOrLeave`, `changeRole`, `syncToAll`). Most mutations identify party via player UUID. Exception: `acceptInvite(player, partyId)`.
+  - **`getOwner(UUID)`** — `default` returning the owner UUID via `getEffectiveParty(uuid).getOwner()`. Automatically works for both `DefaultPartyProvider` and `BQuPartyProvider`.
   - **`getPartyId(UUID)`** / **`getEffectiveParty(UUID)`** — `default` methods returning `null`. `getPartyId` = stable storage key; `getEffectiveParty` = fully-populated `Party` for protection/claims/transit handlers.
+  - **`getAllParties()`** — `default` returning empty list. `DefaultPartyProvider` overrides to return all self-managed parties; `BQuPartyProvider` delegates to `DefaultPartyProvider` fallback.
+  - **`countClaims(UUID)`** — `default` returning 0. `DefaultPartyProvider` and `BQuPartyProvider` override to delegate to `ChunkManagerData.countClaimsForParty(partyId)`.
   - **`isLinkedParty(UUID)`** — `default` returning `false`, used for routing mutating actions between providers.
 - **`PartyProviderRegistry`** — Priority-based registry. `PRIORITY_LOW=-100`, `PRIORITY_DEFAULT=0`, `PRIORITY_HIGH=100`. Higher wins.
-- **`DefaultPartyProvider`** — Self-managed, backed by `PartyManagerData`. Registered at `PRIORITY_DEFAULT`.
+- **`DefaultPartyProvider`** — Self-managed, backed by `PartyManagerData`. Registered at `PRIORITY_DEFAULT`. All mutation methods use `PartyManagerData.addMember()`, `removeMember()`, `setRole()` to maintain the O(1) reverse index.
 - **`BQuPartyProvider`** — BQu implementation, registered at `PRIORITY_HIGH` when BQu present. See `blpc-integration-bqu` for details.
+
+**Performance:** `PartyManagerData.getPartyByPlayer(UUID)` is now **O(1)** thanks to a `playerToPartyId` reverse index maintained on every mutation (`createParty`, `addMember`, `removeMember`, `setRole`, `removeParty`). This eliminates the previous O(n) scan over all parties.
 
 **Offline-member resolution:** `Party.findMemberByName(String)` resolves a member's UUID from their cached display name (`playerNames`, populated from `UsernameCache` — survives logout, unlike the live player list). `Party.findMemberByUsername(MinecraftServer, String)` layers a live-player-list fallback on top for a member not yet name-resolved. `DefaultPartyProvider.kickOrLeave`/`changeRole` and `PartyAction.transferOwnership` all resolve their target through this — so kick, re-rank, and ownership transfer work against offline members, not just online ones.
 

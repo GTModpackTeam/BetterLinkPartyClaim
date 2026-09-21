@@ -82,6 +82,15 @@ The following default methods are provided and may be overridden by implementati
 - **`allPartyNames()`** — returns the names of all known parties. Default: empty list.
 - **`pendingInvitesFor(UUID)`** — returns all parties with a pending invite for the player.
   Default: empty list.
+- **`getOwner(UUID)`** — returns the owner UUID of the player's party, or `null`. Default:
+  delegates to `getEffectiveParty(uuid).getOwner()`. Automatically works for `DefaultPartyProvider`
+  and `BQuPartyProvider` without explicit overrides.
+- **`getAllParties()`** — returns all known `Party` objects, or an empty list.
+  Default: empty list. `DefaultPartyProvider` overrides to return all self-managed parties;
+  `BQuPartyProvider` delegates to `DefaultPartyProvider` fallback.
+- **`countClaims(UUID)`** — returns the number of chunk claims owned by members of the given party.
+  Default: 0. `DefaultPartyProvider` and `BQuPartyProvider` override to delegate to
+  `ChunkManagerData.countClaimsForParty(partyId)`.
 - **`getPartyId(UUID)`** — returns a stable storage key for the player's party (identical for
   every member). Default: `null`.
 - **`getEffectiveParty(UUID)`** — returns the fully-populated `Party` for authoritative
@@ -90,7 +99,33 @@ The following default methods are provided and may be overridden by implementati
 - **`ensureNativePartyWithMembers(UUID, UUID...)`** — ensures a native party exists with the
   given members. Returns `true` if created.
 
-#### Server Party
+#### Performance Note
+
+`PartyManagerData.getPartyByPlayer(UUID)` is **O(1)** thanks to a `playerToPartyId`
+reverse index maintained on every mutation. This is used internally by `IPartyProvider`
+implementations. Addons should use `IPartyProvider` / `PartyQueryUtil` methods
+(instead of `PartyManagerData` directly) to benefit from this performance.
+
+#### Query Utility — `PartyQueryUtil`
+
+Addons should use `PartyQueryUtil` instead of referencing internal packages:
+
+- **`PartyQueryUtil.provider()`** — shorthand for `PartyProviderRegistry.get()`.
+- **`PartyQueryUtil.findByName(name)`** — find a party by display name.
+- **`PartyQueryUtil.allPartyNames()`** — list all party names.
+- **`PartyQueryUtil.pendingInvitesFor(uuid)`** — parties with pending invites.
+- **`PartyQueryUtil.getOwner(uuid)`** — owner UUID of the player's party.
+- **`PartyQueryUtil.resolveName(server, party, uuid)`** — human-readable name for a UUID.
+- **`BLPCCommandHelper.resolveParty(player)`** — resolves a player's party from command context.
+
+### Default methods are additive — existing callers are not affected
+
+All new default methods (`getOwner`, `getAllParties`, `countClaims`) are **pure additions**.
+Existing code that calls `PartyProviderRegistry.get().getEffectiveParty(uuid)` continues to
+work unchanged. Addons that already override the methods they need see no breaking changes;
+addons that don't override get sensible defaults.
+
+### Server Party
 
 When `ModConfig.serverParty.enabled` and `ModConfig.serverParty.freeToJoin` are both enabled,
 `PlayerLoginHandler.onPlayerLogin()` automatically joins new players (who have no native party)
@@ -102,127 +137,7 @@ Configure in `config/blpc/blpc.cfg`:
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `enabled` | boolean | `false` | Auto-create shared party on server start |
-| `name` | String | `"Server"` | Party name |
-| `freeToJoin` | boolean | `true` | Open join (auto-join on login) |
-| `owner` | String | `""` | Owner player name (empty = server-owned) |
-| `moderators` | String[] | `[]` | Moderator player names |
-
-### Party domain types
-
-`api.party` also carries the shared domain model, usable regardless of which provider is
-active:
-
-- **`Party`** — members (`Map<UUID, PartyRole>`), trust settings, allies/enemies,
-  invites, free-to-join/description/color/max-members. `findMemberByName(String)` /
-  `findMemberByUsername(MinecraftServer, String)` resolve a member's UUID from their
-  cached display name (falling back to the live player list) — the same lookup BLPC's
-  own kick/re-rank/transfer-ownership actions use, so a custom `IPartyProvider` can
-  target offline members the same way instead of requiring them online.
-- **`PartyRole`** — `MEMBER < ADMIN < OWNER`, with `canInvite()`, `canKick(target)`,
-  `canDisband()`, `toTrustLevel()`.
-- **`TrustLevel`** — `NONE < ALLY < MEMBER < MODERATOR < OWNER`, checked via
-  `isAtLeast(required)`.
-- **`TrustAction`** — the four protection actions (`BLOCK_EDIT`, `BLOCK_INTERACT`,
-  `ATTACK_ENTITY`, `USE_ITEM`), each with a per-party configurable minimum `TrustLevel`.
-- **`RelationType`** — `MEMBER` / `ALLY` / `ENEMY` / `NONE`, relative to a chunk-owning
-  party.
-
-Each enum has a `fromName(String)` parser (backed by `EnumUtils.parseOrDefault`, see
-[Utility helpers](#utility-helpers)) that falls back to a safe default instead of
-throwing on an unrecognized name — useful when reading data from another mod's wire
-format or config.
-
----
-
-## Querying Party Data
-
-### PartyQueryUtil
-
-Read party data without depending on internal packages or the raw `IPartyProvider`:
-
-```java
-Party party = PartyQueryUtil.findByName("MyCrew");
-List<String> allNames = PartyQueryUtil.allPartyNames();
-List<Party> invites = PartyQueryUtil.pendingInvitesFor(playerUUID);
-
-// Multi-source name resolution for chat/log output: online player → cached party
-// name → global UsernameCache → UUID prefix.
-String displayName = PartyQueryUtil.resolveName(server, party, uuid);
-```
-
-Safe to call from the server thread after world load; calling before
-`FMLServerStartedEvent` or from the client thread returns empty/null results.
-
----
-
-## Party Lifecycle Events
-
-### PartyEvent
-
-Subscribe on `MinecraftForge.EVENT_BUS`. `Pre` variants are `@Cancelable` (veto the
-mutation before it happens); `Post` variants are informational and fire only after a
-successful mutation.
-
-```java
-@SubscribeEvent
-public void onPartyCreated(PartyEvent.Post.Created e) {
-    LOGGER.info("Party '{}' created by {}", e.getPartyName(), e.getOwnerUUID());
-}
-
-@SubscribeEvent
-public void onBeforeDisband(PartyEvent.Pre.Disbanded e) {
-    if (isProtected(e.getPartyId())) e.setCanceled(true);
-}
-```
-
-Event tree:
-
-```
-PartyEvent
-├── Pre  (cancelable, fired before mutation)
-│   ├── Pre.Created   – party about to be created (no partyId yet)
-│   └── Pre.Disbanded – party about to be disbanded
-└── Post (informational, fired after successful mutation)
-    ├── Post.Created
-    ├── Post.Disbanded
-    ├── Post.MemberJoined
-    ├── Post.MemberLeft     – wasKicked() distinguishes kick vs. voluntary leave
-    └── Post.RoleChanged
-```
-
-`Pre.Created#getPartyId()` is `null` (the party doesn't exist yet); every other event
-carries a non-null id.
-
----
-
-## Claim Lifecycle Events
-
-### ChunkModifiedEvent
-
-Same `Pre`/`Post` shape as `PartyEvent`, fired around chunk claim/unclaim/force-load
-changes:
-
-```java
-@SubscribeEvent
-public void onBeforeClaim(ChunkModifiedEvent.Pre.Claim e) {
-    if (isInProtectedRegion(e.getChunkX(), e.getChunkZ())) e.setCanceled(true);
-}
-
-@SubscribeEvent
-public void onClaimed(ChunkModifiedEvent.Post.Claim e) {
-    LOGGER.info("Chunk ({}, {}) claimed by {}", e.getChunkX(), e.getChunkZ(), e.getOwnerUUID());
-}
-```
-
-`Pre.Claim` / `Pre.Unclaim` / `Pre.ForceLoad` / `Pre.Unforce` are `@Cancelable`;
-`Post.Claim` / `Post.Unclaim` / `Post.ForceLoad` / `Post.Unforce` fire after success.
-
----
-
-## Addons Hub — Settings Panels
-
-### AddonRegistry (Recommended)
+| `enabled` | boolean | `false` | Auto-create sha…4117 chars truncated…gistry (Recommended)
 
 Third-party integrations MUST use `AddonRegistry` — a `@SideOnly(CLIENT)` façade with
 `modId` deduplication that replaces raw `IntegrationPanelRegistry` calls. Requires a

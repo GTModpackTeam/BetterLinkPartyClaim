@@ -11,7 +11,6 @@ import net.minecraft.util.text.TextFormatting;
 import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.api.party.Party;
-import com.github.gtexpert.blpc.common.party.PartyManagerData;
 
 public class MeCommand extends PlayerCommand {
 
@@ -29,7 +28,7 @@ public class MeCommand extends PlayerCommand {
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender,
                         String @NotNull [] args) throws CommandException {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        Party party = PartyManagerData.getInstance().getPartyByPlayer(player.getUniqueID());
+        Party party = BLPCCommandHelper.resolveParty(player);
         if (party == null) {
             sender.sendMessage(new TextComponentTranslation("command.blpc.me.no_party"));
             return;

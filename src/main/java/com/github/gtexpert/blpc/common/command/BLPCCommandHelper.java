@@ -60,6 +60,15 @@ public final class BLPCCommandHelper {
     }
 
     /**
+     * Returns the party for the given player, or {@code null} if not in a party.
+     * Convenience for command implementations to avoid direct
+     * {@code PartyQueryUtil.provider().getEffectiveParty()} calls.
+     */
+    public static Party resolveParty(EntityPlayerMP player) {
+        return PartyQueryUtil.provider().getEffectiveParty(player.getUniqueID());
+    }
+
+    /**
      * Returns the provider that should handle a player-initiated mutation. Players in a linked
      * BQu party (checked live via {@link IPartyProvider#isLinkedParty}, not a per-player flag —
      * see {@code PartyAction.Handler#dispatch}) use the registered BQu provider; others use the

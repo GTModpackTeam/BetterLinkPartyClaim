@@ -25,7 +25,6 @@ import com.github.gtexpert.blpc.common.chunk.ClaimedChunkData;
 import com.github.gtexpert.blpc.common.chunk.ClientClaimCache;
 import com.github.gtexpert.blpc.common.chunk.TicketManager;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
-import com.github.gtexpert.blpc.common.party.PartyManagerData;
 import com.github.gtexpert.blpc.common.waypoint.ClientWaypointCache;
 
 public class CoreEventHandler {
@@ -34,7 +33,7 @@ public class CoreEventHandler {
     public static void onWorldSave(WorldEvent.Save event) {
         if (!event.getWorld().isRemote && event.getWorld().provider.getDimension() == 0) {
             BLPCSaveHandler.INSTANCE.saveIfDirty();
-            for (Party party : PartyManagerData.getInstance().getAllParties()) {
+            for (Party party : PartyProviderRegistry.get().getAllParties()) {
                 party.cleanExpiredInvites();
             }
         }
