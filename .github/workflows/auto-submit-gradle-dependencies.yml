@@ -1,4 +1,4 @@
-name: Automatic Dependency Submission (Gradle with Java 25)
+name: Automatic Dependency Submission
 
 on:
   push:
