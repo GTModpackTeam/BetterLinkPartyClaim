@@ -1,0 +1,17 @@
+name: Automatic Dependency Submission (Gradle with Java 25)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: auto-submit-gradle-dependencies-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  submit-gradle:
+    uses: gradle/actions/auto-submit-gradle-dependencies@v6
+    with:
+      java-version: 25
