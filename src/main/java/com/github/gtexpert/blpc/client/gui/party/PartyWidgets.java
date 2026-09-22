@@ -70,14 +70,7 @@ public final class PartyWidgets {
 
     private PartyWidgets() {}
 
-    /**
-     * Per-instance unique panel name suffix. MUI's {@code PanelManager.panelHandlerMap}
-     * keys on {@link ModularPanel#getName()} and never removes entries; a fresh
-     * {@code IPanelHandler.simple(...)} that opens the same panel name silently
-     * redirects to the stale first handler ("Using existing panel handler!" in
-     * MUI log). Appending a monotonic suffix to every rebuilt panel/dialog name
-     * makes each instance unique so the lookup hits the current handler.
-     */
+    /** MUI reuses stale panel handlers by name — append a monotonic suffix each time. */
     public static String uniquePanelId(String base) {
         return base + "#" + System.nanoTime();
     }
@@ -489,21 +482,7 @@ public final class PartyWidgets {
         }
     }
 
-    /**
-     * ModularUI-compatible widget wrapper around a {@link MemberEntry}.
-     * Returns a ready-to-use {@link Flow} that can be added directly to
-     * {@link ListWidget} instances — solving the
-     * {@code ListWidget<MemberEntry>} type constraint when {@code MemberEntry}
-     * itself is not a widget.
-     *
-     * <p>
-     * Addon developers can use this together with a plain
-     * {@code ListWidget<IWidget>} instead of the internal cast that
-     * {@link LiveSearchableList} performs.
-     *
-     * @param entry member data
-     * @return a ready-to-use widget with face icon and formatted label
-     */
+    /** ModularUI widget wrapper around a {@link MemberEntry} (face icon + label). */
     public static Flow memberEntryWidget(MemberEntry entry) {
         return memberEntryWidget(entry, BLPCColors.text());
     }
@@ -527,22 +506,7 @@ public final class PartyWidgets {
 
     // ── Common MemberPanel construction ──
 
-    /**
-     * Builds a single-page member panel with header, searchable list, and
-     * sync refresh. The caller provides the row factory (custom per-panel)
-     * and the member collector.
-     *
-     * <p>
-     * Shared by {@code MembersPanel}, {@code ModeratorsPanel}, and
-     * {@code TransferOwnerPanel} — eliminating duplicated panel scaffold.
-     *
-     * @param panelId         unique panel name suffix (use {@link #uniquePanelId})
-     * @param titleKey        i18n title key
-     * @param rowFactory      converts a {@link MemberEntry} to an {@link IWidget} row
-     * @param memberCollector fetches the member list from a {@link Party}
-     * @param partyId         party identifier for refresh listener
-     * @param check           predicate to decide if the panel should stay open on refresh
-     */
+    /** Builds a searchable member panel with header, list, and sync refresh. */
     public static ModularPanel buildMemberPanel(String panelId, String titleKey,
                                                 Function<MemberEntry, IWidget> rowFactory,
                                                 java.util.function.Function<Party, List<MemberEntry>> memberCollector,

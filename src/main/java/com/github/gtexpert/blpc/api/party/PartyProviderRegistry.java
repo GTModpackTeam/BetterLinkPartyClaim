@@ -17,15 +17,9 @@ import org.apache.logging.log4j.Logger;
  * Registry for the active {@link IPartyProvider}.
  * <p>
  * {@code CoreModule} registers {@code DefaultPartyProvider} at {@link #PRIORITY_DEFAULT}.
- * {@code BQuModule} replaces it with {@code BQuPartyProvider} at {@link #PRIORITY_HIGH} when
- * BetterQuesting is present. Addons that need to override the provider should use
- * {@link #PRIORITY_HIGH}; addons that want a fallback-only provider should use
- * {@link #PRIORITY_LOW}.
- * <p>
- * A lower-priority registration is silently ignored after a higher-priority one is set.
- * Registrations at equal priority log a warning and win (last-write-wins at tie).
- * <p>
- * Also provides an optional native screen opener for BQu's party management UI.
+ * {@code BQuModule} replaces it with {@code BQuPartyProvider} at {@link #PRIORITY_HIGH}
+ * when BetterQuesting is present. Use {@link #PRIORITY_HIGH} to take over, or
+ * {@link #PRIORITY_LOW} for a fallback-only provider.
  */
 public class PartyProviderRegistry {
 
@@ -37,59 +31,59 @@ public class PartyProviderRegistry {
     private static final IPartyProvider NO_OP = new IPartyProvider() {
 
         @Override
-        public boolean areInSameParty(UUID playerA, UUID playerB) {
+        public boolean areInSameParty(UUID pA, UUID pB) {
             return false;
         }
 
         @Override
         @Nullable
-        public String getPartyName(UUID playerUUID) {
+        public String getPartyName(UUID u) {
             return null;
         }
 
         @Override
-        public List<UUID> getPartyMembers(UUID playerUUID) {
+        public List<UUID> getPartyMembers(UUID u) {
             return Collections.emptyList();
         }
 
         @Override
         @Nullable
-        public String getRole(UUID playerUUID) {
+        public String getRole(UUID u) {
             return null;
         }
 
         @Override
-        public boolean createParty(EntityPlayerMP player, String name) {
+        public boolean createParty(EntityPlayerMP p, String n) {
             return false;
         }
 
         @Override
-        public boolean disbandParty(EntityPlayerMP player) {
+        public boolean disbandParty(EntityPlayerMP p) {
             return false;
         }
 
         @Override
-        public boolean renameParty(EntityPlayerMP player, String newName) {
+        public boolean renameParty(EntityPlayerMP p, String n) {
             return false;
         }
 
         @Override
-        public boolean invitePlayer(EntityPlayerMP inviter, String targetUsername) {
+        public boolean invitePlayer(EntityPlayerMP i, String t) {
             return false;
         }
 
         @Override
-        public boolean acceptInvite(EntityPlayerMP player, UUID partyId) {
+        public boolean acceptInvite(EntityPlayerMP p, UUID id) {
             return false;
         }
 
         @Override
-        public boolean kickOrLeave(EntityPlayerMP actor, String targetUsername) {
+        public boolean kickOrLeave(EntityPlayerMP a, String t) {
             return false;
         }
 
         @Override
-        public boolean changeRole(EntityPlayerMP actor, String targetUsername, String newRole) {
+        public boolean changeRole(EntityPlayerMP a, String t, String r) {
             return false;
         }
 
@@ -108,21 +102,14 @@ public class PartyProviderRegistry {
     private static volatile int registeredPriority = Integer.MIN_VALUE;
     private static volatile Runnable nativePartyScreenOpener;
 
-    /**
-     * Registers the active party provider at {@link #PRIORITY_DEFAULT}.
-     * Calls {@link #register(IPartyProvider, int)} — see that method for priority semantics.
-     */
+    /** Registers the provider at {@link #PRIORITY_DEFAULT}. */
     public static void register(IPartyProvider newProvider) {
         register(newProvider, PRIORITY_DEFAULT);
     }
 
     /**
-     * Registers a party provider at the given priority.
-     * <ul>
-     * <li>Higher priority wins over a registered lower-priority provider.</li>
-     * <li>Equal priority logs a warning and accepts the new provider (last-write-wins).</li>
-     * <li>Lower priority than the currently registered one is silently ignored.</li>
-     * </ul>
+     * Registers at the given priority. Higher wins; equal priority logs a warning (last-write-wins);
+     * lower is silently ignored.
      */
     public static synchronized void register(IPartyProvider newProvider, int priority) {
         if (newProvider == null) {
@@ -130,15 +117,13 @@ public class PartyProviderRegistry {
             return;
         }
         if (provider != NO_OP && priority < registeredPriority) {
-            LOG.warn(
-                    "Ignoring {} (priority {}) — {} is already registered at higher priority {}",
+            LOG.warn("Ignoring {} (priority {}) — {} is already registered at higher priority {}",
                     newProvider.getClass().getSimpleName(), priority,
                     provider.getClass().getSimpleName(), registeredPriority);
             return;
         }
         if (provider != NO_OP && priority == registeredPriority) {
-            LOG.warn(
-                    "{} (priority {}) is replacing {} at the same priority — check registration order",
+            LOG.warn("{} (priority {}) is replacing {} at the same priority",
                     newProvider.getClass().getSimpleName(), priority,
                     provider.getClass().getSimpleName());
         }
@@ -146,22 +131,16 @@ public class PartyProviderRegistry {
         registeredPriority = priority;
     }
 
-    /**
-     * Clears the registered provider, reverting {@link #get()} to the internal no-op
-     * fallback and {@link #getRegisteredPriority()} to {@code Integer.MIN_VALUE}. Mainly
-     * useful for tests and hot-reload scenarios.
-     */
+    /** Clears the registered provider, reverting to the no-op fallback. */
     public static synchronized void unregister() {
         provider = NO_OP;
         registeredPriority = Integer.MIN_VALUE;
     }
 
-    /** Registers a runnable that opens the native party management screen (e.g. BQu's party UI). */
     public static void registerNativeScreenOpener(Runnable opener) {
         nativePartyScreenOpener = opener;
     }
 
-    /** Clears the registered native party screen opener, if any. */
     public static void unregisterNativeScreenOpener() {
         nativePartyScreenOpener = null;
     }
@@ -172,30 +151,22 @@ public class PartyProviderRegistry {
     }
 
     /**
-     * Returns the currently registered party provider wrapped in an {@link Optional}.
-     * <p>
-     * Convenience for addon authors — eliminates the need to null-check against
-     * the registry's no-op fallback. Returns an empty optional when no provider
-     * has been registered yet.
+     * Returns the provider wrapped in an {@link Optional}.
+     * Empty when no provider has been registered (still on the no-op fallback).
      */
     public static Optional<IPartyProvider> getSafe() {
         return Optional.ofNullable(provider);
     }
 
-    /**
-     * The priority the current provider was registered at, or {@code Integer.MIN_VALUE}
-     * if none has been registered (still on the no-op fallback).
-     */
+    /** Returns the priority the current provider was registered at. {@code Integer.MIN_VALUE} if none. */
     public static int getRegisteredPriority() {
         return registeredPriority;
     }
 
-    /** Returns true if a native party screen opener has been registered. */
     public static boolean hasNativeScreen() {
         return nativePartyScreenOpener != null;
     }
 
-    /** Opens the native party screen if one has been registered; otherwise a no-op. */
     public static void openNativeScreen() {
         if (nativePartyScreenOpener != null) {
             nativePartyScreenOpener.run();
