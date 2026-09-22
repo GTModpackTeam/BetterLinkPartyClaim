@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -39,6 +40,7 @@ import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.api.party.PartyRole;
 import com.github.gtexpert.blpc.client.gui.BLPCColors;
 import com.github.gtexpert.blpc.client.gui.PlayerFaceDrawable;
+import com.github.gtexpert.blpc.client.gui.party.widget.LiveSearchableList;
 import com.github.gtexpert.blpc.common.network.ModNetwork;
 import com.github.gtexpert.blpc.common.party.ClientPartyCache;
 
@@ -325,6 +327,19 @@ public final class PartyWidgets {
         return name + " [" + roleStr + "]";
     }
 
+    /**
+     * Creates a face-icon + label row {@link Flow} from a {@link MemberEntry}.
+     * Convenience for use in {@link ListWidget}s or other containers that require
+     * {@code IWidget} children, avoiding direct field access from addon code.
+     *
+     * @param entry member data (role may be {@code null} for invite candidates)
+     * @param color text color (e.g. {@link BLPCColors#text()})
+     * @return a ready-to-use {@link Flow} widget with face icon and formatted label
+     */
+    public static Flow memberRow(MemberEntry entry, int color) {
+        return faceRow(entry.uuid, rowLabel(IKey.str(formatMemberLabel(entry.name, entry.role)), color));
+    }
+
     /** Face-icon + label as a {@link Flow#row}; the label is supplied pre-styled. */
     public static Flow faceRow(UUID uuid, IKey label) {
         return Flow.row()
@@ -449,10 +464,10 @@ public final class PartyWidgets {
     /** Shared row data for member/player lists (role is {@code null} for invite candidates). */
     public static final class MemberEntry {
 
-        final UUID uuid;
-        final String name;
+        public final UUID uuid;
+        public final String name;
         @Nullable
-        final PartyRole role;
+        public final PartyRole role;
 
         public MemberEntry(UUID uuid, String name, @Nullable PartyRole role) {
             this.uuid = uuid;
@@ -472,5 +487,86 @@ public final class PartyWidgets {
         public PartyRole role() {
             return role;
         }
+    }
+
+    /**
+     * ModularUI-compatible widget wrapper around a {@link MemberEntry}.
+     * Returns a ready-to-use {@link Flow} that can be added directly to
+     * {@link ListWidget} instances — solving the
+     * {@code ListWidget<MemberEntry>} type constraint when {@code MemberEntry}
+     * itself is not a widget.
+     *
+     * <p>
+     * Addon developers can use this together with a plain
+     * {@code ListWidget<IWidget>} instead of the internal cast that
+     * {@link LiveSearchableList} performs.
+     *
+     * @param entry member data
+     * @return a ready-to-use widget with face icon and formatted label
+     */
+    public static Flow memberEntryWidget(MemberEntry entry) {
+        return memberEntryWidget(entry, BLPCColors.text());
+    }
+
+    /**
+     * Variant with a custom text color.
+     *
+     * @param entry member data
+     * @param color text color (e.g. {@link BLPCColors#text()})
+     * @return a ready-to-use widget with face icon and formatted label
+     */
+    public static Flow memberEntryWidget(MemberEntry entry, int color) {
+        return Flow.row()
+                .widthRel(1f).heightRel(1f)
+                .padding(ROW_INDENT, 0, 0, 0)
+                .childPadding(ROW_INDENT)
+                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+                .child(new PlayerFaceDrawable(entry.uuid).asWidget().size(FACE_SIZE, FACE_SIZE))
+                .child(rowLabel(IKey.str(formatMemberLabel(entry.name, entry.role)), color).asWidget().expanded());
+    }
+
+    // ── Common MemberPanel construction ──
+
+    /**
+     * Builds a single-page member panel with header, searchable list, and
+     * sync refresh. The caller provides the row factory (custom per-panel)
+     * and the member collector.
+     *
+     * <p>
+     * Shared by {@code MembersPanel}, {@code ModeratorsPanel}, and
+     * {@code TransferOwnerPanel} — eliminating duplicated panel scaffold.
+     *
+     * @param panelId         unique panel name suffix (use {@link #uniquePanelId})
+     * @param titleKey        i18n title key
+     * @param rowFactory      converts a {@link MemberEntry} to an {@link IWidget} row
+     * @param memberCollector fetches the member list from a {@link Party}
+     * @param partyId         party identifier for refresh listener
+     * @param check           predicate to decide if the panel should stay open on refresh
+     */
+    public static ModularPanel buildMemberPanel(String panelId, String titleKey,
+                                                Function<MemberEntry, IWidget> rowFactory,
+                                                java.util.function.Function<Party, List<MemberEntry>> memberCollector,
+                                                UUID partyId, java.util.function.Predicate<Party> check) {
+        UUID playerId = Minecraft.getMinecraft().player.getUniqueID();
+        ModularPanel panel = new ModularPanel(uniquePanelId(panelId));
+        panel.size(LARGE_W, LARGE_H);
+        addHeader(panel, titleKey);
+
+        LiveSearchableList<MemberEntry> list = new LiveSearchableList<>(
+                rowFactory, MemberEntry::name, "blpc.party.no_players_online");
+        panel.child(fillBelowHeader(list.buildContainer()));
+
+        list.rebuild(memberCollector.apply(ClientPartyCache.getParty(partyId)));
+
+        addSyncRefreshListener(panel, () -> {
+            Party fresh = ClientPartyCache.getParty(partyId);
+            if (fresh == null || !check.test(fresh)) {
+                closeIfTopMost(panel);
+                return;
+            }
+            list.rebuild(memberCollector.apply(fresh));
+        });
+
+        return panel;
     }
 }

@@ -11,6 +11,7 @@ import net.minecraftforge.common.UsernameCache;
 import com.github.gtexpert.blpc.api.party.IPartyProvider;
 import com.github.gtexpert.blpc.api.party.Party;
 import com.github.gtexpert.blpc.api.party.PartyProviderRegistry;
+import com.github.gtexpert.blpc.api.party.PartyRole;
 
 /**
  * Public query utilities for addon authors — thin delegation layer over the active
@@ -81,5 +82,19 @@ public final class PartyQueryUtil {
     @Nullable
     public static UUID getOwner(UUID playerUUID) {
         return PartyProviderRegistry.get().getOwner(playerUUID);
+    }
+
+    /**
+     * Returns whether the given player has OWNER or ADMIN (moderator-level) role
+     * in their party. Shorthand for the repeated pattern
+     * {@code role == PartyRole.OWNER || role == PartyRole.ADMIN}.
+     *
+     * @param playerUUID the player to check
+     * @return {@code true} if the player is OWNER or ADMIN in their party
+     */
+    public static boolean isOwnerOrMod(UUID playerUUID) {
+        var provider = PartyProviderRegistry.get();
+        var role = PartyRole.fromName(provider.getRole(playerUUID));
+        return role == PartyRole.OWNER || role == PartyRole.ADMIN;
     }
 }

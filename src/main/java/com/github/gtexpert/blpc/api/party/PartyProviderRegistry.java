@@ -2,6 +2,7 @@ package com.github.gtexpert.blpc.api.party;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -168,6 +169,17 @@ public class PartyProviderRegistry {
     /** Returns the currently registered party provider. */
     public static IPartyProvider get() {
         return provider;
+    }
+
+    /**
+     * Returns the currently registered party provider wrapped in an {@link Optional}.
+     * <p>
+     * Convenience for addon authors — eliminates the need to null-check against
+     * the registry's no-op fallback. Returns an empty optional when no provider
+     * has been registered yet.
+     */
+    public static Optional<IPartyProvider> getSafe() {
+        return Optional.ofNullable(provider);
     }
 
     /**
