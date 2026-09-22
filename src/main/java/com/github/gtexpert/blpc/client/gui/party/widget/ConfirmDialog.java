@@ -1,5 +1,6 @@
 package com.github.gtexpert.blpc.client.gui.party.widget;
 
+import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -21,14 +22,22 @@ import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
  * Usage:
  *
  * <pre>
- * {@code
- * ConfirmDialog.builder("blpc.party.dialog.disband")
- *     .title("blpc.party.disband_confirm_title")
- *     .message("blpc.party.disband_confirm_msg")
- *     .yesLabel("blpc.party.disband_yes")
- *     .noLabel("blpc.party.disband_no")
- *     .onConfirm(() -> { ... })
- *     .build(parentPanel);
+ * 
+ * {
+ *     &#64;code
+ *     // Direct use: build returns Dialog&lt;Boolean&gt; which is an IPanelHandler
+ *     Dialog<Boolean> dialog = ConfirmDialog.builder(panelId)
+ *             .title("my.addon.confirm_title")
+ *             .message("my.addon.confirm_msg")
+ *             .onConfirm(() -> doSomething())
+ *             .build(parentPanel);
+ *
+ *     // Open via IPanelHandler (e.g. button click)
+ *     panel.child(PartyWidgets.dialogButton(IKey.lang("my.addon.confirm"),
+ *             IPanelHandler.simple(parentPanel, (pp, p) -> dialog, true)));
+ *
+ *     // Open immediately
+ *     dialog.openPanel();
  * }
  * </pre>
  */
@@ -109,12 +118,12 @@ public final class ConfirmDialog {
          * Builds the dialog.
          *
          * @param parentPanel the parent panel (closed on confirm if {@link #closeParent} is true)
+         * @return a {@link Dialog} that can be opened via {@link Dialog#openPanel()} or
+         *         passed to {@link IPanelHandler}
          */
         public Dialog<Boolean> build(ModularPanel parentPanel) {
             Runnable confirmAction = this.onConfirm;
             boolean shouldCloseParent = this.closeParentOnConfirm;
-            String id = this.panelId;
-            // Confirm/cancel logging is handled by DialogMixin
             Dialog<Boolean> dialog = new Dialog<>(panelId, result -> {
                 if (Boolean.TRUE.equals(result)) {
                     confirmAction.run();
@@ -127,7 +136,7 @@ public final class ConfirmDialog {
             dialog.setCloseOnOutOfBoundsClick(true);
             dialog.size(width, height);
 
-            // Title + message in a column with automatic spacing
+            // Title + message
             dialog.child(PartyWidgets.dialogHeader(titleKey, messageKey));
 
             // Yes/No buttons pinned to the bottom

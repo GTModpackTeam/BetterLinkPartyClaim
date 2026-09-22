@@ -7,35 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
-## [0.17.0]
+## [0.18.0]
 
 ### Added
 
-- **`IPartyProvider` default methods: `getOwner`, `getAllParties`, `countClaims`**
-    - `getOwner(UUID)` — returns the owner UUID of the player's party via `getEffectiveParty(uuid).getOwner()`. Automatically works for both `DefaultPartyProvider` and `BQuPartyProvider`.
-    - `getAllParties()` — returns all known `Party` objects. `DefaultPartyProvider` overrides to return self-managed parties; `BQuPartyProvider` delegates to fallback.
-    - `countClaims(UUID)` — returns chunk claims for party members. Both providers override to delegate to `ChunkManagerData.countClaimsForParty(partyId)`.
-
-- **`PartyQueryUtil.getOwner(UUID)`** — static convenience method for addon authors to query party owner UUIDs.
-
-- **`PartyManagerData.addMember()`, `removeMember()`, `setRole()`** — wrapper methods that maintain the O(1) reverse index on mutation.
-
-- **`BLPCCommandHelper.resolveParty(EntityPlayerMP)`** — command-layer helper to resolve a player's party, reducing `PartyManagerData.getInstance().getPartyByPlayer()` direct calls in commands.
-
-- **`PartyWidgets.collectSortedMembers(party, exclude, roleFilter)`** — `ModeratorsPanel` uses `roleFilter` to exclude `PartyRole.OWNER` from the list.
+- **Moderators screen now excludes the Party Owner**
+    - The Moderators tab no longer shows the owner in the member list, making it easier to promote new moderators without accidentally selecting the current owner.
+    - Addon developers can now build searchable member panels in a single call with `PartyWidgets.buildMemberPanel()`.
 
 ### Changed
 
-- **`PartyManagerData.getPartyByPlayer()` is now O(1)** — replaced O(n) stream scan with a `playerToPartyId` reverse index maintained on every mutation.
-- **All `DefaultPartyProvider` mutation methods** now use `PartyManagerData.addMember()`/`removeMember()`/`setRole()` instead of direct `Party.addMember()`/`Party.removeMember()`.
-- **All `DefaultPartyProvider` query methods** use `getEffectiveParty()` as the shared source of truth.
-- **`PartyAction.Handler`** — `createParty`, `invitePlayer`, `kickOrLeave`, `acceptInvite` post-event party lookups now use `c.selfProvider.getEffectiveParty()` instead of `PartyManagerData.getInstance().getPartyByPlayer()`.
-- **`PlayerLoginHandler`** — offline UUID merge and server party auto-join use `PartyManagerData.addMember()`/`removeMember()` to maintain the reverse index.
-- **`CoreModule`** — server party creation uses `PartyManagerData.addMember()`.
-- **`ListCommand`** — uses `PartyQueryUtil.provider().getAllParties()` instead of `PartyManagerData.getInstance().getAllParties()`.
-- **`CoreEventHandler`** — `onWorldSave` uses `PartyProviderRegistry.get().getAllParties()` instead of `PartyManagerData.getInstance().getAllParties()`.
-- **Commands** — `MeCommand`, `LeaveCommand`, `AcceptCommand`, `ClaimsCommand`, `KickCommand`, `MoveOwnerCommand` use `BLPCCommandHelper.resolveParty()` or `PartyManagerData` wrapper methods.
-- **`ModeratorsPanel`** — uses `PartyWidgets.collectSortedMembers(party, null, r -> r != PartyRole.OWNER)` to filter out OWNER roles.
+- **Significantly improved performance when joining/leaving parties and looking up members**
+    - Looking up which party you belong to is now much faster, especially in worlds with many parties.
+    - Joining a party via invite and the server-party auto-join feature are more reliable and maintain consistent member data.
+
+[0.18.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.18.0
+
+* * *
+
+## [0.17.0]
+
+### Fixed
+
+- **Moderators screen now shows the full member list correctly**
+    - The Moderators tab no longer accidentally included the party owner when promoting members.
+    - The list is now properly filtered to show only members who can be promoted (everyone except the owner).
 
 [0.17.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.17.0
 

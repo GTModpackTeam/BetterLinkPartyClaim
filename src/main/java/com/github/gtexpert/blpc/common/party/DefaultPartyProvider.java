@@ -117,6 +117,8 @@ public class DefaultPartyProvider implements IPartyProvider {
 
     // --- Mutation (all delegate to PartyManagerData for reverse-index consistency) ---
 
+    // --- Mutation ---
+
     @Override
     public boolean createParty(EntityPlayerMP player, String name) {
         var data = PartyManagerData.getInstance();
@@ -230,6 +232,8 @@ public class DefaultPartyProvider implements IPartyProvider {
         data.setRole(party.getPartyId(), targetId, role);
         return true;
     }
+
+    // --- Sync ---
 
     // --- Sync ---
 

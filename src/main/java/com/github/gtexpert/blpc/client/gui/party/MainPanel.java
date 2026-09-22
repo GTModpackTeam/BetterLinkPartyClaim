@@ -7,6 +7,7 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.ScrollingTextWidget;
 
@@ -77,18 +78,8 @@ public class MainPanel {
         rebuildMenu(menuList, panel, partyId, playerId, nav);
 
         IPanelHandler disbandHandler = IPanelHandler.simple(
-                panel, (pp, player) -> ConfirmDialog.builder(PartyWidgets.uniquePanelId("blpc.party.dialog.disband"))
-                        .title("blpc.party.disband_confirm_title")
-                        .message("blpc.party.disband_confirm_msg")
-                        .yesLabel("blpc.party.disband_yes")
-                        .noLabel("blpc.party.disband_no")
-                        .closeParent(false)
-                        .onConfirm(() -> {
-                            ModNetwork.INSTANCE.sendToServer(PartyAction.disband());
-                            panel.closeIfOpen();
-                            PartyWidgets.clearLocalPartyData();
-                        })
-                        .build(panel),
+                panel,
+                (pp, player) -> buildConfirmDialog(PartyWidgets.uniquePanelId("blpc.party.dialog.disband"), panel),
                 true);
         panel.child(PartyWidgets.dialogButton(IKey.lang("blpc.party.disband"), disbandHandler)
                 .size(50, 16).pos(PartyWidgets.STANDARD_W - 58, PartyWidgets.STANDARD_H - 24)
@@ -103,6 +94,21 @@ public class MainPanel {
         });
 
         return panel;
+    }
+
+    private static Dialog<Boolean> buildConfirmDialog(String panelId, ModularPanel parentPanel) {
+        return ConfirmDialog.builder(panelId)
+                .title("blpc.party.disband_confirm_title")
+                .message("blpc.party.disband_confirm_msg")
+                .yesLabel("blpc.party.disband_yes")
+                .noLabel("blpc.party.disband_no")
+                .closeParent(false)
+                .onConfirm(() -> {
+                    ModNetwork.INSTANCE.sendToServer(PartyAction.disband());
+                    parentPanel.closeIfOpen();
+                    PartyWidgets.clearLocalPartyData();
+                })
+                .build(parentPanel);
     }
 
     private static boolean isOwner(UUID partyId, UUID playerId) {
