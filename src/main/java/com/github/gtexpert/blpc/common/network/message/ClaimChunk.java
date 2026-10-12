@@ -254,7 +254,7 @@ public class ClaimChunk implements IMessage {
         }
 
         private String resolveTeamName(UUID playerId) {
-            String name = PartyProviderRegistry.get().getPartyName(playerId);
+            var name = PartyProviderRegistry.get().getPartyName(playerId);
             return name != null ? name : "";
         }
 
