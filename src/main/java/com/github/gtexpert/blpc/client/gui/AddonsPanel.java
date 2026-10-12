@@ -39,8 +39,8 @@ public final class AddonsPanel {
         list.crossAxisAlignment(Alignment.CrossAxis.START);
 
         List<IntegrationPanelRegistry.Entry> entries = IntegrationPanelRegistry.available();
-        var widgets = new ArrayList<IWidget>();
-        var searchNames = new ArrayList<String>();
+        ArrayList<IWidget> widgets = new ArrayList<IWidget>();
+        ArrayList<String> searchNames = new ArrayList<String>();
 
         for (IntegrationPanelRegistry.Entry entry : entries) {
             ButtonWidget<?> btn = buildEntryButton(panel, entry, playerId);

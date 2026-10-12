@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.MobEffects;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -229,7 +230,7 @@ public class ChunkTransitHandler {
     }
 
     private static EntityPlayerMP getOnlinePlayer(UUID uuid) {
-        var server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         return server != null ? server.getPlayerList().getPlayerByUUID(uuid) : null;
     }
 

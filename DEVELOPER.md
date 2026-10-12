@@ -115,6 +115,14 @@ Addons should use `PartyQueryUtil` instead of referencing internal packages:
 - **`PartyQueryUtil.allPartyNames()`** — list all party names.
 - **`PartyQueryUtil.pendingInvitesFor(uuid)`** — parties with pending invites.
 - **`PartyQueryUtil.getOwner(uuid)`** — owner UUID of the player's party.
+- **`PartyQueryUtil.getPartyId(uuid)`** — stable storage-key id for the player's party; may
+  also be `null` when the active provider does not implement the query.
+- **`PartyQueryUtil.getParty(uuid)`** — the player's fully-populated `Party`, or `null`
+  (or when the active provider does not implement the query).
+- **`PartyQueryUtil.isInParty(uuid)`** — whether the player currently has a party.
+- **`PartyQueryUtil.getPartyMembers(uuid)`** — member UUIDs of the player's party (player-keyed,
+  like every BLPC party lookup except `IPartyProvider.acceptInvite`).
+- **`PartyQueryUtil.getRole(uuid)`** — the player's `PartyRole`, or `null` if they have none.
 - **`PartyQueryUtil.resolveName(server, party, uuid)`** — human-readable name for a UUID.
 - **`BLPCCommandHelper.resolveParty(player)`** — resolves a player's party from command context.
 

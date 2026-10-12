@@ -57,7 +57,7 @@ public class PartyManagerData {
      * is visible to queries (i.e. before {@code parties.put()}).
      */
     private void registerMembers(Party party, Map<UUID, PartyRole> members) {
-        for (var entry : members.entrySet()) {
+        for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
             playerToPartyId.put(entry.getKey(), party.getPartyId());
         }
     }
@@ -69,7 +69,7 @@ public class PartyManagerData {
 
     /** Removes all members of a party from the reverse index. */
     private void unregisterAllMembers(Party party) {
-        for (var entry : party.getMembers().entrySet()) {
+        for (Map.Entry<UUID, PartyRole> entry : party.getMembers().entrySet()) {
             playerToPartyId.remove(entry.getKey());
         }
     }
@@ -81,7 +81,7 @@ public class PartyManagerData {
      */
     @Nullable
     public Party addMember(UUID partyId, UUID playerUUID, PartyRole role) {
-        var party = parties.get(partyId);
+        Party party = parties.get(partyId);
         if (party == null) return null;
         party.addMember(playerUUID, role);
         playerToPartyId.put(playerUUID, partyId);
@@ -95,9 +95,9 @@ public class PartyManagerData {
      */
     @Nullable
     public PartyRole removeMember(UUID partyId, UUID playerUUID) {
-        var party = parties.get(partyId);
+        Party party = parties.get(partyId);
         if (party == null) return null;
-        var role = party.getRole(playerUUID);
+        PartyRole role = party.getRole(playerUUID);
         party.removeMember(playerUUID);
         playerToPartyId.remove(playerUUID);
         return role;
@@ -110,7 +110,7 @@ public class PartyManagerData {
      */
     @Nullable
     public Party setRole(UUID partyId, UUID playerUUID, PartyRole role) {
-        var party = parties.get(partyId);
+        Party party = parties.get(partyId);
         if (party == null) return null;
         party.setRole(playerUUID, role);
         return party;
@@ -147,7 +147,7 @@ public class PartyManagerData {
     }
 
     public void removeParty(UUID partyId) {
-        var party = parties.get(partyId);
+        Party party = parties.get(partyId);
         if (party != null) {
             unregisterAllMembers(party);
         }
@@ -170,7 +170,7 @@ public class PartyManagerData {
      */
     @Nullable
     public Party getPartyByPlayer(UUID playerUUID) {
-        var partyId = playerToPartyId.get(playerUUID);
+        UUID partyId = playerToPartyId.get(playerUUID);
         return partyId != null ? parties.get(partyId) : null;
     }
 
@@ -209,7 +209,7 @@ public class PartyManagerData {
             bquLinkedPlayers.add(linkedList.getCompoundTagAt(i).getUniqueId("uuid"));
         }
         // Rebuild reverse index from all loaded parties
-        for (var party : parties.values()) {
+        for (Party party : parties.values()) {
             rebuildIndexForParty(party);
         }
     }

@@ -104,8 +104,8 @@ public class BLPCSaveHandler {
     }
 
     private boolean writeCompressedAtomic(File file, NBTTagCompound nbt) {
-        var tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
-        try (var fos = new FileOutputStream(tmpFile)) {
+        File tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
             CompressedStreamTools.writeCompressed(nbt, fos);
             try {
                 fos.getFD().sync();
@@ -142,7 +142,7 @@ public class BLPCSaveHandler {
         List<File> tmpFiles = new ArrayList<>();
 
         for (Party party : data.getAllParties()) {
-            var tmpFile = new File(partiesDir, party.getPartyId() + ".dat.tmp");
+            File tmpFile = new File(partiesDir, party.getPartyId() + ".dat.tmp");
             if (!writeCompressedTemp(tmpFile, party.toNBT())) {
                 for (File tmp : tmpFiles) tmp.delete();
                 ModLog.IO.error("Party save aborted; old files preserved");
@@ -193,7 +193,7 @@ public class BLPCSaveHandler {
         if (globalList.tagCount() > 0) {
             toWrite.put("global", globalList);
         }
-        for (var entry : partyLists.entrySet()) {
+        for (Map.Entry<UUID, NBTTagList> entry : partyLists.entrySet()) {
             if (entry.getValue().tagCount() > 0) {
                 toWrite.put(entry.getKey().toString(), entry.getValue());
             }
@@ -201,8 +201,8 @@ public class BLPCSaveHandler {
 
         // Write all temp files first
         List<File> tmpFiles = new ArrayList<>();
-        for (var entry : toWrite.entrySet()) {
-            var tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
+        for (Map.Entry<String, NBTTagList> entry : toWrite.entrySet()) {
+            File tmpFile = new File(claimsDir, entry.getKey() + ".dat.tmp");
             NBTTagCompound nbt = new NBTTagCompound();
             nbt.setTag("claims", entry.getValue());
             if (!writeCompressedTemp(tmpFile, nbt)) {
@@ -248,7 +248,7 @@ public class BLPCSaveHandler {
 
     public void saveWaypoints(WaypointManagerData data) {
         Map<String, NBTTagList> toWrite = new HashMap<>();
-        for (var entry : data.getAllForSave().entrySet()) {
+        for (Map.Entry<UUID, Map<String, PartyWaypointData>> entry : data.getAllForSave().entrySet()) {
             if (entry.getValue().isEmpty()) continue;
             NBTTagList list = new NBTTagList();
             for (PartyWaypointData waypoint : entry.getValue().values()) {
@@ -258,8 +258,8 @@ public class BLPCSaveHandler {
         }
 
         List<File> tmpFiles = new ArrayList<>();
-        for (var entry : toWrite.entrySet()) {
-            var tmpFile = new File(waypointsDir, entry.getKey() + ".dat.tmp");
+        for (Map.Entry<String, NBTTagList> entry : toWrite.entrySet()) {
+            File tmpFile = new File(waypointsDir, entry.getKey() + ".dat.tmp");
             NBTTagCompound nbt = new NBTTagCompound();
             nbt.setTag("waypoints", entry.getValue());
             if (!writeCompressedTemp(tmpFile, nbt)) {
@@ -274,7 +274,7 @@ public class BLPCSaveHandler {
     }
 
     private boolean writeCompressedTemp(File tmpFile, NBTTagCompound nbt) {
-        try (var fos = new FileOutputStream(tmpFile)) {
+        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
             CompressedStreamTools.writeCompressed(nbt, fos);
             try {
                 fos.getFD().sync();

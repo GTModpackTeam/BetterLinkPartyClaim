@@ -1,5 +1,7 @@
 package com.github.gtexpert.blpc.common.command;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
@@ -27,7 +29,7 @@ public class ListCommand extends PlayerCommand {
     @Override
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender,
                         String @NotNull [] args) {
-        var parties = PartyQueryUtil.provider().getAllParties();
+        List<Party> parties = PartyQueryUtil.provider().getAllParties();
         if (parties.isEmpty()) {
             sender.sendMessage(new TextComponentTranslation("command.blpc.list.empty"));
             return;
@@ -35,7 +37,7 @@ public class ListCommand extends PlayerCommand {
         sender.sendMessage(new TextComponentTranslation("command.blpc.list.header", parties.size()));
         for (Party party : parties) {
             String ownerName = BLPCCommandHelper.resolveOwnerName(server, party);
-            var line = new TextComponentString(String.format("- %s%s%s (%s%d%s) - %s",
+            TextComponentString line = new TextComponentString(String.format("- %s%s%s (%s%d%s) - %s",
                     TextFormatting.AQUA, party.getName(), TextFormatting.RESET,
                     TextFormatting.GRAY, party.getMembers().size(), TextFormatting.RESET,
                     ownerName));

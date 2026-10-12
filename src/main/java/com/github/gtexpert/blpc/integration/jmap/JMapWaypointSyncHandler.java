@@ -1,5 +1,7 @@
 package com.github.gtexpert.blpc.integration.jmap;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.TreeSet;
 
@@ -114,15 +116,15 @@ public class JMapWaypointSyncHandler {
         }
 
         boolean enabled = JMapClientConfig.isWaypointSharingEnabled();
-        var sharedWaypoints = ClientWaypointCache.getAll();
+        Collection<PartyWaypointData> sharedWaypoints = ClientWaypointCache.getAll();
         WaypointGroup group = ensureGroup(api);
         group.setEnabled(enabled);
 
-        var existingIds = new java.util.HashSet<>(group.getWaypointIds());
-        var wantedIds = new java.util.HashSet<String>();
+        HashSet<String> existingIds = new HashSet<>(group.getWaypointIds());
+        HashSet<String> wantedIds = new HashSet<String>();
 
         for (PartyWaypointData shared : sharedWaypoints) {
-            var stableId = WP_ID_PREFIX + shared.waypointId;
+            String stableId = WP_ID_PREFIX + shared.waypointId;
             wantedIds.add(stableId);
             Waypoint ex = api.getWaypoint(Tags.MODID, stableId);
             if (ex != null) {
@@ -131,7 +133,7 @@ public class JMapWaypointSyncHandler {
                 ex.setPrimaryDimension(shared.dimension);
                 ex.setColor(shared.color);
             } else {
-                var wp = createWaypoint(shared, stableId, group.getGuid());
+                ClientWaypointImpl wp = createWaypoint(shared, stableId, group.getGuid());
                 group.addWaypoint(wp);
                 WaypointStore.getInstance().putLocal(wp, false);
             }
@@ -146,11 +148,11 @@ public class JMapWaypointSyncHandler {
     }
 
     private WaypointGroup ensureGroup(IClientAPI api) {
-        for (var g : api.getWaypointGroups(Tags.MODID)) {
+        for (WaypointGroup g : api.getWaypointGroups(Tags.MODID)) {
             if (GROUP_GUID.equals(g.getGuid())) return g;
         }
 
-        var group = new WaypointGroupImpl(Tags.MODID, GROUP_NAME, GROUP_GUID);
+        WaypointGroupImpl group = new WaypointGroupImpl(Tags.MODID, GROUP_NAME, GROUP_GUID);
         group.setLocked(true);
         group.setPersistent(true);
         api.addWaypointGroup(group);
@@ -158,8 +160,8 @@ public class JMapWaypointSyncHandler {
     }
 
     private static ClientWaypointImpl createWaypoint(PartyWaypointData data, String guid, String groupGuid) {
-        var pos = new WaypointPos(new BlockPos(data.x, data.y, data.z), String.valueOf(data.dimension));
-        var dims = new TreeSet<>(java.util.Collections.singleton(String.valueOf(data.dimension)));
+        WaypointPos pos = new WaypointPos(new BlockPos(data.x, data.y, data.z), String.valueOf(data.dimension));
+        TreeSet<String> dims = new TreeSet<>(java.util.Collections.singleton(String.valueOf(data.dimension)));
         return new ClientWaypointImpl(
                 data.name,
                 "1",
@@ -178,7 +180,7 @@ public class JMapWaypointSyncHandler {
     }
 
     private void removeGroupIfPresent(IClientAPI api) {
-        for (var g : api.getWaypointGroups(Tags.MODID)) {
+        for (WaypointGroup g : api.getWaypointGroups(Tags.MODID)) {
             if (GROUP_GUID.equals(g.getGuid())) {
                 api.removeWaypointGroup(g, true);
                 return;

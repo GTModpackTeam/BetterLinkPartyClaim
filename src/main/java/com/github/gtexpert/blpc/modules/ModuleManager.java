@@ -318,7 +318,7 @@ public class ModuleManager implements IModuleManager {
     }
 
     private Map<String, List<IModule>> getModules(ASMDataTable table) {
-        var instances = getInstances(table);
+        List<IModule> instances = getInstances(table);
         Map<String, List<IModule>> modules = new LinkedHashMap<>();
         for (IModule module : instances) {
             TModule info = module.getClass().getAnnotation(TModule.class);
@@ -369,7 +369,7 @@ public class ModuleManager implements IModuleManager {
     private String getComment(IModule module) {
         TModule annotation = module.getClass().getAnnotation(TModule.class);
 
-        var comment = new StringBuilder(annotation.description());
+        StringBuilder comment = new StringBuilder(annotation.description());
         Set<ResourceLocation> dependencies = module.getDependencyUids();
         if (!dependencies.isEmpty()) {
             comment.append("\nModule Dependencies: [ ")

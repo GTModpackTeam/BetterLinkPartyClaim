@@ -114,7 +114,7 @@ public class Party {
     public void setRole(UUID uuid, PartyRole role) {
         if (!members.containsKey(uuid)) return;
         if (role == PartyRole.OWNER) {
-            for (var entry : members.entrySet()) {
+            for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
                 if (entry.getValue() == PartyRole.OWNER) {
                     entry.setValue(PartyRole.ADMIN);
                     break;
@@ -126,7 +126,7 @@ public class Party {
 
     @Nullable
     public UUID getOwner() {
-        for (var entry : members.entrySet()) {
+        for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
             if (entry.getValue() == PartyRole.OWNER) {
                 return entry.getKey();
             }
@@ -389,9 +389,9 @@ public class Party {
     }
 
     private static NBTTagList uuidSetToNBT(Collection<UUID> uuids) {
-        var list = new NBTTagList();
+        NBTTagList list = new NBTTagList();
         for (UUID uuid : uuids) {
-            var tag = new NBTTagCompound();
+            NBTTagCompound tag = new NBTTagCompound();
             tag.setUniqueId("uuid", uuid);
             list.appendTag(tag);
         }
@@ -407,9 +407,9 @@ public class Party {
     }
 
     private static NBTTagList uuidNameMapToNBT(Map<UUID, String> map) {
-        var list = new NBTTagList();
-        for (var entry : map.entrySet()) {
-            var tag = new NBTTagCompound();
+        NBTTagList list = new NBTTagList();
+        for (Map.Entry<UUID, String> entry : map.entrySet()) {
+            NBTTagCompound tag = new NBTTagCompound();
             tag.setUniqueId("uuid", entry.getKey());
             tag.setString("name", entry.getValue());
             list.appendTag(tag);
@@ -431,7 +431,7 @@ public class Party {
         tag.setLong("created", createdAt);
 
         NBTTagList memberList = new NBTTagList();
-        for (var entry : members.entrySet()) {
+        for (Map.Entry<UUID, PartyRole> entry : members.entrySet()) {
             NBTTagCompound memberTag = new NBTTagCompound();
             memberTag.setUniqueId("uuid", entry.getKey());
             memberTag.setString("role", entry.getValue().name());
@@ -440,7 +440,7 @@ public class Party {
         tag.setTag("members", memberList);
 
         NBTTagCompound trustTag = new NBTTagCompound();
-        for (var entry : requiredTrustLevels.entrySet()) {
+        for (Map.Entry<TrustAction, TrustLevel> entry : requiredTrustLevels.entrySet()) {
             trustTag.setString(entry.getKey().getNbtKey(), entry.getValue().name());
         }
         tag.setTag("trustLevels", trustTag);

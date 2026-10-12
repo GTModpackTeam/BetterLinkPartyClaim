@@ -25,7 +25,7 @@ public class WaypointSync implements IMessage {
 
     public static WaypointSync addOrUpdate(String waypointId, UUID ownerUUID, String name, int dimension, int x,
                                            int y, int z, int color) {
-        var msg = new WaypointSync();
+        WaypointSync msg = new WaypointSync();
         msg.action = WaypointAction.ACTION_ADD_OR_UPDATE;
         msg.waypointId = waypointId;
         msg.ownerUUID = ownerUUID;
@@ -39,7 +39,7 @@ public class WaypointSync implements IMessage {
     }
 
     public static WaypointSync remove(String waypointId) {
-        var msg = new WaypointSync();
+        WaypointSync msg = new WaypointSync();
         msg.action = WaypointAction.ACTION_REMOVE;
         msg.waypointId = waypointId;
         return msg;

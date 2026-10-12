@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -19,7 +20,7 @@ public final class SyncAllWaypointsClientHandler extends MainThreadMessageHandle
     @Override
     protected void handleOnMainThread(SyncAllWaypoints msg) {
         NBTTagCompound data = msg.getData();
-        var list = data.getTagList("waypoints", Constants.NBT.TAG_COMPOUND);
+        NBTTagList list = data.getTagList("waypoints", Constants.NBT.TAG_COMPOUND);
         List<PartyWaypointData> waypoints = new ArrayList<>();
         for (int i = 0; i < list.tagCount(); i++) {
             PartyWaypointData d = PartyWaypointData.fromNBT(list.getCompoundTagAt(i));

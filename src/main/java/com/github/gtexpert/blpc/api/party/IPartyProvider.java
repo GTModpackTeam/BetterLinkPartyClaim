@@ -56,7 +56,7 @@ public interface IPartyProvider {
     /** Convenience shortcut for {@code getEffectiveParty(uuid).getOwner()}. */
     @Nullable
     default UUID getOwner(UUID playerUUID) {
-        var party = getEffectiveParty(playerUUID);
+        Party party = getEffectiveParty(playerUUID);
         return party != null ? party.getOwner() : null;
     }
 

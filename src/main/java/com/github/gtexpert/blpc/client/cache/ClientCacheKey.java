@@ -2,6 +2,7 @@ package com.github.gtexpert.blpc.client.cache;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -21,7 +22,7 @@ public final class ClientCacheKey {
     public static String current() {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.isIntegratedServerRunning()) {
-            var server = mc.getIntegratedServer();
+            IntegratedServer server = mc.getIntegratedServer();
             if (server == null) return null;
             return "sp_" + sanitize(server.getFolderName());
         }

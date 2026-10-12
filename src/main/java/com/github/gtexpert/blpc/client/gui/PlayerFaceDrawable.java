@@ -3,6 +3,7 @@ package com.github.gtexpert.blpc.client.gui;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
@@ -43,7 +44,7 @@ public class PlayerFaceDrawable implements IDrawable {
 
     /** Resolves a player's skin texture, falling back to the default Steve/Alex skin if not yet loaded. */
     public static ResourceLocation resolveSkin(UUID playerUUID) {
-        var conn = Minecraft.getMinecraft().getConnection();
+        NetHandlerPlayClient conn = Minecraft.getMinecraft().getConnection();
         if (conn != null) {
             NetworkPlayerInfo info = conn.getPlayerInfo(playerUUID);
             if (info != null) {

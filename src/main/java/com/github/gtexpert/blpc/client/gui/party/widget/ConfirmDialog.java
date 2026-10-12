@@ -1,5 +1,9 @@
 package com.github.gtexpert.blpc.client.gui.party.widget;
 
+import java.util.function.Consumer;
+
+import net.minecraft.client.Minecraft;
+
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.screen.ModularPanel;
@@ -25,19 +29,25 @@ import com.github.gtexpert.blpc.client.gui.party.PartyWidgets;
  * 
  * {
  *     &#64;code
- *     // Direct use: build returns Dialog&lt;Boolean&gt; which is an IPanelHandler
- *     Dialog<Boolean> dialog = ConfirmDialog.builder(panelId)
- *             .title("my.addon.confirm_title")
- *             .message("my.addon.confirm_msg")
- *             .onConfirm(() -> doSomething())
- *             .build(parentPanel);
+ *     // One-liner: build + open immediately (scheduled on the render thread)
+ *     ConfirmDialog.show(parentPanel, "my.addon.confirm_title", "my.addon.confirm_msg",
+ *             () -> doSomething());
  *
- *     // Open via IPanelHandler (e.g. button click)
- *     panel.child(PartyWidgets.dialogButton(IKey.lang("my.addon.confirm"),
- *             IPanelHandler.simple(parentPanel, (pp, p) -> dialog, true)));
+ *     // Direct use: build() returns a Dialog&lt;Boolean&gt;, which is a ModularPanel —
+ *     // it must be opened through an IPanelHandler, not opened directly
+ *     IPanelHandler handler = IPanelHandler.simple(parentPanel,
+ *             (pp, p) -> ConfirmDialog.builder(panelId)
+ *                     .title("my.addon.confirm_title")
+ *                     .message("my.addon.confirm_msg")
+ *                     .onConfirm(() -> doSomething())
+ *                     .build(parentPanel),
+ *             true);
  *
- *     // Open immediately
- *     dialog.openPanel();
+ *     // Open via a button (e.g. click handler)
+ *     panel.child(PartyWidgets.dialogButton(IKey.lang("my.addon.confirm"), handler));
+ *
+ *     // Or open immediately
+ *     handler.openPanel();
  * }
  * </pre>
  */
@@ -48,6 +58,34 @@ public final class ConfirmDialog {
     /** Creates a new builder for a confirmation dialog. */
     public static Builder builder(String panelId) {
         return new Builder(panelId);
+    }
+
+    /**
+     * One-liner for the common case: build a title/message/confirm dialog and open it
+     * immediately, scheduled on the render thread. Skips the {@link IPanelHandler} boilerplate
+     * needed to open a {@link Builder#build} result directly.
+     *
+     * @param parentPanel the panel the dialog is shown over (closed on confirm by default)
+     * @param titleKey    lang key for the dialog title
+     * @param messageKey  lang key for the dialog message
+     * @param onConfirm   action to run when the user confirms
+     */
+    public static void show(ModularPanel parentPanel, String titleKey, String messageKey, Runnable onConfirm) {
+        show(parentPanel, builder -> builder.title(titleKey).message(messageKey).onConfirm(onConfirm));
+    }
+
+    /**
+     * Same as {@link #show(ModularPanel, String, String, Runnable)} but exposes the full
+     * {@link Builder} (e.g. for custom {@code yesLabel}/{@code noLabel}/{@code closeParent}).
+     */
+    public static void show(ModularPanel parentPanel, Consumer<Builder> configurer) {
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            Builder builder = builder(PartyWidgets.uniquePanelId("blpc.confirm_dialog"));
+            configurer.accept(builder);
+            IPanelHandler handler = IPanelHandler.simple(parentPanel,
+                    (pp, p) -> builder.build(parentPanel), true);
+            handler.openPanel();
+        });
     }
 
     public static class Builder {
@@ -118,8 +156,8 @@ public final class ConfirmDialog {
          * Builds the dialog.
          *
          * @param parentPanel the parent panel (closed on confirm if {@link #closeParent} is true)
-         * @return a {@link Dialog} that can be opened via {@link Dialog#openPanel()} or
-         *         passed to {@link IPanelHandler}
+         * @return a {@link Dialog} panel — open it via {@link IPanelHandler#simple} (it is a
+         *         {@link ModularPanel}, not an {@link IPanelHandler} itself)
          */
         public Dialog<Boolean> build(ModularPanel parentPanel) {
             Runnable confirmAction = this.onConfirm;

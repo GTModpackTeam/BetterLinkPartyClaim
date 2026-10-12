@@ -108,7 +108,8 @@ public class ClaimChunk implements IMessage {
             }
 
             String partyName = resolveTeamName(playerId);
-            var claimed = new ClaimedChunkData(msg.x, msg.z, msg.dim, playerId, player.getName(), partyName, false);
+            ClaimedChunkData claimed = new ClaimedChunkData(msg.x, msg.z, msg.dim, playerId, player.getName(),
+                    partyName, false);
             data.enqueueClaim(claimed);
             syncToAll(msg.x, msg.z, msg.dim, playerId, player.getName(), partyName, false);
             BLPCSaveHandler.INSTANCE.markDirty();
@@ -147,7 +148,7 @@ public class ClaimChunk implements IMessage {
 
                 String partyName = resolveTeamName(playerId);
                 boolean forced = TicketManager.forceChunk(player.world, msg.x, msg.z, null);
-                var claimed = new ClaimedChunkData(
+                ClaimedChunkData claimed = new ClaimedChunkData(
                         msg.x, msg.z, msg.dim, playerId, player.getName(), partyName, forced);
                 data.enqueueClaim(claimed);
                 syncToAll(msg.x, msg.z, msg.dim, playerId, player.getName(), partyName, forced);

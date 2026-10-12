@@ -25,6 +25,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
+## [0.18.1]
+
+### Added
+
+- **`PartyQueryUtil` addon-facing convenience methods**
+    - `getPartyId(uuid)`, `getParty(uuid)`, `isInParty(uuid)`, `getPartyMembers(uuid)`,
+      `getRole(uuid)` — thin delegations over the active `IPartyProvider` so addon authors
+      never need to reference `PartyProviderRegistry` directly.
+- **`ConfirmDialog.show()` one-liner**
+    - Static convenience method that builds and opens a confirmation dialog on the render
+      thread, removing the `IPanelHandler` boilerplate.
+- **`PartyWidgets.rowButton()` and `validatedCycleButton()`**
+    - `rowButton` absorbs `ButtonWidget`'s self-bounded generic so addon code can chain
+      calls without compile errors. `validatedCycleButton` provides an `onBeforeChange`-like
+      veto hook (`canChange` predicate) that `CycleButtonWidget` doesn't expose natively.
+- **Addon-namespaced cache in `ClientPartyCache`**
+    - `putAddonData(modId, key, value)` / `getAddonData(modId, key)` /
+      `removeAddonData(modId, key)` / `clearAddonData(modId)` — addon client-side cache
+      slots that share BLPC's cache lifecycle (cleared on disconnect), so addons don't
+      need their own disconnect handling.
+
+[0.18.1]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.18.1
+
+* * *
+
 ## [0.17.0]
 
 ### Fixed
@@ -61,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Registering the same integration twice no longer creates a duplicate button — the registry now checks for existing entries by label key before adding.
 
 - **ModuleManager duplicate setup guard**
-    - Calling `setup()` a second time (which can happen when BLET shares the same ModuleManager instance) now skips the second load instead of duplicating modules.
+    - Calling `setup()` a second time (which can happen when shares the same ModuleManager instance) now skips the second load instead of duplicating modules.
 
 ### Fixed
 

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.UsernameCache;
 
@@ -35,10 +36,58 @@ public final class PartyQueryUtil {
     }
 
     /**
+     * Stable storage-key id for the player's party, or {@code null} if they have none.
+     * Shorthand for {@code provider().getPartyId(playerUUID)}.
+     * <p>
+     * Note: the active provider may return {@code null} when it does not implement
+     * {@code getPartyId}, not only when the player has no party.
+     */
+    @Nullable
+    public static UUID getPartyId(UUID playerUUID) {
+        return PartyProviderRegistry.get().getPartyId(playerUUID);
+    }
+
+    /**
+     * The fully-populated {@link Party} for the player, or {@code null} if they have none.
+     * Shorthand for {@code provider().getEffectiveParty(playerUUID)}.
+     * <p>
+     * Note: the active provider may return {@code null} when it does not implement
+     * {@code getEffectiveParty}, not only when the player has no party.
+     */
+    @Nullable
+    public static Party getParty(UUID playerUUID) {
+        return PartyProviderRegistry.get().getEffectiveParty(playerUUID);
+    }
+
+    /** Returns {@code true} if the player currently has a party. */
+    public static boolean isInParty(UUID playerUUID) {
+        return PartyProviderRegistry.get().getPartyName(playerUUID) != null;
+    }
+
+    /**
+     * Member UUIDs of the player's party (empty if they have none). Shorthand for
+     * {@code provider().getPartyMembers(playerUUID)}.
+     * <p>
+     * Note: identified by a party <em>member's</em> UUID, not a party id — BLPC party
+     * lookups are always player-keyed ({@link IPartyProvider#acceptInvite} is the one
+     * exception, since it targets a party the player hasn't joined yet).
+     */
+    public static List<UUID> getPartyMembers(UUID playerUUID) {
+        return PartyProviderRegistry.get().getPartyMembers(playerUUID);
+    }
+
+    /** The player's role in their party, or {@code null} if they have none. */
+    @Nullable
+    public static PartyRole getRole(UUID playerUUID) {
+        String role = PartyProviderRegistry.get().getRole(playerUUID);
+        return role == null ? null : PartyRole.fromName(role);
+    }
+
+    /**
      * Resolves a display name for a UUID: online player → party cache → global username cache → UUID prefix.
      */
     public static String resolveName(MinecraftServer server, @Nullable Party party, UUID uuid) {
-        var online = server.getPlayerList().getPlayerByUUID(uuid);
+        EntityPlayerMP online = server.getPlayerList().getPlayerByUUID(uuid);
         if (online != null) return online.getName();
         String cached = party != null ? party.getPlayerName(uuid) : null;
         if (cached != null) return cached;
@@ -58,8 +107,8 @@ public final class PartyQueryUtil {
 
     /** Returns true if the player has OWNER or ADMIN role in their party. */
     public static boolean isOwnerOrMod(UUID playerUUID) {
-        var provider = PartyProviderRegistry.get();
-        var role = PartyRole.fromName(provider.getRole(playerUUID));
+        IPartyProvider provider = PartyProviderRegistry.get();
+        PartyRole role = PartyRole.fromName(provider.getRole(playerUUID));
         return role == PartyRole.OWNER || role == PartyRole.ADMIN;
     }
 }

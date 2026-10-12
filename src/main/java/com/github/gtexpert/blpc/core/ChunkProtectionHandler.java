@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -114,8 +115,8 @@ public class ChunkProtectionHandler {
 
         if (party == null) return false;
 
-        var playerParty = PartyProviderRegistry.get().getEffectiveParty(player.getUniqueID());
-        var playerPartyId = playerParty != null ? playerParty.getPartyId() : null;
+        Party playerParty = PartyProviderRegistry.get().getEffectiveParty(player.getUniqueID());
+        UUID playerPartyId = playerParty != null ? playerParty.getPartyId() : null;
         TrustLevel effectiveLevel = party.getEffectiveTrustLevel(player.getUniqueID(), playerPartyId);
         if (effectiveLevel == null) return false; // Enemy: null encodes "no trust"
         return effectiveLevel.isAtLeast(party.getTrustLevel(action));

@@ -50,7 +50,7 @@ public class WaypointAction implements IMessage {
 
     public static WaypointAction addOrUpdate(String waypointId, String name, int dimension, int x, int y, int z,
                                              int color) {
-        var msg = new WaypointAction();
+        WaypointAction msg = new WaypointAction();
         msg.action = ACTION_ADD_OR_UPDATE;
         msg.waypointId = waypointId;
         msg.name = name;
@@ -63,7 +63,7 @@ public class WaypointAction implements IMessage {
     }
 
     public static WaypointAction remove(String waypointId) {
-        var msg = new WaypointAction();
+        WaypointAction msg = new WaypointAction();
         msg.action = ACTION_REMOVE;
         msg.waypointId = waypointId;
         return msg;
@@ -149,7 +149,7 @@ public class WaypointAction implements IMessage {
                             rollback(data, partyId, message.waypointId, player);
                             return;
                         }
-                        var waypoint = new PartyWaypointData(message.waypointId, playerId, message.name,
+                        PartyWaypointData waypoint = new PartyWaypointData(message.waypointId, playerId, message.name,
                                 message.dimension, message.x, message.y, message.z, message.color);
                         data.setWaypoint(partyId, waypoint);
                         broadcast(activeProvider, playerId,
