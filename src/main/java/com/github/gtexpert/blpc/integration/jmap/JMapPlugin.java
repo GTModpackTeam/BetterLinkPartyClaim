@@ -85,12 +85,12 @@ public class JMapPlugin implements IClientPlugin {
     }
 
     private void registerOptions() {
-        var category = new OptionCategory(getModId(), Tags.MODID.toUpperCase(), Tags.MODNAME);
+        OptionCategory category = new OptionCategory(getModId(), Tags.MODID.toUpperCase(), Tags.MODNAME);
         overlaysOption = new BooleanOption(category, "showClaimOverlays",
                 I18n.format("blpc.addons.journeymap.overlays_option"), true);
-        var waypointSharing = new BooleanOption(category, "waypointSharing",
+        BooleanOption waypointSharing = new BooleanOption(category, "waypointSharing",
                 I18n.format("blpc.addons.journeymap.waypoints_option"), true);
-        var syncInterval = new IntegerOption(category, "waypointSyncInterval",
+        IntegerOption syncInterval = new IntegerOption(category, "waypointSyncInterval",
                 I18n.format("blpc.addons.journeymap.sync_interval_option"), 100, 0, 6000);
         OptionsRegistry.register(getModId(), overlaysOption);
         OptionsRegistry.register(getModId(), waypointSharing);

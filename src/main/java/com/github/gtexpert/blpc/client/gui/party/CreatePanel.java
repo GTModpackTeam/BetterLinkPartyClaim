@@ -167,7 +167,7 @@ public class CreatePanel {
         if (entry.full) return btn;
 
         UUID partyId = entry.partyId;
-        var action = entry.invited ? PartyAction.acceptInvite(partyId) :
+        PartyAction action = entry.invited ? PartyAction.acceptInvite(partyId) :
                 PartyAction.joinFreeParty(partyId);
         btn.onMousePressed(b -> PartyWidgets.sendAndApply(action, partyId,
                 p -> p.addMember(Minecraft.getMinecraft().player.getUniqueID(), PartyRole.MEMBER)));

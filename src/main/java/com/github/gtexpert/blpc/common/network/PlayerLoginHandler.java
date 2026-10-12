@@ -70,7 +70,7 @@ public class PlayerLoginHandler {
             }
         }
 
-        var pmData = PartyManagerData.getInstance();
+        PartyManagerData pmData = PartyManagerData.getInstance();
         IPartyProvider activeProvider = PartyProviderRegistry.get();
 
         // Auto-join server party if configured

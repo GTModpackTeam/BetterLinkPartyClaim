@@ -1,6 +1,7 @@
 package com.github.gtexpert.blpc.client.gui.party;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -67,7 +68,7 @@ public class MainPanel {
 
         // Cache nav handlers for the panel's lifetime — IPanelHandler.simple registers
         // into panel.clientSubPanels with no removal API, so per-rebuild creation leaks.
-        var partyRef = PartyWidgets.livePartyRef(partyId, party);
+        Supplier<Party> partyRef = PartyWidgets.livePartyRef(partyId, party);
         NavHandlers nav = new NavHandlers(
                 IPanelHandler.simple(panel, (pp, p) -> SettingsPanel.build(partyRef.get()), true),
                 IPanelHandler.simple(panel, (pp, p) -> MembersPanel.build(partyRef.get()), true),
@@ -124,7 +125,7 @@ public class MainPanel {
         Party party = ClientPartyCache.getParty(partyId);
         if (party == null) return;
 
-        var builder = PartyMenuBuilder.of(panel, party, playerId);
+        PartyMenuBuilder builder = PartyMenuBuilder.of(panel, party, playerId);
 
         builder.navHandler("blpc.party.settings", nav.settings)
                 .tooltip("blpc.party.tooltip.settings")

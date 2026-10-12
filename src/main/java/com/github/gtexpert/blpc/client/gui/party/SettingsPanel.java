@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
@@ -59,7 +60,7 @@ public class SettingsPanel {
 
         PartyWidgets.addHeader(panel, "blpc.party.settings_title");
 
-        var controller = new PagedWidget.Controller();
+        PagedWidget.Controller controller = new PagedWidget.Controller();
         PartyWidgets.addTabs(panel, controller,
                 new String[] {
                         "blpc.party.settings_tab_party",
@@ -88,7 +89,7 @@ public class SettingsPanel {
     }
 
     private static IWidget buildPartyInfoPage(Supplier<Party> partyRef, ModularPanel panel) {
-        var list = newList();
+        ListWidget<IWidget, ?> list = newList();
 
         // Pre-create handlers to avoid "same panel handler already exists" on repeated clicks.
         IPanelHandler renameHandler = IPanelHandler.simple(panel, (pp, player) -> InputDialog
@@ -115,7 +116,7 @@ public class SettingsPanel {
 
         IPanelHandler colorHandler = IPanelHandler.simple(panel, (pp, player) -> {
             int startArgb = BLPCColors.partyArgb(partyRef.get().getColor());
-            var dialog = new ColorPickerDialog(color -> {
+            ColorPickerDialog dialog = new ColorPickerDialog(color -> {
                 int rgb = color & 0xFFFFFF;
                 partyRef.get().setColor(rgb);
                 ModNetwork.INSTANCE.sendToServer(PartyAction.setColor(rgb));
@@ -193,7 +194,7 @@ public class SettingsPanel {
     }
 
     private static IWidget buildProtectionPage(Supplier<Party> partyRef) {
-        var list = newList();
+        ListWidget<IWidget, ?> list = newList();
 
         for (TrustAction action : TrustAction.values()) {
             list.child(createTrustCycle(partyRef, action));
@@ -275,7 +276,7 @@ public class SettingsPanel {
     }
 
     private static Collection<NetworkPlayerInfo> collectTrustablePlayers(Party myParty) {
-        var conn = Minecraft.getMinecraft().getConnection();
+        NetHandlerPlayClient conn = Minecraft.getMinecraft().getConnection();
         if (conn == null) return Collections.emptyList();
 
         UUID myPartyId = myParty.getPartyId();
@@ -348,7 +349,7 @@ public class SettingsPanel {
 
     @SuppressWarnings("unchecked")
     private static ListWidget<IWidget, ?> newList() {
-        var list = new ListWidget<>();
+        ListWidget<IWidget, ?> list = new ListWidget<>();
         list.widthRel(1f).heightRel(1f);
         list.crossAxisAlignment(Alignment.CrossAxis.START);
         return list;

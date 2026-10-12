@@ -1,5 +1,8 @@
 package com.github.gtexpert.blpc.common.command;
 
+import java.util.Map;
+import java.util.UUID;
+
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -11,6 +14,7 @@ import net.minecraft.util.text.TextFormatting;
 import org.jetbrains.annotations.NotNull;
 
 import com.github.gtexpert.blpc.api.party.Party;
+import com.github.gtexpert.blpc.api.party.PartyRole;
 
 public class MeCommand extends PlayerCommand {
 
@@ -42,7 +46,7 @@ public class MeCommand extends PlayerCommand {
                 ListCommand.roleLabel(party.getRole(player.getUniqueID()))));
         sender.sendMessage(new TextComponentTranslation("command.blpc.info.members", party.getMembers().size()));
 
-        for (var entry : party.getMembers().entrySet()) {
+        for (Map.Entry<UUID, PartyRole> entry : party.getMembers().entrySet()) {
             String name = BLPCCommandHelper.resolveName(server, party, entry.getKey());
             boolean online = server.getPlayerList().getPlayerByUUID(entry.getKey()) != null;
             String dot = online ? TextFormatting.GREEN + "●" : TextFormatting.DARK_GRAY + "○";

@@ -53,12 +53,12 @@ public final class ClientCachePersistence {
     private static final String PARTIES_FILE = "parties.dat";
 
     private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-        var t = new Thread(r, "BLPC-ClientCacheSave");
+        Thread t = new Thread(r, "BLPC-ClientCacheSave");
         t.setDaemon(true);
         return t;
     });
     private static final ScheduledExecutorService IO_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
-        var t = new Thread(r, "BLPC-ClientCacheIO");
+        Thread t = new Thread(r, "BLPC-ClientCacheIO");
         t.setDaemon(true);
         return t;
     });

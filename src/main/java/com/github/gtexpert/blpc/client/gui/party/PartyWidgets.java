@@ -171,7 +171,7 @@ public final class PartyWidgets {
      * done in {@link #createPlayerRow}) so callers can just chain on the returned widget.
      */
     public static ButtonWidget<?> rowButton(IKey label, IGuiAction.MousePressed onClick) {
-        var btn = new ButtonWidget<>();
+        ButtonWidget<?> btn = new ButtonWidget<>();
         btn.widthRel(1f).height(BTN_H).padding(ROW_INDENT, 0, 0, 0)
                 .overlay(buttonLabelLeft(label))
                 .onMousePressed(onClick);
@@ -286,22 +286,22 @@ public final class PartyWidgets {
     /** Tab row + paged content positioned below the header. */
     public static void addTabs(ModularPanel panel, PagedWidget.Controller controller,
                                String[] labelKeys, IWidget[] pages) {
-        var tabRow = buildTabRow(controller, labelKeys).left(4).right(4).top(22).height(TAB_H);
-        var paged = buildPagedArea(controller, pages).left(4).right(4).top(40).bottom(4);
+        Flow tabRow = buildTabRow(controller, labelKeys).left(4).right(4).top(22).height(TAB_H);
+        PagedWidget<?> paged = buildPagedArea(controller, pages).left(4).right(4).top(40).bottom(4);
         panel.child(tabRow);
         panel.child(paged);
     }
 
     /** Tab row + paged content as a single {@link Flow#column} that fills its parent. */
     public static IWidget buildInnerTabs(String[] labelKeys, IWidget[] pages) {
-        var controller = new PagedWidget.Controller();
-        var tabRow = buildTabRow(controller, labelKeys).widthRel(1f).height(TAB_H);
-        var paged = buildPagedArea(controller, pages).widthRel(1f).expanded();
+        PagedWidget.Controller controller = new PagedWidget.Controller();
+        Flow tabRow = buildTabRow(controller, labelKeys).widthRel(1f).height(TAB_H);
+        PagedWidget<?> paged = buildPagedArea(controller, pages).widthRel(1f).expanded();
         return Flow.column().widthRel(1f).heightRel(1f).child(tabRow).child(paged);
     }
 
     private static Flow buildTabRow(PagedWidget.Controller controller, String[] labelKeys) {
-        var row = Flow.row().childPadding(2);
+        Flow row = Flow.row().childPadding(2);
         for (int i = 0; i < labelKeys.length; i++) {
             row.child(new PageButton(i, controller).height(TAB_H).expanded()
                     .overlay(buttonLabel(IKey.lang(labelKeys[i]))));
@@ -310,7 +310,7 @@ public final class PartyWidgets {
     }
 
     private static PagedWidget<?> buildPagedArea(PagedWidget.Controller controller, IWidget[] pages) {
-        var paged = new PagedWidget<>().controller(controller);
+        PagedWidget<?> paged = new PagedWidget<>().controller(controller);
         for (IWidget page : pages) paged.addPage(page);
         return paged;
     }
@@ -322,7 +322,7 @@ public final class PartyWidgets {
     public static Flow wrapWithSearchBox(ListWidget<IWidget, ?> list,
                                          List<IWidget> widgets, List<String> searchNames) {
         String[] filterText = { "" };
-        var searchBox = new TextFieldWidget()
+        TextFieldWidget searchBox = new TextFieldWidget()
                 .widthRel(1f).height(14)
                 .hintText(IKey.lang("blpc.party.search").get())
                 .autoUpdateOnChange(true)
@@ -388,7 +388,7 @@ public final class PartyWidgets {
 
     /** Clickable {@link #faceRow} with a colored, shadowed label. */
     public static ButtonWidget<?> createPlayerRow(UUID uuid, String label, int color) {
-        var btn = new ButtonWidget<>();
+        ButtonWidget<?> btn = new ButtonWidget<>();
         btn.widthRel(1f).height(BTN_H).padding(0);
         btn.child(faceRow(uuid, rowLabel(IKey.str(label), color)));
         return btn;

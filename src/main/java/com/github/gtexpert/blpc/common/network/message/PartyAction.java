@@ -377,7 +377,7 @@ public class PartyAction implements IMessage {
                 targetUUID = c.player.getUniqueID();
             } else if (party != null) {
                 MinecraftServer srv = c.player.getServer();
-                for (var kv : membersCopy.entrySet()) {
+                for (Map.Entry<UUID, PartyRole> kv : membersCopy.entrySet()) {
                     EntityPlayerMP onlineMember = srv != null ? srv.getPlayerList().getPlayerByUUID(kv.getKey()) : null;
                     if (onlineMember != null && onlineMember.getName().equals(c.stringArg)) {
                         targetUUID = kv.getKey();
@@ -400,7 +400,7 @@ public class PartyAction implements IMessage {
                 String targetName = c.stringArg;
                 MinecraftServer srv = c.player.getServer();
                 c.pendingNotifications.add(() -> {
-                    for (var entry : membersCopy.entrySet()) {
+                    for (Map.Entry<UUID, PartyRole> entry : membersCopy.entrySet()) {
                         if (finalTarget != null && entry.getKey().equals(finalTarget)) continue;
                         EntityPlayerMP member = srv != null ? srv.getPlayerList().getPlayerByUUID(entry.getKey()) :
                                 null;

@@ -85,7 +85,7 @@ public class ClientNotify implements IMessage {
      */
     public static ClientNotify chunkTransit(String playerName, UUID playerId, RelationType relation, boolean entered,
                                             String ownerName, boolean self) {
-        var msg = new ClientNotify();
+        ClientNotify msg = new ClientNotify();
         msg.kind = KIND_CHUNK_TRANSIT;
         msg.playerName = playerName != null ? playerName : "";
         msg.playerUUID = playerId;
@@ -97,7 +97,7 @@ public class ClientNotify implements IMessage {
     }
 
     public static ClientNotify partyEvent(String eventType, String playerName, String extraInfo) {
-        var msg = new ClientNotify();
+        ClientNotify msg = new ClientNotify();
         msg.kind = KIND_PARTY_EVENT;
         msg.eventType = eventType;
         msg.playerName = playerName != null ? playerName : "";
@@ -106,7 +106,7 @@ public class ClientNotify implements IMessage {
     }
 
     public static ClientNotify claimFailed(String reason, int current, int max) {
-        var msg = new ClientNotify();
+        ClientNotify msg = new ClientNotify();
         msg.kind = KIND_CLAIM_FAILED;
         msg.reason = reason;
         msg.current = current;

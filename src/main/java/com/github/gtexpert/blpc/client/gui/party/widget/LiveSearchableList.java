@@ -45,7 +45,7 @@ public class LiveSearchableList<T> {
 
     /** Search box stacked above the inner list, ready to be added to a panel. */
     public Flow buildContainer() {
-        var searchBox = new TextFieldWidget()
+        TextFieldWidget searchBox = new TextFieldWidget()
                 .widthRel(1f).height(14)
                 .hintText(IKey.lang("blpc.party.search").get())
                 .autoUpdateOnChange(true)

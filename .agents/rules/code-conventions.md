@@ -2,8 +2,8 @@ All Java code MUST follow these conventions. Violations are build-breaking or me
 
 ## Java 25 Syntax (Mandatory)
 
-- Arrow-form switch (`case X -> { ... }`), pattern instanceof (`if (obj instanceof T v)`), `var` for obvious types, multi-label case.
-- NEVER use colon+break, separate cast, or `var` for primitives/fields/ambiguous types.
+- Arrow-form switch (`case X -> { ... }`), pattern instanceof (`if (obj instanceof T v)`), multi-label case.
+- NEVER use colon+break, separate cast, `var`, or `var` for primitives/fields/ambiguous types.
 
 ## Imports
 
