@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
-## [0.18.0]
+## [0.18.2]
 
 ### Added
 
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Looking up which party you belong to is now much faster, especially in worlds with many parties.
     - Joining a party via invite and the server-party auto-join feature are more reliable and maintain consistent member data.
 
-[0.18.0]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.18.0
+[0.18.2]: https://github.com/gtexpert/BetterLinkPartyClaim/releases/tag/0.18.2
 
 * * *
 
