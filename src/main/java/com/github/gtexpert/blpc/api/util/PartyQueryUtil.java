@@ -37,6 +37,9 @@ public final class PartyQueryUtil {
     /**
      * Stable storage-key id for the player's party, or {@code null} if they have none.
      * Shorthand for {@code provider().getPartyId(playerUUID)}.
+     * <p>
+     * Note: the active provider may return {@code null} when it does not implement
+     * {@code getPartyId}, not only when the player has no party.
      */
     @Nullable
     public static UUID getPartyId(UUID playerUUID) {
@@ -46,6 +49,9 @@ public final class PartyQueryUtil {
     /**
      * The fully-populated {@link Party} for the player, or {@code null} if they have none.
      * Shorthand for {@code provider().getEffectiveParty(playerUUID)}.
+     * <p>
+     * Note: the active provider may return {@code null} when it does not implement
+     * {@code getEffectiveParty}, not only when the player has no party.
      */
     @Nullable
     public static Party getParty(UUID playerUUID) {
@@ -72,7 +78,7 @@ public final class PartyQueryUtil {
     /** The player's role in their party, or {@code null} if they have none. */
     @Nullable
     public static PartyRole getRole(UUID playerUUID) {
-        String role = PartyProviderRegistry.get().getRole(playerUUID);
+        var role = PartyProviderRegistry.get().getRole(playerUUID);
         return role == null ? null : PartyRole.fromName(role);
     }
 

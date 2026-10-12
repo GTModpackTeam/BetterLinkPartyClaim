@@ -108,13 +108,13 @@ public class ClientPartyCache {
     @Nullable
     @SuppressWarnings("unchecked")
     public static <T> T getAddonData(String modId, String key) {
-        Map<String, Object> namespace = addonData.get(modId);
+        var namespace = addonData.get(modId);
         return namespace == null ? null : (T) namespace.get(key);
     }
 
     /** Removes a single value stored via {@link #putAddonData}. */
     public static void removeAddonData(String modId, String key) {
-        Map<String, Object> namespace = addonData.get(modId);
+        var namespace = addonData.get(modId);
         if (namespace != null) namespace.remove(key);
     }
 

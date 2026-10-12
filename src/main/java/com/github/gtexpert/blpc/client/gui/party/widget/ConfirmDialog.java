@@ -79,10 +79,13 @@ public final class ConfirmDialog {
      * {@link Builder} (e.g. for custom {@code yesLabel}/{@code noLabel}/{@code closeParent}).
      */
     public static void show(ModularPanel parentPanel, Consumer<Builder> configurer) {
-        Builder builder = builder(PartyWidgets.uniquePanelId("blpc.confirm_dialog"));
-        configurer.accept(builder);
-        IPanelHandler handler = IPanelHandler.simple(parentPanel, (pp, p) -> builder.build(parentPanel), true);
-        Minecraft.getMinecraft().addScheduledTask(handler::openPanel);
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            Builder builder = builder(PartyWidgets.uniquePanelId("blpc.confirm_dialog"));
+            configurer.accept(builder);
+            IPanelHandler handler = IPanelHandler.simple(parentPanel,
+                    (pp, p) -> builder.build(parentPanel), true);
+            handler.openPanel();
+        });
     }
 
     public static class Builder {
