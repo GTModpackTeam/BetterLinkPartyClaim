@@ -20,6 +20,7 @@ public class ClientPartyCache {
     private static final Map<UUID, Party> parties = new LinkedHashMap<>();
     private static final Set<UUID> bquLinkedPlayers = new HashSet<>();
     private static final List<Runnable> syncListeners = new ArrayList<>();
+    private static final Map<String, Map<String, Object>> addonData = new HashMap<>();
 
     public static void addSyncListener(Runnable listener) {
         syncListeners.add(listener);
@@ -79,6 +80,7 @@ public class ClientPartyCache {
     public static void clear() {
         parties.clear();
         bquLinkedPlayers.clear();
+        addonData.clear();
         // Don't clear syncListeners — they survive reconnects
     }
 
@@ -86,6 +88,39 @@ public class ClientPartyCache {
         parties.clear();
         bquLinkedPlayers.clear();
         syncListeners.clear();
+        addonData.clear();
+    }
+
+    /**
+     * Stores an addon-namespaced client-side cache value alongside core party data. Data
+     * shares BLPC's cache lifecycle — cleared on {@link #clear()}/{@link #clearAll()}
+     * (disconnect) — so addons don't need to wire up their own disconnect handling.
+     *
+     * @param modId your addon's mod ID (used as the namespace; avoids key collisions)
+     * @param key   cache key, scoped to {@code modId}
+     * @param value value to store
+     */
+    public static void putAddonData(String modId, String key, Object value) {
+        addonData.computeIfAbsent(modId, id -> new HashMap<>()).put(key, value);
+    }
+
+    /** Reads a value stored via {@link #putAddonData}, or {@code null} if absent. */
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public static <T> T getAddonData(String modId, String key) {
+        Map<String, Object> namespace = addonData.get(modId);
+        return namespace == null ? null : (T) namespace.get(key);
+    }
+
+    /** Removes a single value stored via {@link #putAddonData}. */
+    public static void removeAddonData(String modId, String key) {
+        Map<String, Object> namespace = addonData.get(modId);
+        if (namespace != null) namespace.remove(key);
+    }
+
+    /** Clears every value stored under {@code modId} via {@link #putAddonData}. */
+    public static void clearAddonData(String modId) {
+        addonData.remove(modId);
     }
 
     @Nullable

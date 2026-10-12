@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -21,14 +24,17 @@ import org.lwjgl.input.Keyboard;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.IGuiAction;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
+import com.cleanroommc.modularui.value.IntValue;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.CycleButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
@@ -154,6 +160,42 @@ public final class PartyWidgets {
                     handler.openPanel();
                     return true;
                 });
+    }
+
+    /**
+     * Full-width row button (label + click handler), styled like {@link #createPlayerRow}
+     * minus the face icon. Addon code should prefer this over {@code new ButtonWidget<>()}
+     * directly: {@link ButtonWidget}'s self-bounded generic ({@code W extends ButtonWidget<W>})
+     * makes chaining calls onto a bare diamond-constructed instance fail to compile — this
+     * factory absorbs that workaround (separate statements on a {@code var}-typed local, as
+     * done in {@link #createPlayerRow}) so callers can just chain on the returned widget.
+     */
+    public static ButtonWidget<?> rowButton(IKey label, IGuiAction.MousePressed onClick) {
+        var btn = new ButtonWidget<>();
+        btn.widthRel(1f).height(BTN_H).padding(ROW_INDENT, 0, 0, 0)
+                .overlay(buttonLabelLeft(label))
+                .onMousePressed(onClick);
+        return btn;
+    }
+
+    /**
+     * Builds a {@link CycleButtonWidget} whose pending state change can be vetoed — works
+     * around ModularUI not exposing an {@code onBeforeChange} hook on {@code CycleButtonWidget}.
+     * {@code canChange} runs before {@code onChange}; returning {@code false} rejects the click
+     * (the getter is re-queried, so the displayed state doesn't move).
+     *
+     * @param length    number of states
+     * @param getter    current state index (0-based)
+     * @param canChange veto predicate for the pending index; {@code false} rejects the change
+     * @param onChange  applied only when {@code canChange} allows the pending index
+     */
+    public static CycleButtonWidget validatedCycleButton(int length, IntSupplier getter,
+                                                         IntPredicate canChange, IntConsumer onChange) {
+        return new CycleButtonWidget()
+                .length(length)
+                .value(new IntValue.Dynamic(getter, idx -> {
+                    if (canChange.test(idx)) onChange.accept(idx);
+                }));
     }
 
     /**
